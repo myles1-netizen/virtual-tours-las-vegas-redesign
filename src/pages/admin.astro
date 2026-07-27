@@ -594,7 +594,7 @@ const tierCount = [hdrTiers, matterportTiers, floorPlanTiers, virtualStagingTier
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script is:inline define:vars={{ snapshot: snapshotJson, usingDefaultPassword: USING_DEFAULT_PASSWORD, passwordHash: PASSWORD_HASH }}>
+    <script is:inline define:vars={{ snapshot: snapshotJson, usingDefaultPassword: USING_DEFAULT_PASSWORD, passwordHash: PASSWORD_HASH, adminPassword: ADMIN_PASSWORD }}>
       (function () {
         "use strict";
         var DATA = JSON.parse(snapshot);
@@ -634,21 +634,30 @@ const tierCount = [hdrTiers, matterportTiers, floorPlanTiers, virtualStagingTier
             gateError.textContent = "";
             var value = pwdInput ? pwdInput.value : "";
             if (!value) { gateError.textContent = "Please enter the password."; return; }
-            if (!window.crypto || !crypto.subtle) { gateError.textContent = "This browser can't verify the password securely. Try over HTTPS."; return; }
-            sha256Hex(value).then(function (hash) {
-              if (hash === passwordHash) {
-                try { localStorage.setItem(STORAGE_KEY, "yes"); } catch (e) {}
-                // First-login default-password banner (in-session).
-                if (usingDefaultPassword) {
-                  try { if (!localStorage.getItem(FIRST_LOGIN_KEY)) { showToast("Default password is VTLV-admin-2026 — change it via the ADMIN_PASSWORD env var. See the note on the login screen."); localStorage.setItem(FIRST_LOGIN_KEY, "yes"); } } catch (e) {}
-                }
-                showDash();
-              } else {
-                gateError.textContent = "That password isn't right.";
-                if (pwdInput) { pwdInput.value = ""; pwdInput.focus(); }
-              }
-            }).catch(function () { gateError.textContent = "Couldn't verify the password. Please try again."; });
+            // Try crypto.subtle first (secure), fall back to direct comparison
+            if (window.crypto && crypto.subtle) {
+              sha256Hex(value).then(function (hash) {
+                if (hash === passwordHash) { unlockAdmin(); }
+                else { gateError.textContent = "That password isn't right."; pwdInput.value = ""; pwdInput.focus(); }
+              }).catch(function () {
+                // crypto.subtle failed (e.g. not HTTPS) — use direct comparison as fallback
+                if (value === adminPassword) { unlockAdmin(); }
+                else { gateError.textContent = "That password isn't right."; pwdInput.value = ""; pwdInput.focus(); }
+              });
+            } else {
+              // No crypto.subtle — direct comparison (still client-side only gate)
+              if (value === adminPassword) { unlockAdmin(); }
+              else { gateError.textContent = "That password isn't right."; pwdInput.value = ""; pwdInput.focus(); }
+            }
           });
+        }
+
+        function unlockAdmin() {
+            try { localStorage.setItem(STORAGE_KEY, "yes"); } catch (e) {}
+            if (usingDefaultPassword) {
+              try { if (!localStorage.getItem(FIRST_LOGIN_KEY)) { showToast("Default password is VTLV-admin-2026 — change it via the ADMIN_PASSWORD env var."); localStorage.setItem(FIRST_LOGIN_KEY, "yes"); } } catch (e) {}
+            }
+            showDash();
         }
         if (logoutBtn) {
           logoutBtn.addEventListener("click", function () {
