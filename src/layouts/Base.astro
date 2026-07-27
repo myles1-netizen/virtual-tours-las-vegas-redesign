@@ -247,6 +247,34 @@ const csp = cspOverride ?? DEFAULT_CSP;
     <link rel="icon" type="image/svg+xml" href={asset("/favicon.svg")} />
     <link rel="apple-touch-icon" href={asset("/apple-touch-icon.png")} />
 
+    {/* Preload the LCP hero image — every page shares this default background
+        photo (homepage hero / OG image), so requesting it on the highest
+        priority fetch in <head> meaningfully improves LCP. fetchpriority="high"
+        on the <img> itself (in each hero) is the partner signal. */}
+    <link rel="preload" as="image" href={asset(image)} fetchpriority="high" />
+
+    {/* ===== Critical CSS (inlined, render-blocking) =====
+        Above-the-fold tokens + reset + body + the fixed header. The full
+        stylesheet (global.css, ~14KB) is still linked normally below; this
+        block just lets the browser paint the first frame without waiting for
+        it, eliminating FOUC and shaving meaningful time off first contentful
+        paint. Kept minimal on purpose — only what's visible above the fold. */}
+    <style is:inline>
+      :root{--paper:#f7f4ef;--paper-2:#efeae1;--ink:#1a1814;--ink-2:#2a2620;--stone:#6b6358;--on-dark:#f7f4ef;--dark:#0f0e0c;--brass:#b08d57;--line-light:rgba(26,24,20,.12);--font-display:'Fraunces',Georgia,'Times New Roman',serif;--font-body:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--container:1240px;--gutter:clamp(1.25rem,.7rem + 2.5vw,2.5rem);color-scheme:light}
+      [data-theme='dark']{--paper:#0f0e0c;--paper-2:#1c1a16;--ink:#f7f4ef;--ink-2:#e6dfd2;--stone:#8a8275;--brass:#c9a572;--line-light:rgba(247,244,239,.14);--dark:#1c1a16;color-scheme:dark}
+      *,*::before,*::after{box-sizing:border-box}*{margin:0}html{-webkit-text-size-adjust:100%}
+      body{font-family:var(--font-body);color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;overflow-x:hidden;line-height:1.6}
+      img,picture,svg,video,canvas{display:block;max-width:100%;height:auto}
+      a{color:inherit;text-decoration:none}button{background:none;border:none;cursor:pointer;font:inherit;color:inherit}
+      .skip-link{position:absolute;left:1rem;top:-100px;background:var(--ink);color:var(--on-dark);padding:.7em 1.1em;border-radius:4px;z-index:200;font-weight:600}
+      .skip-link:focus{top:1rem}
+      .site-header{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--paper);color:var(--ink);box-shadow:0 1px 0 var(--line-light)}
+      .site-header .bar{max-width:var(--container);margin-inline:auto;padding:.55rem var(--gutter);display:flex;align-items:center;gap:1.25rem}
+      .container{width:100%;max-width:var(--container);margin-inline:auto;padding-inline:var(--gutter)}
+      body[data-hero='light'] main{padding-top:clamp(84px,12vh,104px)}
+      h1,h2,h3,h4{font-family:var(--font-display);font-weight:400;letter-spacing:-.02em;line-height:1.18;color:var(--ink)}
+    </style>
+
     {/* Progressive enhancement flag: set BEFORE first paint so reveal-elements
         start hidden only when JS is actually available. No-JS = fully visible. */}
     <script is:inline set:html="document.documentElement.dataset.js=''" />

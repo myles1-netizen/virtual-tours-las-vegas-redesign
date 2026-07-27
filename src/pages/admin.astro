@@ -35,7 +35,21 @@ const passwordHash = await sha256(SITE_PASSWORD);
 // SEO catalog so the admin matches what Google actually sees.
 const pages = seoCatalog
   .filter((p) => p.path !== "/404")
-  .map((p) => ({ path: p.path, title: p.title, description: p.description, noindex: !!p.noindex }));
+  .map((p) => ({
+    path: p.path,
+    title: p.title,
+    description: p.description,
+    noindex: !!p.noindex,
+    focusKeyphrase: p.focusKeyphrase ?? "",
+  }));
+
+// Quick catalog lookup so the SEO scorecard and editor can fall back to the
+// static focus keyphrase (from seo-catalog.ts) for any page — including blog
+// posts — when no per-page override has been saved to src/data/cms/seo/ yet.
+// Plain object (not a Map) so define:vars' JSON serialization preserves it.
+const focusByPath = Object.fromEntries(
+  seoCatalog.map((p) => [p.path, p.focusKeyphrase ?? ""])
+);
 
 // Repo coordinates. These match the GitHub Pages deployment.
 const REPO = "MylesThePro1/virtual-tours-las-vegas-redesign";
@@ -895,7 +909,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
     <div id="loading"><div style="text-align:center"><div class="spinner"></div><div class="loading-label" id="loading-label">Working…</div></div></div>
 
     <!-- ===================== SCRIPT ===================== -->
-    <script is:inline define:vars={{ passwordHash, pages, REPO, BRANCH, BASE }}>
+    <script is:inline define:vars={{ passwordHash, pages, REPO, BRANCH, BASE, focusByPath }}>
       "use strict";
       // ============================================================
       //  Config & state
@@ -2615,8 +2629,11 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
           try {
             const f = await readFile(seoPath);
             model = JSON.parse(f.content);
+            // A saved file with an empty keyword still inherits the catalog default
+            // so the field is never blank in the editor.
+            if (!model.keyword) model.keyword = page?.focusKeyphrase || focusByPath[path] || "";
           } catch {
-            model = { title: page.title, description: page.description, keyword: "" };
+            model = { title: page.title, description: page.description, keyword: page?.focusKeyphrase || focusByPath[path] || "" };
           }
           models.seo[path] = model;
         }
@@ -4099,9 +4116,11 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
             try {
               const file = await readFile(`${BLOG_DIR}/${f.name}`);
               const fm = parseFrontmatter(file.content);
-              const seoPath = `${CMS_DIR}/seo/${seoFileName("/blog/" + f.name.replace(/\.md$/, "") + "/")}.json`;
-              let keyword = "";
-              try { const s = await readFile(seoPath); keyword = (JSON.parse(s.content).keyword) || ""; } catch {}
+              const blogPath = "/blog/" + f.name.replace(/\.md$/, "") + "/";
+              const seoPath = `${CMS_DIR}/seo/${seoFileName(blogPath)}.json`;
+              // Saved override wins; otherwise fall back to the catalog keyphrase.
+              let keyword = focusByPath[blogPath] || "";
+              try { const s = await readFile(seoPath); keyword = (JSON.parse(s.content).keyword) || keyword; } catch {}
               const score = seoScore(fm, keyword);
               rows.push({ title: fm.title || f.name, name: f.name, kind: "post", score, hasKw: !!keyword });
             } catch {}
@@ -4109,8 +4128,9 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
           // Add static pages too.
           for (const p of pages) {
             const seoPath = `${CMS_DIR}/seo/${seoFileName(p.path)}.json`;
-            let keyword = "", title = p.title, desc = p.description || "";
-            try { const s = await readFile(seoPath); const j = JSON.parse(s.content); keyword = j.keyword || ""; title = j.title || title; desc = j.description || desc; } catch {}
+            // Saved override wins; otherwise fall back to the catalog keyphrase.
+            let keyword = p.focusKeyphrase || focusByPath[p.path] || "", title = p.title, desc = p.description || "";
+            try { const s = await readFile(seoPath); const j = JSON.parse(s.content); keyword = j.keyword || keyword; title = j.title || title; desc = j.description || desc; } catch {}
             rows.push({ title, name: p.path, kind: "page", score: seoScore({ title, description: desc }, keyword), hasKw: !!keyword });
           }
 
