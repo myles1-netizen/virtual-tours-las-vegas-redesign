@@ -56,13 +56,13 @@ const id = `ba-${Math.random().toString(36).slice(2, 9)}`;
     width: 100%; height: 100%;
     object-fit: cover;
   }
+  /* Full-size, always — only the visible slice changes via clip-path (set in JS).
+     Both images render at identical scale/crop, so the reveal never "jumps" zoom. */
   .ba-before-clip {
     position: absolute; inset: 0;
-    width: 50%;
     overflow: hidden;
-    will-change: width;
+    will-change: clip-path;
   }
-  .ba-before-clip .ba-before { width: 100vw; max-width: 1000%; /* counter-clip */ }
 
   .ba-tag {
     position: absolute;
@@ -139,7 +139,7 @@ const id = `ba-${Math.random().toString(36).slice(2, 9)}`;
 
     const set = (pct: number) => {
       const v = Math.max(0, Math.min(100, pct));
-      clip.style.width = `${v}%`;
+      clip.style.clipPath = `inset(0 ${100 - v}% 0 0)`;
       handle.style.left = `${v}%`;
     };
     range.value = "30";
