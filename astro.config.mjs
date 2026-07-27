@@ -22,7 +22,9 @@ export default defineConfig({
   ],
   prefetch: {
     prefetchAll: true,
-    defaultStrategy: 'viewport',
+    // Prefetch on hover/focus so links feel instant on click, without
+    // speculatively fetching every page in the viewport (lighter on bandwidth).
+    defaultStrategy: 'hover',
   },
   compressHTML: true,
 });
