@@ -1,5 +1,5 @@
 ---
-import { asset } from "../data/site";
+import { asset, webpOf } from "../data/site";
 export interface Props {
   eyebrow?: string;
   title: string;
@@ -19,7 +19,10 @@ const {
 ---
 <section class="phero">
   <div class="phero-bg">
-    <img src={asset(image)} alt={imageAlt} fetchpriority="high" />
+    <picture>
+      <source type="image/webp" srcset={asset(webpOf(image))} />
+      <img src={asset(image)} alt={imageAlt} fetchpriority="high" decoding="async" />
+    </picture>
     <div class="phero-shade"></div>
   </div>
   <div class="container phero-inner" data-align={align}>

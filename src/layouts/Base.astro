@@ -3,7 +3,7 @@ import "../styles/global.css";
 import SiteHeader from "../components/SiteHeader.astro";
 import SiteFooter from "../components/SiteFooter.astro";
 import GlobalLightbox from "../components/GlobalLightbox.astro";
-import { business, asset, testimonials } from "../data/site";
+import { business, asset, webpOf, testimonials } from "../data/site";
 
 export interface Props {
   title: string;
@@ -251,8 +251,10 @@ const csp = cspOverride ?? DEFAULT_CSP;
     {/* Preload the LCP hero image — every page shares this default background
         photo (homepage hero / OG image), so requesting it on the highest
         priority fetch in <head> meaningfully improves LCP. fetchpriority="high"
-        on the <img> itself (in each hero) is the partner signal. */}
-    <link rel="preload" as="image" href={asset(image)} fetchpriority="high" />
+        on the <img> itself (in each hero) is the partner signal.
+        imagesrcset lets the browser pick WebP when supported, matching the
+        <picture><source> used in the hero, so there's no double download. */}
+    <link rel="preload" as="image" imagesrcset={asset(webpOf(image))} fetchpriority="high" />
 
     {/* ===== Critical CSS (inlined, render-blocking) =====
         Above-the-fold tokens + reset + body + the fixed header. The full

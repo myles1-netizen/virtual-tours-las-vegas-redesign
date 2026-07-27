@@ -15,7 +15,7 @@
 // Usage:
 //   <LightboxImage src="/img/room.jpg" alt="Living room" group="staging" />
 //   <LightboxImage src={thumb} full={full} alt="..." caption="Custom caption" />
-import { asset } from "../data/site";
+import { asset, webpOf } from "../data/site";
 
 export interface Props {
   /** Thumbnail image path (resolved against the deployment base). */
@@ -50,6 +50,7 @@ const {
 } = Astro.props;
 
 const thumbSrc = asset(src);
+const thumbWebp = asset(webpOf(src));
 const fullSrc = asset(full ?? src);
 const captionText = caption ?? alt;
 ---
@@ -64,15 +65,18 @@ const captionText = caption ?? alt;
     data-lightbox-group={group}
     aria-label={`Enlarge image: ${captionText || "image"}`}
   >
-    <img
-      class="lb-img"
-      src={thumbSrc}
-      alt={alt}
-      loading={loading}
-      decoding="async"
-      width={width}
-      height={height}
-    />
+    <picture>
+      <source type="image/webp" srcset={thumbWebp} />
+      <img
+        class="lb-img"
+        src={thumbSrc}
+        alt={alt}
+        loading={loading}
+        decoding="async"
+        width={width}
+        height={height}
+      />
+    </picture>
     <span class="lb-img-zoom" aria-hidden="true">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6M8 11h6"/></svg>
     </span>

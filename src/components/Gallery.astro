@@ -1,5 +1,5 @@
 ---
-import { asset, type Shot } from "../data/site";
+import { asset, webpOf, type Shot } from "../data/site";
 
 export interface Props {
   shots: Shot[];
@@ -10,10 +10,11 @@ export interface Props {
   class?: string;
 }
 const { shots, filters = false, carousel = false, class: className = "" } = Astro.props;
-// Pre-resolve every shot src against the deployment base path.
+// Pre-resolve every shot src + its WebP variant against the deployment base path.
 const resolved = shots.map((s) => ({
   ...s,
   src: asset(s.src),
+  webp: asset(webpOf(s.src)),
   matterportId: s.matterportId || "",
 }));
 
@@ -67,14 +68,17 @@ const hasTours = resolved.some((s) => s.matterportId);
         data-lightbox-trigger
         aria-label={`Open enlarged: ${shot.alt}`}
       >
-        <img
-          src={shot.src}
-          alt={shot.alt}
-          loading={i < 4 ? "eager" : "lazy"}
-          decoding={i < 4 ? "auto" : "async"}
-          width="800"
-          height="600"
-        />
+        <picture>
+          <source type="image/webp" srcset={shot.webp} />
+          <img
+            src={shot.src}
+            alt={shot.alt}
+            loading={i < 4 ? "eager" : "lazy"}
+            decoding={i < 4 ? "auto" : "async"}
+            width="800"
+            height="600"
+          />
+        </picture>
         <span class="tile-cat">{shot.category}</span>
         {shot.matterportId && (
           <span class="tile-tour" aria-hidden="true">

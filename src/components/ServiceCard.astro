@@ -1,11 +1,14 @@
 ---
-import { asset, type ServiceBuyer } from "../data/site";
+import { asset, webpOf, type ServiceBuyer } from "../data/site";
 export interface Props { b: ServiceBuyer; index?: number; }
 const { b, index = 0 } = Astro.props;
 ---
 <a class="scard" href={asset(b.href)} data-reveal data-reveal-delay={String((index % 3) + 1)}>
   <div class="scard-img">
-    <img src={asset(b.image)} alt={b.alt} loading="lazy" width="600" height="450" />
+    <picture>
+      <source type="image/webp" srcset={asset(webpOf(b.image))} />
+      <img src={asset(b.image)} alt={b.alt} loading="lazy" decoding="async" width="600" height="450" />
+    </picture>
     <div class="scard-overlay"></div>
     <span class="scard-tag">{b.audience}</span>
   </div>

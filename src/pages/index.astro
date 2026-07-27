@@ -1,5 +1,5 @@
 ---
-import { asset } from "../data/site";
+import { asset, webpOf } from "../data/site";
 import Base from "../layouts/Base.astro";
 import TrustBar from "../components/TrustBar.astro";
 import Gallery from "../components/Gallery.astro";
@@ -28,7 +28,10 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
   {/* ===== HERO ===== */}
   <section class="hero">
     <div class="hero-bg">
-      <img src={asset("/images/portfolio/sierra-skye-living.jpg")} alt="Sunlit Las Vegas living room captured with professional HDR real estate photography" fetchpriority="high" />
+      <picture>
+        <source type="image/webp" srcset={asset(webpOf("/images/portfolio/sierra-skye-living.jpg"))} />
+        <img src={asset("/images/portfolio/sierra-skye-living.jpg")} alt="Sunlit Las Vegas living room captured with professional HDR real estate photography" fetchpriority="high" decoding="async" />
+      </picture>
       <div class="hero-shade"></div>
     </div>
     <div class="container hero-inner">
@@ -246,7 +249,10 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
         </div>
         <div class="area-stat" data-reveal data-reveal-delay="2">
           <div class="area-img photo-frame">
-            <img src={asset("/images/portfolio/drone-aerial.jpg")} alt="Aerial drone view of a Las Vegas neighborhood" loading="lazy" width="700" height="525" />
+            <picture>
+              <source type="image/webp" srcset={asset(webpOf("/images/portfolio/drone-aerial.jpg"))} />
+              <img src={asset("/images/portfolio/drone-aerial.jpg")} alt="Aerial drone view of a Las Vegas neighborhood" loading="lazy" decoding="async" width="700" height="525" />
+            </picture>
           </div>
           <p class="area-cred">Locally based · Same-day availability · {business.turnaround} delivery</p>
         </div>

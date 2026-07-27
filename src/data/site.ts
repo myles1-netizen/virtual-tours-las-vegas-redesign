@@ -22,6 +22,12 @@ const BASE = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "");
 export const asset = (p: string) => (p.startsWith("/") ? `${BASE}${p}` : `${BASE}/${p}`);
 export const url = asset;
 
+// Returns the WebP equivalent path for a raster image (.jpg/.jpeg/.png → .webp).
+// Used by <picture> sources so browsers get the smaller format with a graceful
+// fallback to the original. SVG and unknown extensions pass through unchanged.
+export const webpOf = (p: string): string =>
+  /\.(jpe?g|png)$/i.test(p) ? p.replace(/\.(jpe?g|png)$/i, ".webp") : p;
+
 export const business = {
   name: settings.name,
   shortName: settings.shortName,

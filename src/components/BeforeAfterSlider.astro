@@ -1,5 +1,5 @@
 ---
-import { asset } from "../data/site";
+import { asset, webpOf } from "../data/site";
 export interface Props {
   before: string;
   beforeAlt: string;
@@ -17,9 +17,15 @@ const id = `ba-${Math.random().toString(36).slice(2, 9)}`;
     role="group"
     aria-label={label ? `Before and after: ${label}` : "Before and after comparison"}
   >
-    <img class="ba-after" src={asset(after)} alt={afterAlt} loading="lazy" width="1200" height="800" />
+    <picture>
+      <source type="image/webp" srcset={asset(webpOf(after))} />
+      <img class="ba-after" src={asset(after)} alt={afterAlt} loading="lazy" decoding="async" width="1200" height="800" />
+    </picture>
     <div class="ba-before-clip" data-ba-clip>
-      <img class="ba-before" src={asset(before)} alt={beforeAlt} loading="lazy" width="1200" height="800" aria-hidden="true" />
+      <picture>
+        <source type="image/webp" srcset={asset(webpOf(before))} />
+        <img class="ba-before" src={asset(before)} alt={beforeAlt} loading="lazy" decoding="async" width="1200" height="800" aria-hidden="true" />
+      </picture>
     </div>
 
     <span class="ba-tag ba-tag-before">Before</span>
