@@ -12,8 +12,8 @@
 //
 // Progressive enhancement: a <noscript> fallback note is shown and the static
 // price tables elsewhere on the page remain visible without JS. Nevada does not
-// tax photography services (see handoff/07-LEGAL-ACCURACY-GUIDELINES.md), so no
-// tax line is added — a small note explains that instead.
+// tax photography services, so no tax line is added — the summary shows the
+// plain estimated total with no fine-print disclaimers.
 
 import { asset } from "../data/site";
 import {
@@ -255,7 +255,7 @@ const configJson = JSON.stringify(config);
   <fieldset class="calc-step">
     <legend class="step-legend"><span class="step-n">2</span> Property details</legend>
     <div class="details-grid">
-      <label class="detail-field">
+      <label class="detail-field" data-field="address">
         <span class="detail-label">Address <span class="opt">optional</span></span>
         <input type="text" data-address placeholder="e.g. 123 Main St, Las Vegas, NV" autocomplete="off" />
       </label>
@@ -268,10 +268,7 @@ const configJson = JSON.stringify(config);
       </label>
       <label class="detail-field">
         <span class="detail-label">Stories</span>
-        <div class="seg" role="group" aria-label="Number of stories">
-          <button type="button" class="seg-btn is-active" data-stories="1" aria-pressed="true">Single</button>
-          <button type="button" class="seg-btn" data-stories="2" aria-pressed="false">Two</button>
-        </div>
+        <input type="number" class="stories-input" inputmode="numeric" min="1" max="10" step="1" value="1" data-stories-input aria-describedby="sqft-note" />
       </label>
     </div>
     <p id="sqft-note" class="ctrl-note">Square footage drives 3D tour &amp; floor plan tier pricing.</p>
@@ -531,11 +528,6 @@ const configJson = JSON.stringify(config);
         <span class="total-amount" data-total>$0</span>
       </div>
 
-      <p class="summary-note">
-        Nevada doesn't tax photography services, so this is the full amount — no surprise fees.
-        Final invoice may vary for unusual scopes (very large properties, custom work).
-      </p>
-
       <a class="btn brass btn-block summary-cta" data-book href={asset("/contact/")}>
         Book this
       </a>
@@ -641,13 +633,16 @@ const configJson = JSON.stringify(config);
   .ptype-blurb { font-size: var(--step--1); color: var(--stone); line-height: 1.3; }
 
   /* ===== Property details ===== */
+  /* Stack fields into readable rows; each input is full-width within its cell. */
   .details-grid {
     display: grid;
-    grid-template-columns: 1.4fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 0.9rem;
     align-items: end;
   }
-  .detail-field { display: flex; flex-direction: column; gap: 0.4rem; }
+  /* Address spans the full width on top, sqft + stories share a row below. */
+  .detail-field[data-field="address"] { grid-column: 1 / -1; }
+  .detail-field { display: flex; flex-direction: column; gap: 0.45rem; }
   .detail-label {
     font-size: 0.78rem;
     font-weight: 700;
@@ -659,29 +654,38 @@ const configJson = JSON.stringify(config);
     gap: 0.4rem;
   }
   .opt { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.02em; text-transform: none; color: var(--stone-2); }
+  /* Every detail input is full-width, at least 48px tall, with comfortable padding. */
   .detail-field input {
     width: 100%;
-    padding: 0.75em 0.85em;
+    min-height: 48px;
+    padding: 0.85em 0.95em;
     background: var(--paper-2);
-    border: 1px solid var(--line-light);
+    border: 1.5px solid var(--line-light);
     border-radius: var(--radius-sm);
     font-size: var(--step-0);
     color: var(--ink);
     font-family: inherit;
+    box-sizing: border-box;
+    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
   }
   .detail-field input:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 3px var(--brass-soft); }
-  .ctrl-note { font-size: 0.75rem; color: var(--stone-2); line-height: 1.45; }
+  .ctrl-note { font-size: 0.75rem; color: var(--stone-2); line-height: 1.45; grid-column: 1 / -1; }
 
-  .sqft-input { display: flex; align-items: stretch; }
+  .sqft-input { display: flex; align-items: stretch; width: 100%; }
   .sqft-input input {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 48px;
     border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    /* Large number input — prominent, easy to read while typing. */
     font-family: var(--font-display);
+    font-size: var(--step-2);
     background: var(--paper-2);
   }
   .sqft-unit {
-    padding: 0.75em 0.85em;
+    padding: 0.85em 1em;
     background: var(--paper-3);
-    border: 1px solid var(--line-light);
+    border: 1.5px solid var(--line-light);
     border-left: none;
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     font-size: var(--step--1);
@@ -689,24 +693,19 @@ const configJson = JSON.stringify(config);
     white-space: nowrap;
     display: grid;
     place-items: center;
+    min-height: 48px;
   }
 
-  /* Segmented control (stories) */
-  .seg { display: inline-flex; border: 1px solid var(--line-light); border-radius: var(--radius-sm); overflow: hidden; }
-  .seg-btn {
-    padding: 0.65em 1.2em;
-    font-size: var(--step--1);
-    font-weight: 600;
-    color: var(--stone);
-    background: var(--paper-2);
-    border: none;
-    border-right: 1px solid var(--line-light);
-    cursor: pointer;
-    min-height: 44px;
-    transition: background 0.2s var(--ease), color 0.2s var(--ease);
+  /* Stories — a plain, comfortable number input (was a 2-option segmented control). */
+  .stories-input {
+    width: 100%;
+    text-align: left;
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    -moz-appearance: textfield;
   }
-  .seg-btn:last-child { border-right: none; }
-  .seg-btn.is-active { background: var(--ink); color: var(--on-dark); }
+  .stories-input::-webkit-outer-spin-button,
+  .stories-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
   /* ===== Service groups ===== */
   .svc-group { display: flex; flex-direction: column; gap: 0.6rem; }
@@ -722,17 +721,23 @@ const configJson = JSON.stringify(config);
   }
   .svc-note { font-size: 0.78rem; color: var(--stone-2); line-height: 1.45; }
 
-  /* Visual service cards (multi-select) */
-  .svc-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.65rem; }
-  .svc-card { cursor: pointer; display: block; }
+  /* Visual service cards (multi-select) — generous padding + min-width so they
+     never collapse into a cramped column. Cards stay on their own grid track. */
+  .svc-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.7rem;
+  }
+  .svc-card { cursor: pointer; display: block; min-width: 0; }
   .svc-card input { position: absolute; opacity: 0; width: 1px; height: 1px; }
   .svc-card-inner {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
-    padding: 0.9rem 1rem;
+    gap: 0.4rem;
+    padding: 1rem 1.1rem;
     border: 1.5px solid var(--line-light);
     border-radius: var(--radius);
+    min-height: 92px;
     background: var(--paper-2);
     height: 100%;
     transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.2s var(--ease);
@@ -886,20 +891,24 @@ const configJson = JSON.stringify(config);
     margin-top: 0.4rem;
     line-height: 1.2;
   }
-  .breakdown { display: flex; flex-direction: column; gap: 0.55rem; margin: 1rem 0 0; }
+  /* One line item per row — name on the left, price pinned right, never wraps
+     awkwardly even at 375px. The price is locked to its own line via nowrap. */
+  .breakdown { display: flex; flex-direction: column; gap: 0.5rem; margin: 1rem 0 0; padding: 0; list-style: none; }
   .breakdown li {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    gap: 1rem;
-    padding-bottom: 0.55rem;
+    gap: 0.75rem;
+    padding-bottom: 0.5rem;
     border-bottom: 1px dashed var(--line-dark);
     font-size: var(--step--1);
     color: rgba(247,244,239,0.85);
+    line-height: 1.35;
   }
   .breakdown li:last-child { border-bottom: none; }
-  .breakdown .bd-name { line-height: 1.35; padding-right: 0.5rem; }
-  .breakdown .bd-price { font-family: var(--font-display); color: var(--on-dark); white-space: nowrap; }
+  /* Name takes available space and may wrap to two lines; price never wraps. */
+  .breakdown .bd-name { flex: 1 1 auto; min-width: 0; padding-right: 0.4rem; }
+  .breakdown .bd-price { font-family: var(--font-display); color: var(--on-dark); white-space: nowrap; flex: 0 0 auto; align-self: flex-start; }
   .breakdown .bd-sub { color: rgba(247,244,239,0.55); font-size: 0.72rem; display: block; margin-top: 0.15rem; }
   .breakdown .bd-empty {
     color: rgba(247,244,239,0.6);
@@ -921,12 +930,6 @@ const configJson = JSON.stringify(config);
   .total-label { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(247,244,239,0.7); }
   .total-amount { font-family: var(--font-display); font-size: var(--step-5); color: var(--brass-2); line-height: 1; }
 
-  .summary-note {
-    margin-top: 1rem;
-    font-size: 0.75rem;
-    line-height: 1.5;
-    color: rgba(247,244,239,0.55);
-  }
   .summary-cta { margin-top: 1.3rem; }
   .summary-alt { margin-top: 0.8rem; text-align: center; font-size: var(--step--1); color: rgba(247,244,239,0.6); }
   .summary-alt a { color: var(--brass-2); font-weight: 600; border-bottom: 1px solid transparent; }
@@ -947,13 +950,24 @@ const configJson = JSON.stringify(config);
   @media (max-width: 880px) {
     .calc { grid-template-columns: 1fr; }
     .calc-summary { position: static; }
+    /* Below tablet: stack sqft and stories vertically too, so neither is cramped. */
     .details-grid { grid-template-columns: 1fr; }
   }
   @media (max-width: 560px) {
+    .calc { padding: 1.1rem; }
     .ptypes { grid-template-columns: 1fr; }
     .svc-cards { grid-template-columns: 1fr; }
     .addon-grid { grid-template-columns: 1fr; }
     .total-amount { font-size: var(--step-4); }
+    .qty-row { flex-wrap: wrap; gap: 0.5rem; }
+    /* Make the breakdown prices comfortably tappable/readable on phones. */
+    .breakdown li { gap: 0.6rem; }
+  }
+  /* Narrow phones (375px) — guarantee no horizontal overflow and comfortable type. */
+  @media (max-width: 400px) {
+    .calc { padding: 0.9rem; border-radius: var(--radius); }
+    .svc-card-inner { padding: 0.9rem; min-height: 80px; }
+    .num-spin input { width: 48px; }
   }
 </style>
 
@@ -969,7 +983,6 @@ const configJson = JSON.stringify(config);
     const svcGroups = calc.querySelectorAll("[data-svc-for]");
     const sqftInput = calc.querySelector("[data-sqft]");
     const sqftLabel = calc.querySelector("[data-sqft-label]");
-    const storiesBtns = calc.querySelectorAll("[data-stories]");
     const summaryType = calc.querySelector("[data-summary-type]");
     const breakdown = calc.querySelector("[data-breakdown]");
     const totalEl = calc.querySelector("[data-total]");
@@ -986,35 +999,46 @@ const configJson = JSON.stringify(config);
     const stagingCount = calc.querySelector("[data-staging-count]");
     const hdrCtrl = calc.querySelector("[data-hdr-ctrl]");
     const stagingCtrl = calc.querySelector("[data-staging-ctrl]");
+    // Individual service toggle checkboxes (HDR / staging) so their qty rows can
+    // be shown/hidden. serviceChecks is the NodeList of every [data-service].
+    const hdrCheck = calc.querySelector('[data-service="hdr"]');
+    const stagingCheck = calc.querySelector('[data-service="staging"]');
+    // Stories is now a plain number input (was a segmented control).
+    const storiesInput = calc.querySelector("[data-stories-input]");
 
     // ---- Pricing helpers (mirror the real bracket logic) ----
+    // All prices are coerced with Number() so a future hand-edit of pricing.json
+    // (e.g. a value accidentally quoted as a string) can NEVER turn the total
+    // into "$111230" via string concatenation — every price is a real number.
     function sqft() { return Math.max(0, parseInt(sqftInput.value, 10) || 0); }
 
     function hdrPriceFor(count) {
       const c = Math.max(0, count | 0);
       const b = CONFIG.hdrBrackets.find((x) => c <= x.max) || CONFIG.hdrBrackets[CONFIG.hdrBrackets.length - 1];
-      return { price: b.price, label: b.label };
+      return { price: Number(b.price), label: b.label };
     }
 
     function commercialHdrPriceFor(count) {
       const c = Math.max(0, count | 0);
       const b = CONFIG.commercialHdrBrackets.find((x) => c <= x.max) || CONFIG.commercialHdrBrackets[CONFIG.commercialHdrBrackets.length - 1];
-      return { price: b.price, label: b.label };
+      return { price: Number(b.price), label: b.label };
     }
 
     function matterportPriceFor(sqftVal) {
       if (sqftVal <= 0) {
         const b = CONFIG.matterportBrackets[0];
-        return { price: b.price, label: b.label, overage: 0 };
+        return { price: Number(b.price), label: b.label, overage: 0 };
       }
       const b = CONFIG.matterportBrackets.find((x) => sqftVal <= x.maxSqft);
-      if (b) return { price: b.price, label: b.label, overage: 0 };
-      const cap = CONFIG.matterportBrackets[CONFIG.matterportBrackets.length - 1].maxSqft;
-      const base = CONFIG.matterportBrackets[CONFIG.matterportBrackets.length - 1].price;
+      if (b) return { price: Number(b.price), label: b.label, overage: 0 };
+      const last = CONFIG.matterportBrackets[CONFIG.matterportBrackets.length - 1];
+      const cap = Number(last.maxSqft);
+      const base = Number(last.price);
       const extra = sqftVal - cap;
       const additional1000s = Math.ceil(extra / 1000);
-      const overage = additional1000s * CONFIG.matterportOveragePer1000;
-      return { price: base + overage, label: `Over ${cap.toLocaleString()} sq ft (+$${CONFIG.matterportOveragePer1000}/1000)`, overage };
+      const overage = additional1000s * Number(CONFIG.matterportOveragePer1000);
+      // Group the addition so it can never concatenate strings: (base + overage)
+      return { price: (base + overage), label: `Over ${cap.toLocaleString()} sq ft (+$${Number(CONFIG.matterportOveragePer1000)}/1000)`, overage };
     }
 
     function floorPlanPriceFor(sqftVal, stor) {
@@ -1022,9 +1046,18 @@ const configJson = JSON.stringify(config);
       const b = CONFIG.floorPlanBrackets.find(
         (x) => x.stories === stor && sqftVal >= x.minSqft && sqftVal <= x.maxSqft
       );
-      if (b) return { price: b.price, label: b.label };
+      if (b) return { price: Number(b.price), label: b.label };
       const fb = CONFIG.floorPlanBrackets.find((x) => x.stories === stor && x.maxSqft === 2500);
-      return fb ? { price: fb.price, label: fb.label } : { price: null, label: CONFIG.floorPlanCustomNote, custom: true };
+      return fb ? { price: Number(fb.price), label: fb.label } : { price: null, label: CONFIG.floorPlanCustomNote, custom: true };
+    }
+
+    // Turn pricing.json's "Up to 2,000 sq ft" into a compact "≤2,000 sq ft"
+    // bracket label for the breakdown, and shorten HDR's "11–30 photos" too.
+    function matterportSubLabel(raw) {
+      return String(raw).replace(/^Up to\s+/i, "≤ ").replace(/^Over\s+/i, "> ");
+    }
+    function hdrSubLabel(raw) {
+      return String(raw).replace(/\s*HDR\s*photos?/i, "").trim();
     }
 
     // ---- Compute the current quote ----
@@ -1039,10 +1072,10 @@ const configJson = JSON.stringify(config);
         if (svc === "hdr") {
           const count = Math.max(1, parseInt(hdrCount.value, 10) || 0);
           const { price, label } = hdrPriceFor(count);
-          lines.push({ name: `HDR photography (${count} photo${count === 1 ? "" : "s"})`, sub: label, price });
+          lines.push({ name: `HDR photography (${count} photo${count === 1 ? "" : "s"})`, sub: hdrSubLabel(label), price });
         } else if (svc === "matterport") {
           const { price, label } = matterportPriceFor(sqftVal);
-          lines.push({ name: "Matterport 3D tour", sub: label, price });
+          lines.push({ name: "Matterport 3D tour", sub: matterportSubLabel(label), price });
         } else if (svc === "floorplan") {
           const fp = floorPlanPriceFor(sqftVal, stories);
           lines.push({ name: "Floor plan", sub: fp.label, price: fp.price, custom: !!fp.custom });
@@ -1084,7 +1117,10 @@ const configJson = JSON.stringify(config);
         }
       });
 
-      const total = lines.reduce((sum, l) => sum + (typeof l.price === "number" ? l.price : 0), 0);
+      // Force every price to a real number before summing so a stray string
+      // anywhere can NEVER concatenate into something like "$111230".
+      lines.forEach((l) => { if (l.price != null) l.price = Number(l.price) || 0; });
+      const total = lines.reduce((sum, l) => sum + (l.custom ? 0 : (Number(l.price) || 0)), 0);
       return { lines, total };
     }
 
@@ -1095,9 +1131,11 @@ const configJson = JSON.stringify(config);
         breakdown.innerHTML = '<li class="bd-empty">Pick a service to see your total.</li>';
       } else {
         breakdown.innerHTML = lines.map((l) => {
-          const priceTxt = l.custom ? '<span class="bd-custom">Custom</span>' : `$${l.price}`;
+          const priceTxt = l.custom
+            ? '<span class="bd-custom">Custom</span>'
+            : `$${Number(l.price).toLocaleString()}`;
           const sub = l.sub ? `<span class="bd-sub">${l.sub}</span>` : "";
-          return `<li><span class="bd-name">${l.name}${sub}</span><span class="bd-price">${priceTxt}</span></li>`;
+          return `<li class="bd-item"><span class="bd-name">${l.name}${sub}</span><span class="bd-price">${priceTxt}</span></li>`;
         }).join("");
       }
       totalEl.textContent = "$" + total.toLocaleString();
@@ -1160,17 +1198,19 @@ const configJson = JSON.stringify(config);
       if (t) setPtype(t);
     }));
 
-    // ---- Stories segmented control ----
-    storiesBtns.forEach((b) => b.addEventListener("click", () => {
-      stories = parseInt(b.dataset.stories, 10);
-      storiesBtns.forEach((x) => {
-        const on = x === b;
-        x.classList.toggle("is-active", on);
-        x.setAttribute("aria-pressed", on ? "true" : "false");
+    // ---- Stories (number input) — live-updates floor plan tier ----
+    if (storiesInput) {
+      storiesInput.addEventListener("input", () => {
+        let n = parseInt(storiesInput.value, 10);
+        if (isNaN(n) || n < 1) n = 1;
+        if (n > 10) n = 10;
+        storiesInput.value = n;
+        // Floor-plan brackets only distinguish 1 vs 2 stories; 3+ behaves like 2.
+        stories = n >= 2 ? 2 : 1;
+        renderTierLabels();
+        render();
       });
-      renderTierLabels();
-      render();
-    }));
+    }
 
     // ---- Number spinners ----
     calc.querySelectorAll("[data-inc-for], [data-dec-for]").forEach((btn) => {
@@ -1190,18 +1230,26 @@ const configJson = JSON.stringify(config);
       if (!check || !ctrl) return;
       const sync = () => { ctrl.hidden = !check.checked; };
       sync();
-      check.addEventListener("change", () => { sync(); render(); });
+      // Listen to both change (keyboard) and click (mouse on label) so the
+      // total updates the instant the toggle is flipped, either way.
+      const onToggle = () => { sync(); renderTierLabels(); render(); };
+      check.addEventListener("change", onToggle);
+      check.addEventListener("click", onToggle);
     }
     wireService(hdrCheck, hdrCtrl);
     wireService(stagingCheck, stagingCtrl);
 
-    // ---- All change events recompute ----
-    [sqftInput, hdrCount, stagingCount].forEach((el) => {
+    // ---- Live updates on EVERY interaction ----
+    // Number inputs update on `input` (keystroke / spinner / paste).
+    [sqftInput, hdrCount, stagingCount, storiesInput].forEach((el) => {
       if (el) el.addEventListener("input", () => { renderTierLabels(); render(); });
     });
-    svcChecks.forEach((c) => c.addEventListener("change", render));
-    serviceChecks.forEach((c) => c.addEventListener("change", render));
-    addonChecks.forEach((c) => c.addEventListener("change", render));
+    // Cards (packages, commercial HDR, video, zillow, panoramas, google) and
+    // add-on chips: `change` for keyboard + `click` for the whole label tap.
+    const onCardChange = () => { renderTierLabels(); render(); };
+    svcChecks.forEach((c) => { c.addEventListener("change", onCardChange); c.addEventListener("click", onCardChange); });
+    serviceChecks.forEach((c) => { c.addEventListener("change", onCardChange); });
+    addonChecks.forEach((c) => { c.addEventListener("change", onCardChange); c.addEventListener("click", onCardChange); });
     const addrInput = calc.querySelector("[data-address]");
     if (addrInput) addrInput.addEventListener("input", render);
 
