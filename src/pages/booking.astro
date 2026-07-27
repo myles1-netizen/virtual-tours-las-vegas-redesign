@@ -2,84 +2,239 @@
 import { asset } from "../data/site";
 import Base from "../layouts/Base.astro";
 import PageHero from "../components/PageHero.astro";
-import SectionHeader from "../components/SectionHeader.astro";
 import { business, vegasPackages, process } from "../data/site";
 
 const title = "Book a Shoot — Las Vegas Real Estate Photography | VTLV";
-const description = "Book a Las Vegas real estate photography or 3D tour shoot. Self-serve scheduling, or call and text Mike directly. Residential, commercial, vacation rentals, drone, floor plans. 24–48 hour delivery.";
+const description = "Book a Las Vegas real estate photography or 3D tour shoot. Request a date and time online, or call and text Mike directly. Residential, commercial, vacation rentals, drone, floor plans. 24–48 hour delivery.";
 
-// Cal.com embed configuration placeholder.
-// When wired up: replace CAL_USERNAME with the real Cal.com user/event slug and
-// UNCOMMENT the Cal.com <script> + <div> in the booking widget below. The CSP in
-// Base.astro will also need `frame-src https://*.cal.com` and the Cal.com script
-// host added to `script-src` — see the TODO note in the widget.
-const CAL_USERNAME = ""; // e.g. "virtual-tours-las-vegas"
-const calReady = CAL_USERNAME.length > 0;
+// Formsubmit.co AJAX endpoint (same one the contact form uses). The booking
+// widget POSTs JSON here so Mike gets the request in his inbox.
+const FORMSUBMIT_ENDPOINT = "https://formsubmit.co/ajax/virtualtourslasvegas@gmail.com";
+
+// Key add-on services the visitor can tack onto a package. Drawn from the real
+// pricing so the labels match what the pricing page advertises.
+const addOnOptions = [
+  { id: "drone", label: "Drone photos (FAA Part 107)" },
+  { id: "floorplan", label: "Floor plan" },
+  { id: "staging", label: "Virtual staging" },
+  { id: "twilight", label: "Twilight photos" },
+  { id: "video", label: "Walk-through video" },
+  { id: "rush", label: "Rush delivery (next morning)" },
+];
+
+// Tomorrow's date in YYYY-MM-DD, used as the min for the date picker.
+const tomorrowIso = (() => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split("T")[0];
+})();
+
+// Time slots offered. Mike confirms the exact hour himself — these are windows.
+const timeSlots = [
+  { id: "morning", label: "Morning", hint: "8:00 – 11:30 AM" },
+  { id: "midday", label: "Midday", hint: "11:30 AM – 2:00 PM" },
+  { id: "afternoon", label: "Afternoon", hint: "2:00 – 5:00 PM" },
+  { id: "flexible", label: "I'm flexible", hint: "Mike picks the best light" },
+];
 ---
 
 <Base title={title} description={description} heroVariant="dark">
   <PageHero
     eyebrow="Booking"
-    title="Pick a time. Get it shot."
-    lead="Self-serve scheduling is coming. In the meantime, the fastest path is calling or texting Mike directly — he handles every booking himself and most shoots are on the calendar within 48 hours."
+    title="Request a shoot."
+    lead="Pick your package and a preferred date and time — Mike reviews every request himself and confirms by phone or text, usually the same day. Need it now? Call or text Mike directly: (702) 527-2732."
     image={asset("/images/portfolio/listing-02.jpg")}
     imageAlt="Spacious Las Vegas property interior, ready to be photographed"
   />
 
   <section class="section">
     <div class="container">
-      <div class="book-grid">
-        {/* ===== LEFT: booking widget ===== */}
-        <div class="book-widget-wrap" data-reveal>
-          <div class="book-widget" data-cal-embed>
-            <p class="eyebrow">Schedule online</p>
-            <h2 class="display book-widget-title">Self-serve calendar.</h2>
+      {/* ===== Primary CTA: call/text Mike (always the fastest path) ===== */}
+      <div class="call-cta" data-reveal>
+        <div class="call-cta-text">
+          <p class="eyebrow">Fastest path</p>
+          <h2 class="display call-title">Call or text Mike.</h2>
+          <p class="call-sub">Mike handles every booking himself. A two-minute call confirms the scope, date and exact time — no back-and-forth.</p>
+        </div>
+        <div class="call-cta-actions">
+          <a href={business.phoneHref} class="btn brass btn-lg">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            (702) 527-2732
+          </a>
+          <a href={business.smsHref} class="btn outline btn-lg">Text Mike</a>
+        </div>
+      </div>
 
-            {calReady ? (
-              /* TODO: when CAL_USERNAME is set, this block renders the live Cal.com embed.
-                 Requires CSP update in Base.astro:
-                   script-src  ... https://app.cal.com  (and the embed CDN)
-                   frame-src   https://*.cal.com
-              */
-              <div
-                class="cal-embed"
-                data-cal-namespace="vtlv"
-                data-cal-link={CAL_USERNAME}
-                data-cal-config='{"layout":"month_view"}'
-              >
-                {/* Cal.com embed script loads here once CSP is updated:
-                    <script type="module" src="https://app.cal.com/embed/embed.js" is:inline></script> */}
+      <div class="book-grid">
+        {/* ===== LEFT: booking request widget ===== */}
+        <div class="book-widget-wrap" data-reveal>
+          <form
+            class="book-widget"
+            data-booking-form
+            data-endpoint={FORMSUBMIT_ENDPOINT}
+            data-mailto={business.emailHref}
+            novalidate
+          >
+            <p class="eyebrow">Request a booking</p>
+            <h2 class="display book-widget-title">Pick the details.</h2>
+            <p class="book-widget-sub">This sends Mike a booking request — he confirms the exact time with you directly.</p>
+
+            {/* ---- Contact details ---- */}
+            <div class="grid2">
+              <label class="field">
+                <span class="label">Your name <span class="req">*</span></span>
+                <input type="text" name="name" required autocomplete="name" aria-required="true" />
+                <span class="field-error" data-error-for="name"></span>
+              </label>
+              <label class="field">
+                <span class="label">Phone <span class="req">*</span></span>
+                <input type="tel" name="phone" required autocomplete="tel" aria-required="true" />
+                <span class="field-error" data-error-for="phone"></span>
+              </label>
+            </div>
+
+            <label class="field">
+              <span class="label">Email <span class="req">*</span></span>
+              <input type="email" name="email" required autocomplete="email" aria-required="true" />
+              <span class="field-error" data-error-for="email"></span>
+            </label>
+
+            {/* ---- Package picker ---- */}
+            <fieldset class="pkg-fieldset">
+              <legend class="label">Choose a package <span class="req">*</span></legend>
+              <div class="pkg-cards">
+                {vegasPackages.map((p, i) => (
+                  <label class:list={["pkg-card", { featured: p.featured }]}>
+                    <input
+                      type="radio"
+                      name="package"
+                      value={p.name}
+                      data-package-radio
+                      checked={i === 0}
+                      required
+                    />
+                    <span class="pkg-card-inner">
+                      <span class="pkg-card-head">
+                        <span class="pkg-card-name">{p.name}</span>
+                        <span class="pkg-card-price">${p.price}</span>
+                      </span>
+                      <span class="pkg-card-tag">{p.tag}</span>
+                      <span class="pkg-card-blurb">{p.blurb}</span>
+                    </span>
+                  </label>
+                ))}
+                <label class="pkg-card pkg-card--custom">
+                  <input type="radio" name="package" value="Custom / not sure" data-package-radio />
+                  <span class="pkg-card-inner">
+                    <span class="pkg-card-head">
+                      <span class="pkg-card-name">Custom build</span>
+                      <span class="pkg-card-price">Quote</span>
+                    </span>
+                    <span class="pkg-card-tag">À la carte</span>
+                    <span class="pkg-card-blurb">Mix services your way. Tell Mike what you need below.</span>
+                  </span>
+                </label>
               </div>
-            ) : (
-              <div class="cal-placeholder" role="status" aria-live="polite">
-                <div class="cal-mock" aria-hidden="true">
-                  <div class="cal-mock-bar">
-                    <span class="cal-mock-dot"></span>
-                    <span class="cal-mock-dot"></span>
-                    <span class="cal-mock-dot"></span>
-                  </div>
-                  <div class="cal-mock-body">
-                    <div class="cal-mock-line w70"></div>
-                    <div class="cal-mock-grid">
-                      {Array.from({ length: 14 }).map(() => <span class="cal-mock-cell"></span>)}
-                    </div>
-                    <div class="cal-mock-line w40"></div>
-                  </div>
-                </div>
-                <p class="cal-placeholder-text">
-                  Online self-scheduling is being configured. For now, the fastest way to book is direct.
-                </p>
-                <div class="cal-placeholder-actions">
-                  <a href={business.phoneHref} class="btn brass btn-block">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                    Call {business.phone}
-                  </a>
-                  <a href={business.smsHref} class="btn outline btn-block">Text Mike</a>
-                  <a href={asset("/contact/")} class="text-link">or send a booking request →</a>
-                </div>
+              <span class="field-error" data-error-for="package"></span>
+            </fieldset>
+
+            {/* ---- Add-ons ---- */}
+            <fieldset class="addon-fieldset">
+              <legend class="label">Add-ons (optional)</legend>
+              <div class="addon-grid">
+                {addOnOptions.map((a) => (
+                  <label class="addon-chip">
+                    <input type="checkbox" name="addons" value={a.label} data-addon />
+                    <span class="addon-chip-inner">{a.label}</span>
+                  </label>
+                ))}
               </div>
-            )}
-          </div>
+            </fieldset>
+
+            {/* ---- Date & time ---- */}
+            <div class="grid2">
+              <label class="field">
+                <span class="label">Preferred date <span class="req">*</span></span>
+                <input type="date" name="preferred_date" min={tomorrowIso} required data-date aria-required="true" />
+                <span class="field-error" data-error-for="preferred_date"></span>
+              </label>
+              <label class="field">
+                <span class="label">Property size (sq ft)</span>
+                <input type="number" name="sqft" inputmode="numeric" min="0" step="100" placeholder="e.g. 2200" />
+              </label>
+            </div>
+
+            <fieldset class="time-fieldset">
+              <legend class="label">Preferred time <span class="req">*</span></legend>
+              <div class="time-grid">
+                {timeSlots.map((t, i) => (
+                  <label class="time-opt">
+                    <input type="radio" name="time_slot" value={`${t.label} (${t.hint})`} data-time required checked={i === 0} />
+                    <span class="time-opt-inner">
+                      <span class="time-opt-label">{t.label}</span>
+                      <span class="time-opt-hint">{t.hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <span class="field-error" data-error-for="time_slot"></span>
+            </fieldset>
+
+            {/* ---- Property details ---- */}
+            <label class="field">
+              <span class="label">Property address / area <span class="req">*</span></span>
+              <input type="text" name="location" required placeholder="e.g. 1234 Summerlin Pkwy, Summerlin" aria-required="true" />
+              <span class="field-error" data-error-for="location"></span>
+            </label>
+
+            <label class="field">
+              <span class="label">Property type</span>
+              <select name="property_type">
+                <option value="">Select…</option>
+                <option>Residential listing</option>
+                <option>Commercial property</option>
+                <option>Vacation rental (Airbnb/Vrbo)</option>
+                <option>New construction / builder</option>
+                <option>As-built / documentation</option>
+                <option>Other</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span class="label">Notes for Mike</span>
+              <textarea name="message" rows="3" placeholder="Access details (lockbox, occupant), must-have shots, anything else Mike should know."></textarea>
+            </label>
+
+            {/* Honeypot — Formsubmit recognises "_honey" natively. */}
+            <div class="hp-wrap" aria-hidden="true">
+              <label for="booking-hp">Company (leave blank)</label>
+              <input class="hp" id="booking-hp" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true" />
+            </div>
+
+            {/* Formsubmit control fields. */}
+            <input type="hidden" name="_subject" value="New booking request from the website" />
+            <input type="hidden" name="_template" value="table" />
+            <input type="hidden" name="_captcha" value="false" />
+
+            <div class="form-actions">
+              <button type="submit" class="btn brass btn-block btn-lg" data-submit>
+                <span class="submit-label">Request booking</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+
+              <p class="form-status form-status--success" data-status="success" role="status" hidden>
+                <strong>Booking request sent.</strong> Mike reviews every request himself and will call or text you to confirm — usually the same day. For anything urgent, call (702) 527-2732.
+              </p>
+              <p class="form-status form-status--error" data-status="error" role="alert" hidden>
+                Something went wrong sending your request. Please try again, or <a href={business.phoneHref}>call {business.phone}</a> directly.
+              </p>
+
+              <p class="form-alt">Prefer to talk? <a href={business.phoneHref}>Call or text {business.phone}</a></p>
+              <p class="form-note">
+                This is a request, not a live reservation — Mike confirms every booking personally so the scope and timing work for your property.
+              </p>
+            </div>
+          </form>
         </div>
 
         {/* ===== RIGHT: context — packages & how it works ===== */}
@@ -117,6 +272,26 @@ const calReady = CAL_USERNAME.length > 0;
 </Base>
 
 <style>
+  /* ===== Primary call/text CTA banner ===== */
+  .call-cta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    background: var(--dark);
+    color: var(--paper);
+    border-radius: var(--radius-lg);
+    padding: clamp(1.4rem, 1.2rem + 1.5vw, 2.2rem);
+    margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
+  }
+  .call-cta-text { flex: 1 1 320px; }
+  .call-cta .eyebrow { color: var(--brass-2); }
+  .call-title { color: var(--paper); font-size: var(--step-3); margin-top: 0.3rem; }
+  .call-sub { color: rgba(247,244,239,0.72); font-size: var(--step--1); margin-top: 0.6rem; line-height: 1.5; max-width: 52ch; }
+  .call-cta-actions { display: flex; gap: 0.7rem; flex-wrap: wrap; }
+  .btn-lg { padding: 0.85em 1.4em; font-size: var(--step-0); }
+
   .book-grid {
     display: grid;
     grid-template-columns: 1.2fr 1fr;
@@ -130,44 +305,188 @@ const calReady = CAL_USERNAME.length > 0;
     border-radius: var(--radius-lg);
     padding: clamp(1.5rem, 1.2rem + 1.5vw, 2.2rem);
     box-shadow: var(--shadow-card);
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
     position: sticky;
     top: 100px;
   }
   .book-widget-title { font-size: var(--step-3); margin-top: 0.3rem; }
+  .book-widget-sub { color: var(--stone); font-size: var(--step--1); margin-top: -0.2rem; line-height: 1.5; }
 
-  .cal-placeholder { display: flex; flex-direction: column; gap: 1.2rem; margin-top: 1.4rem; }
-  .cal-mock {
+  /* Shared field styles */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
+  .field { display: flex; flex-direction: column; gap: 0.45rem; }
+  .label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--ink-2);
+  }
+  .req { color: var(--brass); }
+  .book-widget input,
+  .book-widget select,
+  .book-widget textarea {
+    width: 100%;
+    padding: 0.8em 0.9em;
+    background: var(--paper);
     border: 1px solid var(--line-light);
+    border-radius: var(--radius-sm);
+    font-size: var(--step--1);
+    color: var(--ink);
+    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+    font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  .book-widget input:focus,
+  .book-widget select:focus,
+  .book-widget textarea:focus {
+    outline: none;
+    border-color: var(--brass);
+    box-shadow: 0 0 0 3px var(--brass-soft);
+  }
+  .book-widget input[aria-invalid="true"],
+  .book-widget select[aria-invalid="true"],
+  .book-widget textarea[aria-invalid="true"] {
+    border-color: #c0392b;
+    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.15);
+  }
+  .field-error { font-size: 0.75rem; color: #c0392b; min-height: 0; }
+  .field-error:not(:empty) { margin-top: -0.1rem; }
+
+  /* Fieldsets */
+  .pkg-fieldset, .addon-fieldset, .time-fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .pkg-fieldset legend,
+  .addon-fieldset legend,
+  .time-fieldset legend {
+    padding: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--ink-2);
+  }
+
+  /* Package cards */
+  .pkg-cards { display: flex; flex-direction: column; gap: 0.6rem; }
+  .pkg-card { cursor: pointer; display: block; }
+  .pkg-card input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .pkg-card-inner {
+    display: block;
+    padding: 0.85rem 1rem;
+    border: 1.5px solid var(--line-light);
     border-radius: var(--radius);
+    background: var(--paper);
+    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  }
+  .pkg-card input:checked + .pkg-card-inner {
+    border-color: var(--brass);
+    box-shadow: 0 0 0 3px var(--brass-soft);
+  }
+  .pkg-card input:focus-visible + .pkg-card-inner { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .pkg-card.featured .pkg-card-inner { background: var(--dark); color: var(--paper); border-color: var(--dark); }
+  .pkg-card.featured input:checked + .pkg-card-inner { border-color: var(--brass-2); box-shadow: 0 0 0 3px var(--brass-soft); }
+  .pkg-card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem; }
+  .pkg-card-name { font-family: var(--font-display); font-size: var(--step-1); }
+  .pkg-card-price { font-family: var(--font-display); font-size: var(--step-2); color: var(--brass); }
+  .pkg-card.featured .pkg-card-price { color: var(--brass-2); }
+  .pkg-card-tag { display: inline-block; margin-top: 0.2rem; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brass-2); }
+  .pkg-card-blurb { display: block; margin-top: 0.4rem; font-size: var(--step--1); line-height: 1.45; color: var(--stone); }
+  .pkg-card.featured .pkg-card-blurb { color: rgba(247,244,239,0.72); }
+
+  /* Add-ons */
+  .addon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .addon-chip { cursor: pointer; display: block; }
+  .addon-chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .addon-chip-inner {
+    display: block;
+    padding: 0.55em 0.8em;
+    border: 1.5px solid var(--line-light);
+    border-radius: var(--radius-sm);
+    background: var(--paper);
+    font-size: var(--step--1);
+    color: var(--ink-2);
+    transition: border-color 0.2s var(--ease), background 0.2s var(--ease);
+  }
+  .addon-chip input:checked + .addon-chip-inner {
+    border-color: var(--brass);
+    background: var(--brass-soft);
+    color: var(--ink);
+  }
+  .addon-chip input:focus-visible + .addon-chip-inner { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+  /* Time slots */
+  .time-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .time-opt { cursor: pointer; display: block; }
+  .time-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .time-opt-inner {
+    display: flex;
+    flex-direction: column;
+    padding: 0.55em 0.8em;
+    border: 1.5px solid var(--line-light);
+    border-radius: var(--radius-sm);
+    background: var(--paper);
+    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  }
+  .time-opt input:checked + .time-opt-inner {
+    border-color: var(--brass);
+    box-shadow: 0 0 0 3px var(--brass-soft);
+  }
+  .time-opt input:focus-visible + .time-opt-inner { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .time-opt-label { font-size: var(--step--1); font-weight: 600; color: var(--ink); }
+  .time-opt-hint { font-size: 0.7rem; color: var(--stone-2); }
+
+  /* Honeypot */
+  .hp-wrap {
+    position: absolute !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 1px; height: 1px;
     overflow: hidden;
+  }
+  .hp { width: 1px; height: 1px; }
+
+  /* Actions & status */
+  .form-actions { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 0.4rem; }
+  .form-alt { text-align: center; font-size: var(--step--1); color: var(--stone); }
+  .form-alt a { color: var(--brass); font-weight: 600; }
+  .form-note {
+    font-size: 0.78rem;
+    color: var(--stone-2);
+    text-align: center;
+    line-height: 1.5;
+    padding: 0.8rem;
     background: var(--paper-2);
+    border-radius: var(--radius-sm);
   }
-  .cal-mock-bar {
-    display: flex; gap: 0.4rem;
-    padding: 0.7rem 0.9rem;
-    background: var(--paper);
-    border-bottom: 1px solid var(--line-light);
+  .form-status {
+    font-size: var(--step--1);
+    line-height: 1.5;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
   }
-  .cal-mock-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--paper-3); }
-  .cal-mock-body { padding: 1.1rem; display: flex; flex-direction: column; gap: 0.8rem; }
-  .cal-mock-line { height: 10px; background: var(--paper-3); border-radius: 4px; }
-  .cal-mock-line.w70 { width: 70%; }
-  .cal-mock-line.w40 { width: 40%; }
-  .cal-mock-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
+  .form-status a { font-weight: 600; }
+  .form-status--success {
+    color: #1e6b3a;
+    background: rgba(46, 160, 67, 0.1);
+    border-color: rgba(46, 160, 67, 0.3);
   }
-  .cal-mock-cell {
-    aspect-ratio: 1;
-    background: var(--paper);
-    border: 1px solid var(--line-light);
-    border-radius: 4px;
+  .form-status--success a { color: #1e6b3a; }
+  .form-status--error {
+    color: #a02817;
+    background: rgba(192, 57, 43, 0.08);
+    border-color: rgba(192, 57, 43, 0.3);
   }
-  .cal-mock-cell:nth-child(3n) { background: var(--brass-soft); border-color: transparent; }
-  .cal-placeholder-text { font-size: var(--step--1); color: var(--stone); line-height: 1.5; }
-  .cal-placeholder-actions { display: flex; flex-direction: column; gap: 0.7rem; align-items: stretch; }
-  .cal-placeholder-actions .text-link { align-self: center; }
+  .form-status--error a { color: #a02817; }
+  .book-widget[data-busy="true"] [data-submit] { opacity: 0.7; pointer-events: none; }
+  .book-widget[data-busy="true"] .submit-label::after { content: "…"; }
 
   /* Context column */
   .book-context { display: flex; flex-direction: column; gap: 1.5rem; }
@@ -210,5 +529,162 @@ const calReady = CAL_USERNAME.length > 0;
   @media (max-width: 880px) {
     .book-grid { grid-template-columns: 1fr; }
     .book-widget { position: static; }
+    .call-cta { flex-direction: column; align-items: flex-start; }
+  }
+  @media (max-width: 560px) {
+    .grid2 { grid-template-columns: 1fr; }
+    .addon-grid, .time-grid { grid-template-columns: 1fr; }
   }
 </style>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>("[data-booking-form]");
+  if (form) {
+    const endpoint = form.dataset.endpoint ?? "";
+    const mailtoBase = form.dataset.mailto ?? "";
+    const successEl = form.querySelector<HTMLElement>('[data-status="success"]');
+    const errorEl = form.querySelector<HTMLElement>('[data-status="error"]');
+    const submitBtn = form.querySelector<HTMLButtonElement>("[data-submit]");
+
+    const showStatus = (which: "success" | "error") => {
+      successEl?.setAttribute("hidden", "");
+      errorEl?.setAttribute("hidden", "");
+      const el = which === "success" ? successEl : errorEl;
+      el?.removeAttribute("hidden");
+      el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    };
+
+    const clearErrors = () => {
+      form.querySelectorAll<HTMLElement>("[aria-invalid]").forEach((el) => el.removeAttribute("aria-invalid"));
+      form.querySelectorAll<HTMLElement>(".field-error").forEach((el) => (el.textContent = ""));
+    };
+
+    const setFieldError = (name: string, msg: string) => {
+      const input = form.querySelector<HTMLElement>(`[name="${name}"]`);
+      const err = form.querySelector<HTMLElement>(`[data-error-for="${name}"]`);
+      if (input) input.setAttribute("aria-invalid", "true");
+      if (err) err.textContent = msg;
+    };
+
+    const validate = (): boolean => {
+      clearErrors();
+      let ok = true;
+      const required: Record<string, string> = {
+        name: "Please enter your name.",
+        phone: "Please enter a phone number so Mike can confirm.",
+        location: "Please enter the property address or area.",
+      };
+      Object.keys(required).forEach((name) => {
+        const el = form.querySelector<HTMLInputElement>(`[name="${name}"]`);
+        if (el && !el.value.trim()) {
+          setFieldError(name, required[name]);
+          ok = false;
+        }
+      });
+      const email = form.querySelector<HTMLInputElement>('[name="email"]');
+      if (email) {
+        const v = email.value.trim();
+        if (!v) {
+          setFieldError("email", "Please enter your email.");
+          ok = false;
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+          setFieldError("email", "That email address doesn't look right.");
+          ok = false;
+        }
+      }
+      const pkg = form.querySelector<HTMLInputElement>('[name="package"]:checked');
+      if (!pkg) {
+        setFieldError("package", "Please pick a package.");
+        ok = false;
+      }
+      const date = form.querySelector<HTMLInputElement>('[name="preferred_date"]');
+      if (date && !date.value) {
+        setFieldError("preferred_date", "Please pick a preferred date.");
+        ok = false;
+      }
+      const time = form.querySelector<HTMLInputElement>('[name="time_slot"]:checked');
+      if (!time) {
+        setFieldError("time_slot", "Please pick a preferred time.");
+        ok = false;
+      }
+      return ok;
+    };
+
+    const buildMailtoBody = (): string => {
+      const data = new FormData(form);
+      const addons = data.getAll("addons").map(String).join("; ") || "None";
+      const body = [
+        `Name: ${data.get("name") ?? ""}`,
+        `Phone: ${data.get("phone") ?? ""}`,
+        `Email: ${data.get("email") ?? ""}`,
+        `Package: ${data.get("package") ?? ""}`,
+        `Add-ons: ${addons}`,
+        `Preferred date: ${data.get("preferred_date") ?? ""}`,
+        `Preferred time: ${data.get("time_slot") ?? ""}`,
+        `Sqft: ${data.get("sqft") ?? ""}`,
+        `Property type: ${data.get("property_type") ?? ""}`,
+        `Location: ${data.get("location") ?? ""}`,
+        "",
+        (data.get("message") ?? "").toString(),
+      ].join("\n");
+      return `${mailtoBase}?subject=${encodeURIComponent("New booking request from the website")}&body=${encodeURIComponent(body)}`;
+    };
+
+    form.addEventListener("submit", async (e) => {
+      // Honeypot — if filled, silently drop the submission.
+      const hp = form.querySelector<HTMLInputElement>('input[name="_honey"]');
+      if (hp && hp.value) {
+        e.preventDefault();
+        return;
+      }
+
+      if (!validate()) {
+        e.preventDefault();
+        return;
+      }
+
+      e.preventDefault();
+      form.dataset.busy = "true";
+      submitBtn?.setAttribute("aria-busy", "true");
+
+      try {
+        const data = new FormData(form);
+        const payload: Record<string, string> = {};
+        // Flatten multi-value fields (add-ons) into one readable string so the
+        // email Mike receives lists them on a single line.
+        const addons = data.getAll("addons").map(String).join("; ");
+        data.forEach((value, key) => {
+          if (key === "addons") return;
+          payload[key] = String(value);
+        });
+        if (addons) payload["addons"] = addons;
+
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          showStatus("success");
+          form.reset();
+        } else {
+          showStatus("error");
+        }
+      } catch {
+        // Network/CORS failure: fall back to the visitor's email client.
+        showStatus("error");
+        try {
+          window.location.href = buildMailtoBody();
+        } catch {
+          /* leave the error message visible */
+        }
+      } finally {
+        form.dataset.busy = "false";
+        submitBtn?.removeAttribute("aria-busy");
+      }
+    });
+  }
+</script>

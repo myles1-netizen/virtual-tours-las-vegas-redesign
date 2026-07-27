@@ -13,8 +13,8 @@ export interface Props {
   heroVariant?: "dark" | "light";
   noindex?: boolean;
   /** Optional full CSP string override. When set, replaces the default public-site
-      CSP entirely (used by the /admin CMS page, which needs a Decap-friendly policy).
-      If omitted, the strict default policy below is used. */
+      CSP entirely. The /admin page doesn't use this layout — it ships its own
+      standalone, self-contained CSP. If omitted here, the strict default below is used. */
   cspOverride?: string;
 }
 
@@ -153,22 +153,24 @@ const json = (o: object) => JSON.stringify(o);
 
 // ----- Content Security Policy -----
 // Strict by default. Allows only the resources the public site actually uses:
-//   - script-src 'self' 'unsafe-inline'        (inline theme/JSON-LD scripts; Astro's processing needs 'unsafe-inline' for now)
-//   - Turnstile widget host (spam protection)
-//   - Cal.com frames (future booking widget) and its script host
-//   - Google Fonts, Formspree, and Matterport embeds already in use elsewhere
-// The /admin CMS page passes `cspOverride` because Decap needs a broader policy.
+//   - script-src 'self' 'unsafe-inline'  (inline theme/JSON-LD scripts; Astro's processing needs 'unsafe-inline' for now)
+//   - Google Fonts (display + body typefaces)
+//   - Matterport 3D embeds (already used by MatterportEmbed/Popup)
+//   - formsubmit.co (the contact + booking forms POST their AJAX submissions there)
+//   - mailto: fallback for the forms
+// The /admin page ships its own self-contained CSP (no external sources at all).
 const DEFAULT_CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://app.cal.com",
+  "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: https:",
   // Matterport 3D embeds load from my.matterport.com (already used by MatterportEmbed/Popup).
-  "frame-src https://*.cal.com https://my.matterport.com",
-  "connect-src 'self' https://formspree.io",
-  // form-action covers Formspree POST + the mailto: fallback.
-  "form-action 'self' https://formspree.io mailto:",
+  "frame-src https://my.matterport.com",
+  // formsubmit.co receives the contact + booking form submissions (AJAX POST).
+  "connect-src 'self' https://formsubmit.co",
+  // form-action covers the formsubmit.co POST + the mailto: fallback.
+  "form-action 'self' https://formsubmit.co mailto:",
   // frame-ancestors 'none' = clickjacking protection (also enforced via X-Frame-Options below).
   "frame-ancestors 'none'",
   "base-uri 'self'",

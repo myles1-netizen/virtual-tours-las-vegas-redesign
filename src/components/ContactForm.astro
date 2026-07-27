@@ -1,16 +1,16 @@
 ---
 import { business, serviceBuyers, tourServices } from "../data/site";
-// Form submits to a configurable endpoint (set via env at build, e.g. Formspree).
-// Falls back to a mailto: action with prefilled body if no endpoint is set.
-const FORM_ENDPOINT = import.meta.env.FORM_ENDPOINT ?? "";
-const fallbackMailto = `${business.emailHref}?subject=${encodeURIComponent("New booking request from your website")}`;
-const action = FORM_ENDPOINT || fallbackMailto;
-const method = FORM_ENDPOINT ? "POST" : "GET";
 
-// Cloudflare Turnstile site key. Set via env (TURNSTILE_SITE_KEY) at build time.
-// When empty, the widget is omitted (e.g. local dev) — the form still works.
-const TURNSTILE_SITE_KEY = import.meta.env.TURNSTILE_SITE_KEY ?? "";
-const turnstileEnabled = TURNSTILE_SITE_KEY.length > 0;
+// Formsubmit.co AJAX endpoint. Free, no signup — the first submission triggers
+// a one-time confirmation email to Mike, then it forwards every submission to
+// his inbox permanently. No API key, no backend, works on static hosting.
+// We POST JSON to the /ajax/ variant so the page never redirects away and we
+// can show inline success/error states.
+const FORMSUBMIT_ENDPOINT = "https://formsubmit.co/ajax/virtualtourslasvegas@gmail.com";
+
+// mailto: fallback used if the fetch fails (offline, network blocked, etc.) or
+// when a visitor's browser refuses the cross-origin POST. Builds a rich body.
+const MAILTO_FALLBACK = business.emailHref;
 
 // Build the service-type dropdown from the canonical service data in site.ts so
 // it never drifts from what the pricing/services pages actually offer. Add the
@@ -27,21 +27,13 @@ const serviceOptions: string[] = [
   "Full package (recommend)",
   "Not sure yet",
 ];
-
-// Formspree honors a hidden _subject field and a number of built-in integrations.
-// To enable server-side Turnstile verification through Formspree, enable the
-// "Cloudflare Turnstile" integration in the Formspree dashboard and paste the
-// same site key + secret there. Formspree then verifies the token automatically
-// before accepting the submission. See:
-// https://help.formspree.io/hc/en-us/articles/10303580764947-Cloudflare-Turnstile
 ---
+
 <form
   class="cform"
-  action={action}
-  method={method}
   data-form
-  data-endpoint={FORM_ENDPOINT ? "true" : "false"}
-  data-turnstile={turnstileEnabled ? "true" : "false"}
+  data-endpoint={FORMSUBMIT_ENDPOINT}
+  data-mailto={MAILTO_FALLBACK}
   novalidate
 >
   <div class="grid2">
@@ -101,31 +93,30 @@ const serviceOptions: string[] = [
     <textarea name="message" rows="4" placeholder="Tell me about the property, square footage, and what you're hoping to achieve."></textarea>
   </label>
 
-  {/* Cloudflare Turnstile — privacy-friendly spam protection (no reCAPTCHA).
-      The site key is injected at build via env. Renders nothing if the key
-      is absent, so local dev still works. Server-side verification is handled
-      by Formspree's built-in Turnstile integration (see note above). */}
-  {turnstileEnabled && (
-    <div class="cf-turnstile" data-sitekey={TURNSTILE_SITE_KEY} data-theme="auto"></div>
-  )}
-
   {/* Honeypot: bots fill this, humans don't. Visually hidden AND off-screen so
-      screen readers + browsers ignore it, but bots scraping field names don't. */}
+      screen readers + browsers ignore it, but bots scraping field names don't.
+      Formsubmit also recognises a "_honey" honeypot field natively — we use that
+      exact name so Formsubmit drops the submission server-side even if JS fails. */}
   <div class="hp-wrap" aria-hidden="true">
     <label for="company-hp">Company (leave blank)</label>
     <input
       class="hp"
       id="company-hp"
       type="text"
-      name="company"
+      name="_honey"
       tabindex="-1"
       autocomplete="off"
       aria-hidden="true"
     />
   </div>
 
-  {/* Optional: Formspree custom subject line (ignored by mailto fallback). */}
+  {/* Formsubmit hidden control fields:
+      - _subject: the email subject line Mike sees
+      - _template: table layout for a clean, structured email
+      - _captcha: disable their built-in captcha (we have the honeypot above) */}
   <input type="hidden" name="_subject" value="New booking request from your website" />
+  <input type="hidden" name="_template" value="table" />
+  <input type="hidden" name="_captcha" value="false" />
 
   <div class="form-actions">
     <button type="submit" class="btn brass btn-block" data-submit>
@@ -142,11 +133,9 @@ const serviceOptions: string[] = [
     </p>
 
     <p class="form-alt">Prefer to talk? <a href={business.phoneHref}>Call or text {business.phone}</a></p>
-    {!FORM_ENDPOINT && (
-      <p class="form-note">
-        This demo form opens your email app addressed to Mike. The README shows how to wire it to a free form service for live submissions.
-      </p>
-    )}
+    <p class="form-note">
+      Your message goes straight to Mike's inbox. No middleman sees it.
+    </p>
   </div>
 </form>
 
@@ -194,9 +183,6 @@ const serviceOptions: string[] = [
     min-height: 0;
   }
   .field-error:not(:empty) { margin-top: 0.15rem; }
-
-  /* Turnstile widget — let it size itself, center it. */
-  .cf-turnstile { display: flex; justify-content: center; }
 
   /* Honeypot: visually + accessibly hidden, but present in the DOM so bots
      that fill all inputs still trip it. */
@@ -257,17 +243,11 @@ const serviceOptions: string[] = [
   }
 </style>
 
-{/* Cloudflare Turnstile loader. async + defer so it never blocks the page.
-    Only emitted when a site key is configured. CSP allows this host. */}
-{turnstileEnabled && (
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer is:inline></script>
-)}
-
 <script>
   const form = document.querySelector<HTMLFormElement>("[data-form]");
   if (form) {
-    const hasEndpoint = form.dataset.endpoint === "true";
-    const hasTurnstile = form.dataset.turnstile === "true";
+    const endpoint = form.dataset.endpoint ?? "";
+    const mailtoBase = form.dataset.mailto ?? "";
     const successEl = form.querySelector<HTMLElement>('[data-status="success"]');
     const errorEl = form.querySelector<HTMLElement>('[data-status="error"]');
     const submitBtn = form.querySelector<HTMLButtonElement>("[data-submit]");
@@ -296,9 +276,9 @@ const serviceOptions: string[] = [
       if (err) err.textContent = msg;
     };
 
-    // Lightweight client-side validation. Real validation also happens
-    // server-side (Formspree); this just catches empty required fields and
-    // malformed emails before the round-trip.
+    // Lightweight client-side validation. Catches empty required fields and
+    // malformed emails before the round-trip. Real validation also happens
+    // server-side via Formsubmit's own filters + our honeypot.
     const validate = (): boolean => {
       clearErrors();
       let ok = true;
@@ -368,9 +348,26 @@ const serviceOptions: string[] = [
       // Query-param prefill is a nice-to-have; never block form submission.
     }
 
+    // Build a plain-text body for the mailto: fallback, from current field values.
+    const buildMailtoBody = (): string => {
+      const data = new FormData(form);
+      const body = [
+        `Name: ${data.get("name") ?? ""}`,
+        `Phone: ${data.get("phone") ?? ""}`,
+        `Email: ${data.get("email") ?? ""}`,
+        `Preferred date: ${data.get("preferred_date") ?? ""}`,
+        `Property type: ${data.get("property_type") ?? ""}`,
+        `Services: ${data.get("services") ?? ""}`,
+        `Location: ${data.get("location") ?? ""}`,
+        "",
+        (data.get("message") ?? "").toString(),
+      ].join("\n");
+      return `${mailtoBase}?subject=${encodeURIComponent("New booking request from your website")}&body=${encodeURIComponent(body)}`;
+    };
+
     form.addEventListener("submit", async (e) => {
       // Honeypot — if filled, silently drop the submission.
-      const hp = form.querySelector<HTMLInputElement>('input[name="company"]');
+      const hp = form.querySelector<HTMLInputElement>('input[name="_honey"]');
       if (hp && hp.value) {
         e.preventDefault();
         return;
@@ -381,53 +378,41 @@ const serviceOptions: string[] = [
         return;
       }
 
-      // mailto fallback path: build a prefilled body and hand off to the
-      // visitor's email client.
-      if (!hasEndpoint) {
-        e.preventDefault();
-        const data = new FormData(form);
-        const body = [
-          `Name: ${data.get("name") ?? ""}`,
-          `Phone: ${data.get("phone") ?? ""}`,
-          `Email: ${data.get("email") ?? ""}`,
-          `Preferred date: ${data.get("preferred_date") ?? ""}`,
-          `Property type: ${data.get("property_type") ?? ""}`,
-          `Services: ${data.get("services") ?? ""}`,
-          `Location: ${data.get("location") ?? ""}`,
-          "",
-          (data.get("message") ?? "").toString(),
-        ].join("\n");
-        const mailto = `${form.action.split("?")[0]}?subject=${encodeURIComponent("New booking request from your website")}&body=${encodeURIComponent(body)}`;
-        window.location.href = mailto;
-        return;
-      }
-
-      // Live submission to Formspree (or other endpoint) via fetch, so we can
-      // show inline success/error states instead of redirecting away.
+      // Live submission to Formsubmit via fetch (AJAX), so we can show inline
+      // success/error states instead of redirecting away.
       e.preventDefault();
       form.dataset.busy = "true";
       submitBtn?.setAttribute("aria-busy", "true");
 
-      // Turnstile token is submitted automatically as part of the form data
-      // because the widget renders a hidden <input name="cf-turnstile-response">.
       try {
-        const res = await fetch(form.action, {
+        const data = new FormData(form);
+        const payload: Record<string, string> = {};
+        data.forEach((value, key) => {
+          payload[key] = String(value);
+        });
+        const res = await fetch(endpoint, {
           method: "POST",
-          headers: { Accept: "application/json" },
-          body: new FormData(form),
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(payload),
         });
         if (res.ok) {
           showStatus("success");
           form.reset();
-          // Reset Turnstile so a second submission gets a fresh token.
-          if (hasTurnstile && (window as any).turnstile) {
-            (window as any).turnstile.reset();
-          }
         } else {
           showStatus("error");
         }
       } catch {
+        // Network/CORS failure (e.g. ad blocker, offline): fall back to the
+        // visitor's own email client with a prefilled body. This always works.
         showStatus("error");
+        try {
+          window.location.href = buildMailtoBody();
+        } catch {
+          /* last-resort: leave the error message visible */
+        }
       } finally {
         form.dataset.busy = "false";
         submitBtn?.removeAttribute("aria-busy");

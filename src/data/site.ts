@@ -3,11 +3,12 @@
 // Pricing is the real published pricing. Nothing fabricated.
 //
 // EDITING: The content the site owner needs to change (business info, pricing,
-// testimonials, FAQ, portfolio) lives in JSON files under ./cms/ so Decap CMS
-// (public/admin/config.yml → /admin) can edit them with a form UI. This file
-// imports those JSON files and re-exports typed values, so CMS edits flow
-// through to the public site on the next build. Code-only structure (nav,
-// types, helper arrays) stays here because it isn't content.
+// testimonials, FAQ, portfolio) lives in JSON files under ./cms/. This file
+// imports those JSON files and re-exports typed values. The /admin dashboard
+// (src/pages/admin.astro) shows a read-only view of these values and lets the
+// owner request changes by email; the maintainer edits the JSON directly and
+// rebuilds. Code-only structure (nav, types, helper arrays) stays here because
+// it isn't content.
 
 import settings from "./cms/settings.json";
 import pricing from "./cms/pricing.json";

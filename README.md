@@ -24,19 +24,32 @@ npm run build    # outputs to dist/, using the GH Pages base path
 npm run preview  # preview the production build locally
 ```
 
-## Contact form
+## Contact & booking forms
 
-The form in `src/components/ContactForm.astro` posts to a configurable endpoint. Without one set, it falls back to a `mailto:` link with a prefilled subject.
+The forms in `src/components/ContactForm.astro` and `src/pages/booking.astro` are fully self-contained — no signup, no API keys, no third-party dashboard.
 
-To wire up real form submissions (recommended before this goes live for real):
+- They POST via `fetch` to **Formsubmit** (`https://formsubmit.co/ajax/virtualtourslasvegas@gmail.com`), a free email-forwarding service. The very first submission triggers a one-time confirmation email to Mike; after he confirms, every submission lands in his inbox permanently.
+- A honeypot field (`_honey`) plus Formsubmit's own filters handle spam — no captcha to solve.
+- If the network POST fails (offline, ad blocker, etc.), the form falls back to opening the visitor's email client with a prefilled body addressed to Mike.
 
-1. Sign up at [formspree.io](https://formspree.io) (free tier works) — takes about 5 minutes.
-2. Create a form, grab the endpoint URL (`https://formspree.io/f/xxxxxxxx`).
-3. Set it as a build-time env var: `FORM_ENDPOINT=https://formspree.io/f/xxxxxxxx`.
-   - Locally: add to a `.env` file (already gitignored).
-   - In CI: add it as a repository secret and reference it in `.github/workflows/deploy.yml`.
+No secrets are committed, and no build-time env vars are required for the forms to work.
 
-No secrets are committed to this repo.
+## Booking
+
+`/booking` is a booking **request** form (not a live calendar): the visitor picks a package, add-ons, date, time and address, and the request is emailed to Mike via Formsubmit. Mike confirms every booking himself — which is how he already works. His phone number is shown as the primary CTA at the top of the page.
+
+## Admin dashboard
+
+`/admin` is a lightweight, dependency-free content dashboard (no Sveltia/Decap CMS, no GitHub OAuth):
+
+- Password-gated. Set the password at build time via `ADMIN_PASSWORD`; it's SHA-256 hashed and only the hash ships to the browser. The browser re-hashes the entered password (Web Crypto) and compares. Unlocked state is remembered in `localStorage`.
+- Shows a read-only view of every editable category (business info, packages, all pricing tiers, testimonials, FAQ, services, clients).
+- "Request changes" opens a prefilled email to the maintainer (set via `CHANGES_EMAIL`, defaults to Mike's inbox) with whatever Mike typed. The maintainer applies the edit to the JSON in `src/data/cms/` and rebuilds.
+
+Optional build env vars:
+
+- `ADMIN_PASSWORD` — the admin password (plaintext at build, hashed in output). If unset, the dashboard is open (handy for local preview).
+- `CHANGES_EMAIL` — where "Request changes" emails go. Defaults to Mike's inbox.
 
 ## Deployment
 
@@ -46,6 +59,5 @@ To swap to Cloudflare Pages instead: connect the repo in the Cloudflare dashboar
 
 ## What's left before this could go live
 
-- Real Formspree (or equivalent) endpoint wired up
 - Final content sign-off from Mike on all copy
-- A real booking/availability system if one is wanted (the current form is a request form, not a live calendar)
+- Confirm the first Formsubmit submission (the confirmation email) so live form submissions start flowing

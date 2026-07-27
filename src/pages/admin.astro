@@ -1,63 +1,82 @@
 ---
-// ===== Sveltia CMS admin entry point =====
-// Loads Sveltia CMS from the npm package (@sveltia/cms), bundled by Astro —
-// NOT from a CDN. This keeps the admin surface under our own origin and our
-// dependency tree, so a compromised CDN can't inject code into the editor.
+// ===== Lightweight, dependency-free content dashboard =====
+// Replaces the Sveltia/Decap CMS editor. Works on static hosting (GitHub Pages)
+// with NO backend, NO OAuth, and NO CDN script.
 //
-// Authentication model (see handoff/05-EDITING-SYSTEM-REQUIREMENTS.md):
-//   - The recommended production setup is Cloudflare Access in front of /admin
-//     (email-based login, no GitHub account required for the business owner),
-//     plus a small Cloudflare Worker implementing the GitHub OAuth proxy that
-//     Decap expects for writing commits back to the repo.
-//   - While still on GitHub Pages, the simplest path is Decap's built-in
-//     GitHub PKCE OAuth flow (see public/admin/config.yml). The app_id below
-//     is filled from an env var so the OAuth client ID is never committed.
+// How it works:
+//   - Password gate: a SHA-256 hash of the ADMIN_PASSWORD env var is baked in
+//     at build time. At runtime the visitor types the password; we hash it in
+//     the browser (Web Crypto) and compare. If it matches (or they already
+//     unlocked this browser via localStorage), the dashboard shows.
+//   - The dashboard reads all site content from site.ts at build time and
+//     renders it as an editable-looking summary.
+//   - "Request Changes" opens a prefilled mailto: to the site maintainer with
+//     whatever Mike typed into the notes box. No data leaves the browser except
+//     via his own email client.
 //
-// The admin route is excluded from the public-site CSP via cspOverride below,
-// because Decap's React UI needs 'unsafe-inline' styles and some inline scripts.
-// Public site visitors never load this page, so this does not weaken the public policy.
+// This is intentionally simple. Mike sees his content and asks for changes by
+// email; his son commits them. No developer tools required.
 
-import { business } from "../data/site";
+import { crypto } from "node:crypto";
+import {
+  business, vegasPackages, hdrTiers, hdrAddOns, matterportTiers,
+  floorPlanTiers, floorPlanAddOns, virtualStagingTiers, videoTiers,
+  zillowTiers, commercialHdr, googlePackage, testimonials, faqs,
+  serviceBuyers, clients,
+} from "../data/site";
 
-// GitHub OAuth App client ID for Decap's PKCE flow. Set via env at build time
-// (VITE_/PUBLIC_ prefix not required because we read it server-side here).
-const DECAP_APP_ID = import.meta.env.DECAP_APP_ID ?? "";
-const DECAP_API_ROOT = import.meta.env.DECAP_API_ROOT ?? ""; // optional GitHub Enterprise
-const DECAP_BASE_URL = import.meta.env.DECAP_BASE_URL ?? ""; // optional self-hosted API
+// Build the SHA-256 hash of the admin password (if set). The hash — never the
+// plaintext password — is what gets shipped to the browser. If no password is
+// configured, the gate is open (handy for local dev / preview).
+const ADMIN_PASSWORD = import.meta.env.ADMIN_PASSWORD ?? "";
+const PASSWORD_HASH = ADMIN_PASSWORD
+  ? crypto.createHash("sha256").update(ADMIN_PASSWORD).digest("hex")
+  : "";
 
-// Relaxed CSP for the admin shell only. Still: no framing (frame-ancestors 'none'),
-// no plugins (object-src 'none'), no mixed content, and we only widen the style/script
-// sources Decap actually needs. This page is never crawled by the public.
-const ADMIN_CSP = [
-  "default-src 'self'",
-  // Decap's bundled app uses inline scripts + a couple of eval-ish patterns;
-  // loading from our own bundled origin. Turnstile/challenges allowed for future
-  // protection of the OAuth gate.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com",
-  "style-src 'self' 'unsafe-inline'",
-  // Decap loads user-uploaded media (images) from the repo/CDN and shows previews.
-  "img-src 'self' data: https:",
-  // Decap talks to the GitHub API (api.github.com / raw.githubusercontent.com) and,
-  // if configured, a self-hosted proxy/Worker.
-  "connect-src 'self' https://api.github.com https://raw.githubusercontent.com https://github.com https://*.workers.dev",
-  // Decap uses a popup window for OAuth.
-  "frame-src 'self'",
-  "form-action 'self' https://github.com",
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "object-src 'none'",
-  "upgrade-insecure-requests",
-].join("; ");
+// Where "Request Changes" emails go. Defaults to Mike's own inbox so nothing is
+// lost even before the maintainer address is configured.
+const CHANGES_EMAIL = import.meta.env.CHANGES_EMAIL ?? business.email;
+
+// A compact, human-readable snapshot of every editable category. This is what
+// Mike sees on screen and what gets quoted in the change-request email.
+const snapshot = {
+  business: {
+    name: business.name,
+    owner: business.owner,
+    phone: business.phone,
+    email: business.email,
+    serviceArea: business.serviceArea,
+    turnaround: business.turnaround,
+    url: business.url,
+  },
+  packages: vegasPackages.map((p) => ({ name: p.name, price: p.price, tag: p.tag, blurb: p.blurb })),
+  hdrTiers,
+  hdrAddOns,
+  matterportTiers,
+  floorPlanTiers,
+  floorPlanAddOns,
+  virtualStagingTiers,
+  videoTiers,
+  zillowTiers,
+  commercialHdr,
+  googlePackage,
+  testimonials: testimonials.map((t) => ({ name: t.name, context: t.context, quote: t.quote })),
+  faqs: faqs.map((f) => ({ q: f.q, a: f.a })),
+  services: serviceBuyers.map((s) => ({ label: s.label, audience: s.audience })),
+  clients: clients.map((c) => c.name),
+};
+const snapshotJson = JSON.stringify(snapshot);
 ---
+
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Admin — {business.name}</title>
-    {/* Admin shell is not for public indexing. */}
     <meta name="robots" content="noindex, nofollow" />
-    <meta http-equiv="Content-Security-Policy" content={ADMIN_CSP} />
+    {/* Self-contained: only same-origin resources. No external scripts/styles. */}
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; form-action 'self' mailto:; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="X-Frame-Options" content="DENY" />
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
@@ -65,109 +84,475 @@ const ADMIN_CSP = [
     <style>
       :root {
         color-scheme: light dark;
-        --admin-bg: #0f0e0c;
-        --admin-fg: #f7f4ef;
-        --admin-muted: rgba(247, 244, 239, 0.65);
-        --admin-brass: #c9a04a;
+        --bg: #0f0e0c;
+        --fg: #f7f4ef;
+        --muted: rgba(247, 244, 239, 0.65);
+        --muted-2: rgba(247, 244, 239, 0.45);
+        --brass: #c9a04a;
+        --brass-soft: rgba(201, 160, 74, 0.18);
+        --card: #1a1814;
+        --card-2: #211e19;
+        --line: rgba(247, 244, 239, 0.12);
+        --ok: #4ecca3;
+        --danger: #e57373;
       }
+      * { box-sizing: border-box; }
       html, body {
         margin: 0;
         min-height: 100%;
-        background: var(--admin-bg);
-        color: var(--admin-fg);
+        background: var(--bg);
+        color: var(--fg);
         font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        line-height: 1.5;
       }
-      /* Loading shell shown until Decap boots. */
-      .admin-boot {
-        position: fixed;
-        inset: 0;
+      a { color: var(--brass); }
+      .wrap { max-width: 1000px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+
+      /* ===== Password gate ===== */
+      .gate {
+        min-height: 100vh;
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 1rem;
-        text-align: center;
         padding: 2rem;
       }
-      .admin-boot h1 { font-size: 1.25rem; font-weight: 600; margin: 0; }
-      .admin-boot p { color: var(--admin-muted); font-size: 0.9rem; margin: 0; max-width: 42ch; }
-      .admin-boot .spinner {
-        width: 28px; height: 28px;
-        border: 3px solid rgba(247, 244, 239, 0.15);
-        border-top-color: var(--admin-brass);
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
+      .gate-card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 2rem;
+        max-width: 380px;
+        width: 100%;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
       }
-      @keyframes spin { to { transform: rotate(360deg); } }
-      /* Decap mounts into #ncroot. Hide the boot shell once it appears. */
-      #ncroot:empty + .admin-boot { display: flex; }
-      #ncroot:not(:empty) + .admin-boot { display: none; }
+      .gate-card h1 { font-size: 1.3rem; margin: 0 0 0.3rem; }
+      .gate-card p { color: var(--muted); font-size: 0.9rem; margin: 0 0 1.4rem; }
+      .gate-card label { display: block; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 0.4rem; }
+      .gate-card input {
+        width: 100%;
+        padding: 0.75rem 0.9rem;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--fg);
+        font-size: 1rem;
+        font-family: inherit;
+      }
+      .gate-card input:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 3px var(--brass-soft); }
+      .gate-card button {
+        width: 100%;
+        margin-top: 1rem;
+        padding: 0.8rem;
+        background: var(--brass);
+        color: #1a1814;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .gate-card button:hover { filter: brightness(1.08); }
+      .gate-error { color: var(--danger); font-size: 0.85rem; margin-top: 0.8rem; min-height: 1em; }
+
+      /* ===== Dashboard ===== */
+      .dash[hidden] { display: none; }
+      .dash-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.4rem; }
+      .dash-head h1 { font-size: 1.6rem; margin: 0; }
+      .dash-head .sub { color: var(--muted); font-size: 0.9rem; }
+      .logout { background: none; border: 1px solid var(--line); color: var(--muted); padding: 0.4em 0.9em; border-radius: 7px; cursor: pointer; font-family: inherit; font-size: 0.82rem; }
+      .logout:hover { color: var(--fg); border-color: var(--muted); }
+
+      .intro {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-left: 3px solid var(--brass);
+        border-radius: 10px;
+        padding: 1rem 1.2rem;
+        margin: 1.4rem 0;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+      .intro strong { color: var(--fg); }
+
+      .toc { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.2rem 0 2rem; }
+      .toc a {
+        font-size: 0.8rem;
+        padding: 0.35em 0.8em;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        text-decoration: none;
+        color: var(--muted);
+      }
+      .toc a:hover { color: var(--brass); border-color: var(--brass); }
+
+      section[id] { scroll-margin-top: 1rem; }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 1.3rem 1.4rem;
+        margin-bottom: 1.2rem;
+      }
+      .card h2 { font-size: 1.1rem; margin: 0 0 0.9rem; display: flex; align-items: center; gap: 0.5rem; }
+      .card h2 .count { font-size: 0.72rem; font-weight: 600; color: var(--brass); background: var(--brass-soft); padding: 0.15em 0.6em; border-radius: 999px; }
+
+      table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+      th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+      th { color: var(--muted); font-weight: 600; font-size: 0.74rem; letter-spacing: 0.04em; text-transform: uppercase; }
+      td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+      tr:last-child td { border-bottom: none; }
+
+      .kv { display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1.2rem; font-size: 0.9rem; }
+      .kv dt { color: var(--muted); }
+      .kv dd { margin: 0; }
+      .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+      .chip { font-size: 0.78rem; padding: 0.25em 0.7em; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); }
+
+      .quote { font-style: italic; color: var(--fg); }
+      .quote .who { display: block; font-style: normal; color: var(--muted); font-size: 0.8rem; margin-top: 0.3rem; }
+
+      /* ===== Request changes box ===== */
+      .request {
+        background: var(--card-2);
+        border: 1px solid var(--brass);
+        border-radius: 12px;
+        padding: 1.4rem;
+        margin-top: 1.5rem;
+      }
+      .request h2 { margin-top: 0; }
+      .request p { color: var(--muted); font-size: 0.9rem; margin: 0 0 1rem; }
+      .request textarea {
+        width: 100%;
+        min-height: 160px;
+        resize: vertical;
+        padding: 0.85rem;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--fg);
+        font-family: inherit;
+        font-size: 0.92rem;
+        line-height: 1.5;
+      }
+      .request textarea:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 3px var(--brass-soft); }
+      .request-actions { display: flex; gap: 0.7rem; flex-wrap: wrap; margin-top: 1rem; align-items: center; }
+      .btn-primary {
+        background: var(--brass); color: #1a1814; border: none;
+        padding: 0.7em 1.3em; border-radius: 8px; font-weight: 700; cursor: pointer;
+        font-family: inherit; font-size: 0.9rem; text-decoration: none;
+        display: inline-flex; align-items: center; gap: 0.4rem;
+      }
+      .btn-primary:hover { filter: brightness(1.08); }
+      .btn-ghost {
+        background: none; color: var(--muted); border: 1px solid var(--line);
+        padding: 0.7em 1.3em; border-radius: 8px; cursor: pointer;
+        font-family: inherit; font-size: 0.9rem;
+      }
+      .btn-ghost:hover { color: var(--fg); border-color: var(--muted); }
+      .request-status { font-size: 0.85rem; color: var(--ok); margin-left: 0.3rem; }
+
+      .foot { margin-top: 2.5rem; color: var(--muted-2); font-size: 0.8rem; text-align: center; }
     </style>
   </head>
   <body>
-    {/* Sveltia CMS mount point. The npm package auto-initializes on import and
-        renders into #ncroot. */}
-    <div id="ncroot"></div>
-
-    {/* Boot/loading shell — Decap replaces the visible UI once loaded. */}
-    <div class="admin-boot" aria-live="polite">
-      <div class="spinner" aria-hidden="true"></div>
-      <h1>Loading the {business.name} editor…</h1>
-      <p>If this doesn't appear shortly, sign in with GitHub when prompted.</p>
+    {/* ===== Password gate ===== */}
+    <div class="gate" id="gate" hidden>
+      <form class="gate-card" id="gate-form">
+        <h1>{business.shortName} Admin</h1>
+        <p>Enter the admin password to view and request changes to the site content.</p>
+        <label for="pwd">Password</label>
+        <input id="pwd" type="password" autocomplete="current-password" autofocus required />
+        <button type="submit">Unlock</button>
+        <p class="gate-error" id="gate-error" role="alert"></p>
+      </form>
     </div>
 
-    {/* Inject the Decap config object BEFORE the app loads so it picks up
-        environment-specific values (OAuth app_id, optional API root/base_url)
-        without editing the committed config.yml. Decap reads window.decapCMS. */}
-    <script is:inline define:vars={{ DECAP_APP_ID, DECAP_API_ROOT, DECAP_BASE_URL }}>
-      (function () {
-        try {
-          // Decap config.yml is loaded separately by the app from /admin/config.yml.
-          // Here we only patch in the values that should NOT be committed.
-          window.CMS_ENV = window.CMS_ENV || {};
-          // Register an init hook that augments the loaded config with env values.
-          var applied = false;
-          var applyEnv = function (config) {
-            if (applied) return config;
-            applied = true;
-            if (DECAP_APP_ID) {
-              config.backend = config.backend || {};
-              config.backend.app_id = DECAP_APP_ID;
-            }
-            if (DECAP_API_ROOT) {
-              config.backend = config.backend || {};
-              config.backend.api_root = DECAP_API_ROOT;
-            }
-            if (DECAP_BASE_URL) {
-              config.backend = config.backend || {};
-              config.backend.base_url = DECAP_BASE_URL;
-              config.backend.auth_type = "implicit";
-            }
-            return config;
-          };
-          // Decap's registerConfigPlugin / manual init isn't always available pre-load,
-          // so also expose the values on window for the config.yml-less override path.
-          window.__DECAP_ENV__ = { DECAP_APP_ID, DECAP_API_ROOT, DECAP_BASE_URL };
-          // If Decap's CMS API is present, hook config load.
-          if (window.decapCMS && window.decapCMS.registerEventListener) {
-            window.decapCMS.registerEventListener({
-              name: "prePublish",
-              handler: function () {},
-            });
-          }
-          window.__applyDecapEnv = applyEnv;
-        } catch (e) {
-          // Non-fatal: config.yml still works with a committed app_id placeholder.
-          console.warn("Decap env injection skipped:", e);
-        }
-      })();
-    </script>
+    {/* ===== Dashboard ===== */}
+    <div class="dash" id="dash" hidden>
+      <div class="wrap">
+        <div class="dash-head">
+          <div>
+            <h1>{business.name} — Content Dashboard</h1>
+            <p class="sub">Read-only view of everything on the site. Use "Request changes" at the bottom to email an update.</p>
+          </div>
+          <button class="logout" id="logout" type="button">Lock</button>
+        </div>
 
-    {/* Load Sveltia CMS from the bundled npm package. Astro processes this import
-        and ships it from our own origin (no CDN). Side-effect import: the package
-        auto-initializes and reads /admin/config.yml. */}
-    <script>
-      import "@sveltia/cms";
+        <div class="intro">
+          <strong>How this works:</strong> This page shows the live content of your site. You can't edit it directly
+          (it's read-only so nothing can be broken by accident). To change something, scroll to the bottom, describe
+          what you'd like changed in the box, and hit <strong>Request changes</strong> — it opens your email app with
+          the request ready to send. Your son (or whoever maintains the site) applies the update.
+        </div>
+
+        <nav class="toc" aria-label="Sections">
+          <a href="#business">Business</a>
+          <a href="#packages">Packages</a>
+          <a href="#pricing">All pricing</a>
+          <a href="#testimonials">Testimonials</a>
+          <a href="#faq">FAQ</a>
+          <a href="#services">Services</a>
+          <a href="#clients">Clients</a>
+        </nav>
+
+        <div id="content"><!-- rendered by JS from the snapshot --></div>
+
+        {/* ===== Request changes ===== */}
+        <div class="request" id="request">
+          <h2>Request a change</h2>
+          <p>
+            Describe what you'd like updated — e.g. "Change the Glitz &amp; Glam price to $225" or "Add a new
+            testimonial from Jane Smith: …". Reference the section name so it's easy to find.
+          </p>
+          <textarea id="change-notes" placeholder={"Example:\n- Pricing: Glitz & Glam package is now $225\n- FAQ: update the turnaround answer to say 'same day for rush'\n- Testimonials: add this quote from a recent client…"}></textarea>
+          <div class="request-actions">
+            <a class="btn-primary" id="send-mailto" href="#">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              Request changes
+            </a>
+            <button class="btn-ghost" id="copy-notes" type="button">Copy notes</button>
+            <span class="request-status" id="request-status"></span>
+          </div>
+        </div>
+
+        <p class="foot">
+          {business.name} admin · content snapshot built {new Date().toISOString().slice(0,10)}
+        </p>
+      </div>
+    </div>
+
+    <script is:inline define:vars={{ passwordHash: PASSWORD_HASH, changesEmail: CHANGES_EMAIL, snapshot: snapshotJson }}>
+      (function () {
+        var gate = document.getElementById("gate");
+        var dash = document.getElementById("dash");
+        var gateForm = document.getElementById("gate-form");
+        var pwdInput = document.getElementById("pwd");
+        var gateError = document.getElementById("gate-error");
+        var logoutBtn = document.getElementById("logout");
+        var STORAGE_KEY = "vtlv_admin_unlocked";
+
+        // No password configured → skip the gate entirely (local dev / preview).
+        var gateEnabled = !!passwordHash;
+
+        function showDash() {
+          gate.hidden = true;
+          dash.hidden = false;
+          renderContent();
+        }
+
+        function sha256Hex(text) {
+          // Prefer SubtleCrypto (async). Fallback handled by caller.
+          return crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(function (buf) {
+            return Array.prototype.map.call(new Uint8Array(buf), function (b) {
+              return b.toString(16).padStart(2, "0");
+            }).join("");
+          });
+        }
+
+        function tryUnlock() {
+          // Already unlocked on this browser?
+          var saved = "no";
+          try { saved = localStorage.getItem(STORAGE_KEY) || "no"; } catch (e) {}
+          if (saved === "yes") { showDash(); return true; }
+          if (!gateEnabled) { showDash(); return true; }
+          gate.hidden = false;
+          dash.hidden = true;
+          return false;
+        }
+
+        if (gateForm) {
+          gateForm.addEventListener("submit", function (e) {
+            e.preventDefault();
+            gateError.textContent = "";
+            var value = pwdInput ? pwdInput.value : "";
+            if (!value) { gateError.textContent = "Please enter the password."; return; }
+            if (!window.crypto || !crypto.subtle) {
+              // SubtleCrypto unavailable (insecure context). Can't hash client-side.
+              gateError.textContent = "This browser can't verify the password securely. Try over HTTPS.";
+              return;
+            }
+            sha256Hex(value).then(function (hash) {
+              if (hash === passwordHash) {
+                try { localStorage.setItem(STORAGE_KEY, "yes"); } catch (e) {}
+                showDash();
+              } else {
+                gateError.textContent = "That password isn't right.";
+                if (pwdInput) { pwdInput.value = ""; pwdInput.focus(); }
+              }
+            }).catch(function () {
+              gateError.textContent = "Couldn't verify the password. Please try again.";
+            });
+          });
+        }
+
+        if (logoutBtn) {
+          logoutBtn.addEventListener("click", function () {
+            try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+            try { dash.hidden = true; } catch (e) {}
+            if (gateEnabled) {
+              gate.hidden = false;
+              if (pwdInput) { pwdInput.value = ""; pwdInput.focus(); }
+            } else {
+              showDash();
+            }
+          });
+        }
+
+        // ===== Render the content snapshot as HTML =====
+        function esc(s) {
+          return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+          });
+        }
+        function arr(s) { return Array.isArray(s) ? s : []; }
+
+        function tableRowsTiers(rows, opts) {
+          opts = opts || {};
+          return arr(rows).map(function (r) {
+            var label = esc(r[opts.labelKey] || r.count || r.size || r.item || "");
+            var priceCell;
+            if (typeof r.price === "number") {
+              priceCell = '<td class="num">$' + r.price + '</td>';
+            } else {
+              priceCell = '<td class="num"><em>' + esc(r.note || "Custom") + '</em></td>';
+            }
+            return '<tr><td>' + label + '</td>' + priceCell + '</tr>';
+          }).join("");
+        }
+
+        function renderContent() {
+          var d = JSON.parse(snapshot);
+          var h = [];
+
+          // Business
+          var b = d.business || {};
+          h.push('<section id="business"><div class="card"><h2>Business info</h2>');
+          h.push('<dl class="kv">');
+          h.push('<dt>Name</dt><dd>' + esc(b.name) + '</dd>');
+          h.push('<dt>Owner</dt><dd>' + esc(b.owner) + '</dd>');
+          h.push('<dt>Phone</dt><dd>' + esc(b.phone) + '</dd>');
+          h.push('<dt>Email</dt><dd>' + esc(b.email) + '</dd>');
+          h.push('<dt>Turnaround</dt><dd>' + esc(b.turnaround) + '</dd>');
+          h.push('<dt>Website</dt><dd>' + esc(b.url) + '</dd>');
+          h.push('<dt>Service area</dt><dd>' + arr(b.serviceArea).map(esc).join(" · ") + '</dd>');
+          h.push('</dl></div></section>');
+
+          // Packages
+          h.push('<section id="packages"><div class="card"><h2>Packages <span class="count">' + arr(d.packages).length + '</span></h2>');
+          h.push('<table><thead><tr><th>Name</th><th>Price</th><th>Tag</th></tr></thead><tbody>');
+          arr(d.packages).forEach(function (p) {
+            h.push('<tr><td><strong>' + esc(p.name) + '</strong><br><span style="color:var(--muted);font-size:0.82rem">' + esc(p.blurb) + '</span></td><td class="num">$' + p.price + '</td><td>' + esc(p.tag) + '</td></tr>');
+          });
+          h.push('</tbody></table></div></section>');
+
+          // All pricing
+          h.push('<section id="pricing"><div class="card"><h2>All pricing</h2>');
+          function tierBlock(title, rows, opts) {
+            if (!arr(rows).length) return "";
+            return '<h3 style="font-size:0.8rem;letter-spacing:0.05em;text-transform:uppercase;color:var(--brass);margin:1.1rem 0 0.4rem">' + esc(title) + '</h3>' +
+              '<table><thead><tr><th>' + esc(opts.labelHeading || "Tier") + '</th><th>Price</th></tr></thead><tbody>' +
+              tableRowsTiers(rows, opts) + '</tbody></table>';
+          }
+          h.push(tierBlock("HDR photography", d.hdrTiers, { labelHeading: "Tier", labelKey: "count" }));
+          h.push(tierBlock("Matterport", d.matterportTiers, { labelHeading: "Size", labelKey: "size" }));
+          h.push(tierBlock("Floor plans", d.floorPlanTiers, { labelHeading: "Size", labelKey: "size" }));
+          h.push(tierBlock("Virtual staging", d.virtualStagingTiers, { labelHeading: "Item", labelKey: "item" }));
+          h.push(tierBlock("Video", d.videoTiers, { labelHeading: "Item", labelKey: "item" }));
+          h.push(tierBlock("Zillow", d.zillowTiers, { labelHeading: "Item", labelKey: "item" }));
+          h.push(tierBlock("Commercial HDR", d.commercialHdr, { labelHeading: "Count", labelKey: "count" }));
+          // Add-on lists
+          function addonList(title, items) {
+            if (!arr(items).length) return "";
+            return '<h3 style="font-size:0.8rem;letter-spacing:0.05em;text-transform:uppercase;color:var(--brass);margin:1.1rem 0 0.4rem">' + esc(title) + '</h3>' +
+              '<div class="chips">' + arr(items).map(function (i) { return '<span class="chip">' + esc(i) + '</span>'; }).join("") + '</div>';
+          }
+          h.push(addonList("HDR add-ons", d.hdrAddOns));
+          h.push(addonList("Floor plan add-ons", d.floorPlanAddOns));
+          // Google package
+          var g = d.googlePackage || {};
+          h.push('<h3 style="font-size:0.8rem;letter-spacing:0.05em;text-transform:uppercase;color:var(--brass);margin:1.1rem 0 0.4rem">' + esc(g.name || "Google package") + '</h3>');
+          h.push('<dl class="kv"><dt>Price</dt><dd>$' + esc(g.price) + '</dd><dt>Note</dt><dd>' + esc(g.note) + '</dd></dl>');
+          if (arr(g.includes).length) {
+            h.push('<div class="chips" style="margin-top:0.5rem">' + arr(g.includes).map(function (i) { return '<span class="chip">' + esc(i) + '</span>'; }).join("") + '</div>');
+          }
+          h.push('</div></section>');
+
+          // Testimonials
+          h.push('<section id="testimonials"><div class="card"><h2>Testimonials <span class="count">' + arr(d.testimonials).length + '</span></h2>');
+          arr(d.testimonials).forEach(function (t) {
+            h.push('<p class="quote">"' + esc(t.quote) + '"<span class="who">— ' + esc(t.name) + ', ' + esc(t.context) + '</span></p>');
+          });
+          h.push('</div></section>');
+
+          // FAQ
+          h.push('<section id="faq"><div class="card"><h2>FAQ <span class="count">' + arr(d.faqs).length + '</span></h2>');
+          arr(d.faqs).forEach(function (f, i) {
+            h.push('<p style="font-weight:600;margin:1rem 0 0.2rem">' + (i + 1) + '. ' + esc(f.q) + '</p>');
+            h.push('<p style="color:var(--muted);margin:0 0 0.5rem">' + esc(f.a) + '</p>');
+          });
+          h.push('</div></section>');
+
+          // Services
+          h.push('<section id="services"><div class="card"><h2>Services <span class="count">' + arr(d.services).length + '</span></h2>');
+          h.push('<table><thead><tr><th>Service</th><th>Audience</th></tr></thead><tbody>');
+          arr(d.services).forEach(function (s) {
+            h.push('<tr><td><strong>' + esc(s.label) + '</strong></td><td>' + esc(s.audience) + '</td></tr>');
+          });
+          h.push('</tbody></table></div></section>');
+
+          // Clients
+          h.push('<section id="clients"><div class="card"><h2>Client logos <span class="count">' + arr(d.clients).length + '</span></h2>');
+          h.push('<div class="chips">' + arr(d.clients).map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join("") + '</div>');
+          h.push('</div></section>');
+
+          document.getElementById("content").innerHTML = h.join("");
+        }
+
+        // ===== Request changes mailto builder =====
+        var sendBtn = document.getElementById("send-mailto");
+        var copyBtn = document.getElementById("copy-notes");
+        var notesEl = document.getElementById("change-notes");
+        var statusEl = document.getElementById("request-status");
+
+        function buildMailto() {
+          var notes = (notesEl && notesEl.value.trim()) || "(no notes entered)";
+          var subject = encodeURIComponent("Website content change request — " + (d() && d().business ? d().business.name : "VTLV"));
+          var body = encodeURIComponent(
+            "Hi,\n\nI'd like to request the following changes to the website:\n\n" +
+            notes + "\n\n" +
+            "Thanks,\n" + (d() && d().business ? d().business.owner : "Mike")
+          );
+          return "mailto:" + changesEmail + "?subject=" + subject + "&body=" + body;
+        }
+        // Tiny helper to re-read snapshot for the mailto subject/signature.
+        function d() { try { return JSON.parse(snapshot); } catch (e) { return {}; } }
+
+        if (sendBtn) {
+          sendBtn.addEventListener("click", function (e) {
+            // Let it act as a real link so the mailto handoff works; just set href.
+            sendBtn.setAttribute("href", buildMailto());
+            if (statusEl) { statusEl.textContent = "Opening your email app…"; }
+          });
+        }
+        if (copyBtn) {
+          copyBtn.addEventListener("click", function () {
+            var notes = notesEl ? notesEl.value : "";
+            if (!notes.trim()) { if (statusEl) statusEl.textContent = "Nothing to copy yet."; return; }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(notes).then(function () {
+                if (statusEl) statusEl.textContent = "Copied to clipboard.";
+              }, function () { if (statusEl) statusEl.textContent = "Couldn't copy — select and copy manually."; });
+            } else {
+              notesEl.select(); document.execCommand("copy");
+              if (statusEl) statusEl.textContent = "Copied to clipboard.";
+            }
+          });
+        }
+
+        // Boot.
+        tryUnlock();
+      })();
     </script>
   </body>
 </html>

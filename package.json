@@ -13,7 +13,6 @@
   "license": "MIT",
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
-    "@sveltia/cms": "^0.173.0",
     "astro": "^7.1.3"
   }
 }
