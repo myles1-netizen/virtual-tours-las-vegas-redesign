@@ -1,0 +1,92 @@
+/* ================================================================
+   Virtual Tours Las Vegas — Divi Theme Options → Custom CSS
+   Paste this whole block into: Divi > Theme Options > General > Custom CSS
+   (or Appearance > Customize > Additional CSS)
+
+   This recreates the color/type system from the Astro prototype. The
+   individual page-layout JSON files set colors per-module already —
+   this file is for global defaults (body text, links, headings) and a
+   couple of small helpers the module-level settings don't cover.
+   ================================================================ */
+
+/* ---- Fonts ----
+   Add Fraunces + Inter via Divi > Theme Options > General > Typography,
+   or paste this @import at the very top of Custom CSS (simplest option,
+   costs a small render-blocking request — fine for a small business site). */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --paper: #F7F4EF;
+  --paper-2: #EFEAE1;
+  --paper-3: #E6DFD2;
+  --ink: #1A1814;
+  --ink-2: #2A2620;
+  --stone: #6B6358;
+  --stone-2: #8A8275;
+  --dark: #0F0E0C;
+  --dark-2: #1C1A16;
+  --brass: #B08D57;
+  --brass-2: #C9A572;
+  --brass-btn: #8A6A3C;
+  --brass-btn-2: #7A5E34;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+h1, h2, h3, h4, .et_pb_module h1, .et_pb_module h2, .et_pb_module h3 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+}
+
+a {
+  color: var(--brass);
+}
+
+/* Buttons using the deep gold tone (white text passes contrast; the
+   lighter --brass token does not, so buttons use --brass-btn instead). */
+.et_pb_button.brass-btn {
+  background-color: var(--brass-btn) !important;
+  color: #fff !important;
+  border: none !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.et_pb_button.brass-btn:hover {
+  background-color: var(--brass-btn-2) !important;
+}
+
+/* Sticky header, solid white background (matches the prototype —
+   deliberately NOT a transparent-over-hero header, see project notes). */
+#main-header,
+.et-fixed-header {
+  background-color: var(--paper) !important;
+  box-shadow: 0 1px 0 var(--paper-3);
+}
+#main-header .nav li > a,
+#et-top-navigation .nav li > a {
+  color: var(--ink) !important;
+}
+
+/* Pricing table "featured" card (dark) — Divi's et_pb_pricing_table
+   featured_table option handles the background; this just locks text
+   colors so price/button stay legible on the dark card. */
+.et_pb_pricing_table_featured .et_pb_price_integer,
+.et_pb_pricing_table_featured .et_pb_price,
+.et_pb_pricing_table_featured h3 {
+  color: var(--paper) !important;
+}
+
+/* Section labels ("eyebrow" style small caps used throughout) */
+.eyebrow-label {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--brass);
+}
