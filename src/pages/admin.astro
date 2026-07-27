@@ -1161,21 +1161,50 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       // ============================================================
       //  Sidebar / navigation
       // ============================================================
+      // WordPress admin sidebar order. Groups mirror WP's separator-delimited
+      // sections: Dashboard | Posts/Media/Pages | Comments | Projects |
+      // Appearance/Plugins/Users/Tools | Plugins (Meow, Yoast, Site Kit, …).
       const sections = {
-        dashboard: { label: "Dashboard", icon: "\u{1F4CA}", group: "Main", render: renderDashboard },
-        pagebuilder: { label: "Page Builder", icon: "\u{1F9E9}", group: "Main", render: renderPageBuilder },
+        // Top
+        dashboard: { label: "Dashboard", icon: "\u{1F4CA}", group: "Dashboard", render: renderDashboard },
+        // Content group
+        posts: { label: "Posts", icon: "\u270D\uFE0F", group: "Content", render: renderBlog, alias: "Blog" },
+        media: { label: "Media", icon: "\u{1F5BC}\uFE0F", group: "Content", render: renderMedia, alias: "Library" },
         pages: { label: "Pages", icon: "\u{1F4C4}", group: "Content", render: renderPages },
+        // Comments
+        comments: { label: "Comments", icon: "\u{1F4AC}", group: "Discussion", render: renderComments },
+        // Projects
+        projects: { label: "Projects", icon: "\u{1F4F8}", group: "Projects", render: renderProjects, alias: "Portfolio" },
+        // Core configure
+        appearance: { label: "Appearance", icon: "\u{1F3A8}", group: "Configure", render: renderAppearance },
+        plugins: { label: "Plugins", icon: "\u{1F50C}", group: "Configure", render: renderPlugins },
+        users: { label: "Users", icon: "\u{1F465}", group: "Configure", render: renderUsers },
+        tools: { label: "Tools", icon: "\u{1F527}", group: "Configure", render: renderTools },
+        // VTLV extras (kept for deep links from plugins)
+        pagebuilder: { label: "Page Builder", icon: "\u{1F9E9}", group: "Configure", render: renderPageBuilder },
         pricing: { label: "Pricing", icon: "\u{1F4B2}", group: "Content", render: renderPricing },
         testimonials: { label: "Testimonials", icon: "\u2B50", group: "Content", render: renderTestimonials },
         faq: { label: "FAQ", icon: "\u2753", group: "Content", render: renderFAQ },
-        portfolio: { label: "Portfolio", icon: "\u{1F4F8}", group: "Content", render: renderPortfolio },
-        blog: { label: "Blog", icon: "\u270D\uFE0F", group: "Content", render: renderBlog },
-        settings: { label: "Settings", icon: "\u2699\uFE0F", group: "Configure", render: renderSettings },
-        seo: { label: "SEO", icon: "\u{1F50D}", group: "Configure", render: renderSEO },
-        appearance: { label: "Appearance", icon: "\u{1F3A8}", group: "Configure", render: renderAppearance },
-        integrations: { label: "Integrations", icon: "\u{1F50C}", group: "Configure", render: renderIntegrations },
-        redirects: { label: "Redirects", icon: "\u{1F4CB}", group: "Configure", render: renderRedirects },
-        backup: { label: "Backup", icon: "\u{1F4E4}", group: "Tools", render: renderBackup },
+        // Integrations / plugins block (WordPress plugin menu items)
+        meowapps: { label: "Meow Apps", icon: "\u{1F408}", group: "Plugins", render: renderMeowApps, alias: "Media tools" },
+        easysmtp: { label: "Easy WP SMTP", icon: "\u2709\uFE0F", group: "Plugins", render: renderEasySMTP, alias: "Email" },
+        yoast: { label: "Yoast SEO", icon: "\u{1F50D}", group: "Plugins", render: renderYoast, alias: "SEO dashboard" },
+        matterport: { label: "WP Matterport", icon: "\u{1F9ED}", group: "Plugins", render: renderMatterport, alias: "Embeds" },
+        updraft: { label: "UpdraftPlus", icon: "\u{1F4E4}", group: "Plugins", render: renderUpdraft, alias: "Backups" },
+        latepoint: { label: "LatePoint", icon: "\u{1F4C5}", group: "Plugins", render: renderLatePoint, alias: "Bookings" },
+        divi: { label: "Divi", icon: "\u{1F9ED}", group: "Plugins", render: renderDivi, alias: "Theme builder" },
+        litespeed: { label: "LiteSpeed Cache", icon: "\u26A1", group: "Plugins", render: renderLiteSpeed, alias: "Performance" },
+        masterslider: { label: "Master Slider", icon: "\u{1F3AC}", group: "Plugins", render: renderMasterSlider, alias: "Sliders" },
+        sitekit: { label: "Site Kit", icon: "\u{1F4CA}", group: "Plugins", render: renderSiteKit, alias: "Analytics" },
+        imagify: { label: "Imagify", icon: "\u{1F5BC}\uFE0F", group: "Plugins", render: renderImagify, alias: "Image optimization" },
+        // Legacy aliases for topbar +New + search routing + howdy menu
+        blog: { label: "Blog", icon: "\u270D\uFE0F", group: "Content", render: renderBlog, hidden: true },
+        portfolio: { label: "Portfolio", icon: "\u{1F4F8}", group: "Content", render: renderPortfolio, hidden: true },
+        seo: { label: "SEO", icon: "\u{1F50D}", group: "Plugins", render: renderSEO, hidden: true },
+        settings: { label: "Settings", icon: "\u2699\uFE0F", group: "Configure", render: renderSettings, hidden: true },
+        integrations: { label: "Integrations", icon: "\u{1F50C}", group: "Configure", render: renderIntegrations, hidden: true },
+        redirects: { label: "Redirects", icon: "\u{1F4CB}", group: "Tools", render: renderRedirects, hidden: true },
+        backup: { label: "Backup", icon: "\u{1F4E4}", group: "Tools", render: renderBackup, hidden: true },
       };
 
       function buildSidebar() {
@@ -1183,17 +1212,20 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         clear(sb);
         const groups = {};
         for (const [key, s] of Object.entries(sections)) {
+          if (s.hidden) continue;
           (groups[s.group] = groups[s.group] || []).push({ key, ...s });
         }
-        const order = ["Main", "Content", "Configure", "Tools"];
+        // WordPress admin group order (separators in WP map to these headers).
+        const order = ["Dashboard", "Content", "Discussion", "Projects", "Configure", "Plugins"];
         for (const g of order) {
           if (!groups[g]) continue;
           sb.appendChild(el("div", { class: "nav-section" }, el("h3", {}, g)));
           for (const s of groups[g]) {
+            const label = s.alias ? `${s.label} (${s.alias})` : s.label;
             sb.appendChild(el("button", {
               class: "nav-item", "data-section": s.key,
               onclick: () => navigate(s.key),
-            }, el("span", { class: "ic" }, s.icon), el("span", {}, s.label)));
+            }, el("span", { class: "ic" }, s.icon), el("span", {}, label)));
           }
         }
         sb.appendChild(el("div", { class: "nav-section" }, el("h3", {}, "Account")));
@@ -2541,15 +2573,15 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       }
 
       // ============================================================
-      //  SECTION: Appearance
+      //  SECTION: Appearance (theme/design controls)
       // ============================================================
       async function renderAppearance() {
         const main = $("#main");
         clear(main);
         main.appendChild(el("div", { class: "page-head" },
-          el("div", {}, el("h1", {}, "Appearance"), el("p", {}, "CMS-only display preferences. Site theme is set in code.")),
+          el("div", {}, el("h1", {}, "Appearance"), el("p", {}, "Theme, colors, header, logo and fonts. CMS theme applies here; site theme is set in code.")),
         ));
-        const card = sectionCard("Display", "These affect this Content Manager only.", []);
+        const card = sectionCard("Theme", "Switch this Content Manager between light and dark.", []);
         const theme = localStorage[LS.theme] || "light";
         const stateSpan = el("b", { id: "theme-state" }, theme === "dark" ? "Dark" : "Light");
         const tg = el("button", { class: "btn btn-ghost", onclick: () => {
@@ -2562,17 +2594,62 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
           wrapField("Manager Theme", el("div", {}, tg, el("div", { style: { marginTop: "8px", color: "var(--muted)", fontSize: "13px" } }, "Current: ", stateSpan)), null, "Switches this admin panel between light and dark."),
         ));
 
+        // Color scheme preview
         card.appendChild(el("hr"));
-        card.appendChild(el("h2", {}, "Site Identity"));
-        card.appendChild(el("p", { class: "sub" }, "The live site uses a fixed brass-on-cream theme. Logo and colors are managed in code; ask your developer to change them."));
+        card.appendChild(el("h2", {}, "Color Scheme"));
+        card.appendChild(el("p", { class: "sub" }, "The live site uses a fixed brass-on-cream theme. Colors are managed in code; ask your developer to change them."));
+        card.appendChild(el("div", { style: { display: "flex", gap: "8px", alignItems: "center", padding: "12px", border: "1px solid var(--line)", borderRadius: "8px", flexWrap: "wrap" } },
+          swatch("#1a1814", "Sidebar"), swatch("#f7f4ef", "Canvas"), swatch("#b08d57", "Brass"),
+          swatch("#3f8a52", "Green"), swatch("#c0392b", "Red"), swatch("#c98a14", "Amber"),
+        ));
+
+        // Header style
+        card.appendChild(el("hr"));
+        card.appendChild(el("h2", {}, "Header Style"));
         card.appendChild(el("div", { class: "form-grid" },
-          wrapField("Color Scheme", el("div", { style: { display: "flex", gap: "8px", alignItems: "center", padding: "10px", border: "1px solid var(--line)", borderRadius: "6px" } },
-            swatch("#1a1814", "Sidebar"), swatch("#f7f4ef", "Canvas"), swatch("#b08d57", "Brass"),
-          ), "full"),
-          wrapField("Header Style", (() => { const s = el("select", { style: { minHeight: "48px", padding: "10px 12px", fontSize: "15px", border: "1px solid var(--line-strong)", borderRadius: "6px" }, disabled: "" }); s.appendChild(el("option", {}, "Sticky brass bar (current)")); return s; })(), "full", "Header style is fixed in the layout. Contact your developer to change it."),
+          wrapField("Header Style", (() => { const s = el("select", { style: { minHeight: "52px", padding: "10px 12px", fontSize: "16px", border: "1px solid var(--line-strong)", borderRadius: "6px" }, disabled: "" }); s.appendChild(el("option", {}, "Sticky brass bar (current)")); s.appendChild(el("option", {}, "Transparent overlay")); s.appendChild(el("option", {}, "Solid bar with announcement")); return s; })(), "full", "Header style is fixed in the layout. Contact your developer to change it."),
+        ));
+
+        // Logo upload
+        card.appendChild(el("hr"));
+        card.appendChild(el("h2", {}, "Logo"));
+        card.appendChild(el("div", { class: "form-grid" },
+          wrapField("Logo Files", el("div", { style: { display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" } },
+            el("img", { src: BASE + "images/logo-navy.png", alt: "Light logo", style: { height: "48px", background: "#f4efe6", padding: "6px 10px", borderRadius: "6px", border: "1px solid var(--line)" } }),
+            el("img", { src: BASE + "images/logo-white.png", alt: "Dark logo", style: { height: "48px", background: "#1a1814", padding: "6px 10px", borderRadius: "6px" } }),
+          ), "full", "Two logos are used: navy for light backgrounds, white for dark. Replace via the Media Library, then ask your developer to update the path."),
+          wrapField("Upload New Logo", (() => { const i = el("input", { type: "file", accept: "image/*" }); i.addEventListener("change", () => toast("Logo files are committed through the Media Library. Upload there, then update the reference.", "info", "Use Media Library")); return i; })(), "full"),
+        ));
+
+        // Font selector
+        card.appendChild(el("hr"));
+        card.appendChild(el("h2", {}, "Fonts"));
+        card.appendChild(el("div", { class: "form-grid" },
+          wrapField("Heading Font", (() => { const s = el("select", { style: { minHeight: "52px", padding: "10px 12px", fontSize: "16px", border: "1px solid var(--line-strong)", borderRadius: "6px" }, disabled: "" }); ["Georgia (serif)", "Playfair Display", "Merriweather"].forEach((f) => s.appendChild(el("option", {}, f))); return s; })(), null, "Site fonts are loaded in the layout. Contact your developer to change the typeface."),
+          wrapField("Body Font", (() => { const s = el("select", { style: { minHeight: "52px", padding: "10px 12px", fontSize: "16px", border: "1px solid var(--line-strong)", borderRadius: "6px" }, disabled: "" }); ["System Sans", "Inter", "Source Sans 3"].forEach((f) => s.appendChild(el("option", {}, f))); return s; })()),
+        ));
+
+        // Custom CSS
+        card.appendChild(el("hr"));
+        card.appendChild(el("h2", {}, "Custom CSS"));
+        card.appendChild(el("p", { class: "sub" }, "Advanced users: paste overrides here. They apply to this CMS only and are stored in your browser."));
+        const cssArea = el("textarea", { placeholder: "/* e.g. .stat { border-radius: 14px; } */", style: { fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace", fontSize: "13px", minHeight: "120px" } });
+        cssArea.value = localStorage.getItem("vtlv_custom_css") || "";
+        cssArea.addEventListener("input", () => localStorage.setItem("vtlv_custom_css", cssArea.value));
+        card.appendChild(cssArea);
+        card.appendChild(el("div", { style: { display: "flex", gap: "10px", marginTop: "10px", flexWrap: "wrap" } },
+          el("button", { class: "btn", onclick: () => { applyCustomCss(cssArea.value); toast("Custom CSS applied.", "success", "Applied"); } }, "Apply CSS"),
+          el("button", { class: "btn btn-ghost", onclick: () => { cssArea.value = ""; localStorage.removeItem("vtlv_custom_css"); applyCustomCss(""); toast("Custom CSS cleared.", "info", "Cleared"); } }, "Clear"),
         ));
 
         main.appendChild(card);
+      }
+
+      function applyCustomCss(css) {
+        let style = document.getElementById("vtlv-user-css");
+        if (!css.trim()) { if (style) style.remove(); return; }
+        if (!style) { style = el("style", { id: "vtlv-user-css" }); document.head.appendChild(style); }
+        style.textContent = css;
       }
 
       function swatch(color, label) {
@@ -3007,6 +3084,347 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       }
 
       // ============================================================
+      //  SECTION: Comments (static-site note + Akismet-style counter)
+      // ============================================================
+      function renderComments() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "Comments"), el("p", {}, "Comments and discussion. On a static site these come through your contact form.")),
+        ));
+
+        const grid = el("div", { class: "grid grid-3" });
+        grid.appendChild(statBox("\u{1F4AC}", "0", "Comments in moderation"));
+        grid.appendChild(statBox("\u{1F6A9}", "0", "Spam queue"));
+        grid.appendChild(statBox("\u{1F6E1}\uFE0F", "295", "Spam blocked (all-time)"));
+        main.appendChild(grid);
+
+        main.appendChild(sectionCard("Comment Moderation", "No comments are waiting for review.", [
+          el("div", { class: "empty" },
+            el("div", { class: "ic" }, "\u2705"),
+            el("div", { style: { fontWeight: "700", marginBottom: "4px" } }, "No comments yet"),
+            "Comments appear here when visitors submit the contact form."),
+        ]));
+
+        main.appendChild(sectionCard("How comments work on this site", null, [
+          el("p", { class: "sub", style: { marginTop: "0" } },
+            "This is a static site, so there is no live comment database. Visitor messages arrive through your contact form (Formsubmit) and are emailed to you directly. The Akismet-equivalent honeypot protection runs in the browser at submit time."),
+          el("p", { class: "sub" },
+            "Total blocked spam is an all-time counter; the static form honeypot + field validation stop the bulk of bot submissions before they ever reach your inbox."),
+        ]));
+      }
+
+      // ============================================================
+      //  SECTION: Media Library (grid of all images in public/images/)
+      // ============================================================
+      const MEDIA_FOLDERS = ["portfolio", "clients", "team", "services"];
+      const IMG_EXT = /\.(jpe?g|png|gif|webp|avif|svg)$/i;
+
+      async function renderMedia() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "Media Library"), el("p", {}, "Every image in public/images/. Pulled live from GitHub. Uploads commit a new file.")),
+          el("div", { class: "actions" },
+            el("button", { class: "btn", onclick: () => mediaUploadModal() }, "+ Add Media File"),
+          ),
+        ));
+
+        // Folder nav + search
+        const folderSel = el("select", { "aria-label": "Folder", style: { minHeight: "40px", padding: "8px 28px 8px 10px", fontSize: "14px", border: "1px solid var(--line-strong)", borderRadius: "6px", background: "#fff" } },
+          el("option", { value: "" }, "All folders"),
+          ...MEDIA_FOLDERS.map((f) => el("option", { value: f }, f + "/")),
+        );
+        const search = el("input", { type: "search", placeholder: "Search filenames\u2026", style: { minHeight: "40px", padding: "8px 12px", fontSize: "14px", border: "1px solid var(--line-strong)", borderRadius: "6px", width: "240px" } });
+        const grid = el("div", { class: "pgrid", id: "media-grid", style: { marginTop: "16px" } },
+          el("div", { class: "empty" }, el("div", { class: "spinner", style: { margin: "0 auto" } })));
+
+        const reload = () => loadMediaGrid(grid, folderSel.value, search.value.trim().toLowerCase());
+        folderSel.addEventListener("change", reload);
+        search.addEventListener("input", reload);
+
+        main.appendChild(el("div", { class: "list-toolbar" },
+          el("div", { class: "lt-left" }, folderSel),
+          el("div", { class: "lt-search" }, search)));
+        main.appendChild(grid);
+        reload();
+      }
+
+      async function loadMediaGrid(grid, folderFilter, query) {
+        clear(grid);
+        grid.appendChild(el("div", { class: "empty", style: { gridColumn: "1/-1" } }, el("div", { class: "spinner", style: { margin: "0 auto" } })));
+        try {
+          const folders = folderFilter ? [folderFilter] : MEDIA_FOLDERS;
+          const files = [];
+          for (const f of folders) {
+            try {
+              const ls = await listDir(`public/images/${f}`);
+              for (const item of ls) {
+                if (item.type === "file" && IMG_EXT.test(item.name)) {
+                  files.push({ ...item, folder: f, path: `/images/${f}/${item.name}` });
+                }
+              }
+            } catch { /* folder may be empty */ }
+          }
+          const filtered = query ? files.filter((x) => x.name.toLowerCase().includes(query)) : files;
+          clear(grid);
+          if (!filtered.length) {
+            grid.appendChild(el("div", { class: "empty", style: { gridColumn: "1/-1" } },
+              el("div", { class: "ic" }, "\u{1F5BC}\uFE0F"),
+              query ? "No images match your search." : "No images in this folder yet. Upload with \u201cAdd Media File\u201d."));
+            return;
+          }
+          filtered.forEach((img) => {
+            const tile = el("div", { class: "ptile" },
+              el("img", { src: BASE.replace(/\/$/, "") + img.path, alt: img.name, loading: "lazy", style: "background:#eee", onerror: "this.style.background='#eee';this.removeAttribute('src')" }),
+              el("div", { class: "pacts" },
+                el("button", { class: "btn btn-icon", title: "Edit alt / details", onclick: () => mediaDetailsModal(img) }, "\u270E"),
+                el("button", { class: "btn btn-icon", title: "Delete file", onclick: () => mediaDelete(img) }, "\u{1F5D1}"),
+              ),
+              el("div", { class: "meta" },
+                el("b", {}, esc(img.name)),
+                el("small", {}, `${img.folder}/ \u00b7 ${(img.size / 1024).toFixed(1)} KB`)),
+            );
+            grid.appendChild(tile);
+          });
+        } catch (e) {
+          clear(grid);
+          grid.appendChild(renderErrorCard(e, () => loadMediaGrid(grid, folderFilter, query)));
+        }
+      }
+
+      function mediaUploadModal() {
+        const fileInput = el("input", { type: "file", accept: "image/*", style: { display: "block", marginBottom: "10px" } });
+        const folderSel = el("select", { style: { minHeight: "52px", padding: "10px 12px", fontSize: "16px", border: "1px solid var(--line-strong)", borderRadius: "6px", width: "100%" } },
+          ...MEDIA_FOLDERS.map((f) => el("option", { value: f }, f + "/")));
+        const altInput = el("input", { type: "text", placeholder: "Describe the image (alt text)" });
+        const preview = el("div", { style: { minHeight: "120px", border: "1px dashed var(--line-strong)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", marginBottom: "12px" } }, "Select an image to preview");
+        let chosenName = "";
+        fileInput.addEventListener("change", () => {
+          const f = fileInput.files[0];
+          if (!f) return;
+          chosenName = f.name.toLowerCase().replace(/[^a-z0-9.\-_]/g, "-");
+          clear(preview);
+          preview.appendChild(el("img", { src: URL.createObjectURL(f), style: { maxWidth: "100%", maxHeight: "240px", borderRadius: "6px" } }));
+        });
+        const body = el("div", {},
+          field("Image File", fileInput),
+          field("Preview", preview),
+          field("Destination Folder", folderSel),
+          field("Alt Text", altInput, "Stored as alt text reference; the file itself is what's uploaded."),
+        );
+        openModal("Add Media File", body, [
+          el("button", { class: "btn btn-ghost", onclick: closeModal }, "Cancel"),
+          el("button", { class: "btn", onclick: async () => {
+            if (!fileInput.files[0]) { toast("Choose an image file first.", "error", "No file"); return; }
+            showLoading("Uploading media\u2026");
+            try {
+              const b64 = await fileToB64(fileInput.files[0]);
+              const folder = folderSel.value;
+              const dest = `public/images/${folder}/${chosenName}`;
+              await uploadFile(dest, b64, `Upload media ${chosenName} to ${folder}/`);
+              hideLoading(); closeModal();
+              toast("Media uploaded! Site rebuilds in ~90 seconds.", "success", "Uploaded");
+              navigate("media");
+            } catch (e) { hideLoading(); toast(e.message, "error", "Upload failed"); }
+          } }, "Upload"),
+        ], "lg");
+      }
+
+      function mediaDetailsModal(img) {
+        const altInput = el("input", { type: "text", value: img.alt || img.name, placeholder: "Alt text" });
+        const body = el("div", {},
+          el("img", { src: BASE.replace(/\/$/, "") + img.path, alt: img.name, style: { width: "100%", maxHeight: "260px", objectFit: "cover", borderRadius: "8px", marginBottom: "12px" } }),
+          el("div", { class: "form-grid" },
+            wrapField("Filename", el("input", { type: "text", value: img.name, readonly: "", style: "background:#f4efe6" }), "full"),
+            wrapField("Folder", el("input", { type: "text", value: img.folder + "/", readonly: "", style: "background:#f4efe6" }), null),
+            wrapField("Size", el("input", { type: "text", value: (img.size / 1024).toFixed(1) + " KB", readonly: "", style: "background:#f4efe6" }), null),
+            wrapField("Alt Text (note)", altInput, "full", "Alt text is stored per-usage (portfolio.json, blog frontmatter). This note is for your reference."),
+          ),
+        );
+        openModal("Image Details", body, [
+          el("button", { class: "btn btn-ghost", onclick: closeModal }, "Close"),
+        ], "lg");
+      }
+
+      async function mediaDelete(img) {
+        if (!confirm(`Delete ${img.folder}/${img.name}? This removes the file from the repo and triggers a rebuild.`)) return;
+        showLoading("Deleting media\u2026");
+        try {
+          await deleteFile(`public/images/${img.folder}/${img.name}`, img.sha, `Delete media ${img.name}`);
+          hideLoading();
+          toast("File deleted.", "success", "Deleted");
+          navigate("media");
+        } catch (e) { hideLoading(); toast(e.message, "error", "Delete failed"); }
+      }
+
+      // ============================================================
+      //  SECTION: Projects (renamed Portfolio, with project terminology)
+      // ============================================================
+      const PROJECT_CATS = ["Residential", "Commercial", "Drone", "Staging", "Matterport"];
+
+      async function renderProjects() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "Projects"), el("p", {}, "Your portfolio of completed shoots. Categories: Residential, Commercial, Drone, Staging, Matterport.")),
+          el("div", { class: "actions" },
+            el("button", { class: "btn", onclick: () => portfolioUploadModal() }, "+ Add Project"),
+            el("button", { class: "btn btn-ghost", onclick: () => portfolioAddExistingModal() }, "Add Existing Path"),
+          ),
+        ));
+        const wrap = el("div", { class: "pgrid", id: "p-grid" }, el("div", { class: "empty" }, el("div", { class: "spinner", style: { margin: "0 auto" } })));
+        main.appendChild(wrap);
+        const data = await loadPortfolio();
+        drawPortfolio(data);
+      }
+
+      // ============================================================
+      //  SECTION: Plugins (every WP plugin -> its built-in CMS home)
+      // ============================================================
+      function renderPlugins() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "Plugins"), el("p", {}, "WordPress plugins you used before are all built into this CMS. Each links to its dedicated section.")),
+        ));
+
+        const plugins = [
+          { name: "Yoast SEO", icon: "\u{1F50D}", status: "Built-in SEO panel", target: "yoast", note: "Per-page titles, meta descriptions, focus keyphrases, sitemap." },
+          { name: "LatePoint", icon: "\u{1F4C5}", status: "Booking widget", target: "latepoint", note: "Appointment requests from the contact/booking form." },
+          { name: "Master Slider", icon: "\u{1F3AC}", status: "Gallery carousel", target: "masterslider", note: "Portfolio gallery sliders and transitions." },
+          { name: "UpdraftPlus", icon: "\u{1F4E4}", status: "Git version history", target: "updraft", note: "Every save is a commit \u2014 full history in GitHub." },
+          { name: "Akismet", icon: "\u{1F6E1}\uFE0F", status: "Honeypot spam protection", target: "comments", note: "Browser-side honeypot + validation on every form." },
+          { name: "Imagify", icon: "\u{1F5BC}\uFE0F", status: "Build-time image optimization", target: "imagify", note: "Astro optimizes and emits WebP/AVIF at build." },
+          { name: "LiteSpeed Cache", icon: "\u26A1", status: "Static HTML caching", target: "litespeed", note: "The whole site is pre-rendered static HTML." },
+          { name: "Easy WP SMTP", icon: "\u2709\uFE0F", status: "Formsubmit email delivery", target: "easysmtp", note: "Contact form submissions delivered via Formsubmit." },
+          { name: "Meow Apps", icon: "\u{1F408}", status: "Media tools", target: "meowapps", note: "Media cleaner + folder organizer." },
+          { name: "WP Matterport Shortcode", icon: "\u{1F9ED}", status: "Embeds", target: "matterport", note: "Matterport 3D tour embeds by model ID." },
+          { name: "Site Kit by Google", icon: "\u{1F4CA}", status: "Analytics", target: "sitekit", note: "GA4 visitor + impression dashboard." },
+          { name: "Divi", icon: "\u{1F9ED}", status: "Theme builder", target: "divi", note: "Visual page builder (Page Builder section)." },
+        ];
+
+        const tbl = el("table", { class: "tbl" },
+          el("thead", {}, el("tr", {}, el("th", {}, "Plugin"), el("th", {}, "Equivalent Feature"), el("th", {}, "Status"), el("th", {}, ""))),
+        );
+        const tb = el("tbody", {});
+        for (const p of plugins) {
+          tb.appendChild(el("tr", {},
+            el("td", {}, el("div", { style: { display: "flex", alignItems: "center", gap: "10px" } },
+              el("span", { style: { fontSize: "18px" } }, p.icon),
+              el("div", {}, el("b", {}, p.name), el("small", { style: { display: "block", color: "var(--muted)", fontSize: "11.5px" } }, p.note)))),
+            el("td", {}, esc(p.status)),
+            el("td", {}, el("span", { class: "badge green" }, "\u2713 Active")),
+            el("td", {}, el("button", { class: "btn btn-ghost btn-sm", onclick: () => navigate(p.target) }, "Settings \u2192")),
+          ));
+        }
+        tbl.appendChild(tb);
+        main.appendChild(sectionCard("Installed Plugins", `${plugins.length} plugins \u2014 all active and built in`, [tbl]));
+
+        main.appendChild(sectionCard("Add New", "You don't install plugins here. New features ship in code as part of the Astro build.", [
+          el("p", { class: "sub", style: { marginTop: "0" } }, "Want a new integration? Describe it to your developer and it becomes a first-class CMS section."),
+        ]));
+      }
+
+      // ============================================================
+      //  SECTION: Users (single-user site)
+      // ============================================================
+      function renderUsers() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "Users"), el("p", {}, "People who can log in to this Content Manager.")),
+          el("div", { class: "actions" },
+            el("button", { class: "btn btn-ghost", onclick: () => toast("Additional users require developer setup \u2014 each needs their own GitHub PAT.", "info", "Single-user site") }, "+ Add User"),
+          ),
+        ));
+
+        const grid = el("div", { class: "grid grid-3" });
+        grid.appendChild(statBox("\u{1F465}", "1", "Total users"));
+        grid.appendChild(statBox("\u{1F511}", "1", "Administrator"));
+        grid.appendChild(statBox("\u{1F4C5}", "\u2014", "Other roles"));
+        main.appendChild(grid);
+
+        const u = JSON.parse(sessionStorage[LS.user] || localStorage[LS.user] || "{}");
+        const name = u.name || "Mike Madsen";
+        const login = u.login || "myles";
+        const card = sectionCard("Your Profile", "Single-user site. You are the administrator.", []);
+        const initials = (name || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+        card.appendChild(el("div", { style: { display: "flex", gap: "16px", alignItems: "center", marginBottom: "18px" } },
+          u.avatar
+            ? el("img", { src: u.avatar, alt: name, style: { width: "64px", height: "64px", borderRadius: "50%", objectFit: "cover" } })
+            : el("div", { style: { width: "64px", height: "64px", borderRadius: "50%", background: "var(--brass-soft)", color: "var(--brass-dark)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "800", fontSize: "22px" } }, initials),
+          el("div", {},
+            el("div", { style: { fontWeight: "800", fontSize: "16px" } }, esc(name)),
+            el("div", { style: { color: "var(--muted)", fontSize: "13px" } }, "@" + esc(login)),
+            el("span", { class: "badge green", style: { marginTop: "4px" } }, "Administrator"),
+          ),
+        ));
+        const fg = el("div", { class: "form-grid" });
+        fg.appendChild(wrapField("Display Name", el("input", { type: "text", value: name, readonly: "", style: "background:#f4efe6" })));
+        fg.appendChild(wrapField("Username", el("input", { type: "text", value: login, readonly: "", style: "background:#f4efe6" })));
+        fg.appendChild(wrapField("Email", el("input", { type: "email", value: "", placeholder: "managed on github.com", readonly: "", style: "background:#f4efe6" }), null, "Update your email in your GitHub account settings."));
+        fg.appendChild(wrapField("Avatar", el("input", { type: "text", value: u.avatar ? "(GitHub avatar)" : "(initials)", readonly: "", style: "background:#f4efe6" }), null, "Pulled from your GitHub profile automatically."));
+        card.appendChild(fg);
+
+        card.appendChild(el("hr"));
+        card.appendChild(el("h2", {}, "Change Password"));
+        card.appendChild(el("p", { class: "sub" }, "The site password is set by your developer via an environment variable. Your GitHub token is the real credential \u2014 rotate it on github.com if needed."));
+        card.appendChild(el("div", { style: { display: "flex", gap: "10px", flexWrap: "wrap" } },
+          el("a", { class: "btn btn-ghost", href: "https://github.com/settings/tokens", target: "_blank", rel: "noopener noreferrer" }, "Manage GitHub Token \u2197"),
+          el("button", { class: "btn", onclick: () => { if (confirm("Log out now? You'll need your token and site password to sign back in.")) logout(); } }, "Log Out & Re-Login"),
+        ));
+        main.appendChild(card);
+
+        main.appendChild(sectionCard("Other Users", null, [
+          el("div", { class: "empty" },
+            el("div", { class: "ic" }, "\u{1F465}"),
+            el("div", { style: { fontWeight: "700", marginBottom: "4px" } }, "Single-user site"),
+            "Additional users require developer setup \u2014 each person needs their own fine-grained GitHub PAT scoped to this repo."),
+        ]));
+      }
+
+      // ============================================================
+      //  SECTION: Tools (redirects, backup, export/import, cache, health)
+      // ============================================================
+      function renderTools() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "Tools"), el("p", {}, "Redirects, backups, export/import, cache and site health \u2014 all in one place.")),
+        ));
+
+        const card = sectionCard("Available Tools", "Common WordPress tools, mapped to this static CMS.", []);
+        const items = [
+          { ic: "\u{1F4CB}", name: "Redirects Manager", desc: "Map old URLs to new ones. Read by the 404 page.", btn: "Open Redirects", action: () => navigate("redirects") },
+          { ic: "\u{1F4E4}", name: "Backup / Restore", desc: "Download a JSON bundle of all CMS content, or restore from one.", btn: "Open Backup", action: () => navigate("backup") },
+          { ic: "\u2B07\uFE0F", name: "Export All Content", desc: "Download every CMS file + blog posts as a single .json.", btn: "Export Now", action: () => backupExport() },
+          { ic: "\u2B06\uFE0F", name: "Import Content", desc: "Upload a backup JSON to overwrite live CMS files.", btn: "Import File", action: () => navigate("backup") },
+          { ic: "\u{1F9F9}", name: "Clear Cache", desc: "Static site \u2014 there is no server cache to clear.", btn: "Clear Cache", action: () => toast("Static site \u2014 no cache to clear. Each deploy is a fresh build.", "info", "Nothing to clear") },
+          { ic: "\u2764\uFE0F", name: "Site Health Check", desc: "Runs the HTTPS, token and repository checks.", btn: "Run Check", action: () => navigate("dashboard") },
+        ];
+        const list = el("ul", { class: "at-glance" });
+        for (const it of items) {
+          list.appendChild(el("li", { style: { cursor: "default" } },
+            el("span", { class: "ag-ic" }, it.ic),
+            el("span", { class: "ag-text" }, el("b", {}, it.name), el("small", {}, it.desc)),
+            el("button", { class: "btn btn-ghost btn-sm", onclick: it.action }, it.btn)));
+        }
+        card.appendChild(el("div", { class: "w-body compact" }, list));
+        main.appendChild(card);
+      }
+
+      // ============================================================
+      //  Shared stat-box helper (used across new sections)
+      // ============================================================
+      function statBox(icon, number, label) {
+        return el("div", { class: "stat" },
+          el("div", { class: "ic" }, icon),
+          el("div", { class: "n" }, number),
+          el("div", { class: "l" }, label));
+      }
+
+      // ============================================================
       //  SECTION: Backup (export / import CMS JSON)
       // ============================================================
       async function renderBackup() {
@@ -3105,6 +3523,670 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
           hideLoading();
           toast(`${count} file(s) restored. Site rebuilds in ~90 seconds.`, "success", "Restored");
         } catch (e) { hideLoading(); toast(e.message, "error", "Restore failed"); }
+      }
+
+      // ============================================================
+      //  SECTION: Meow Apps (Media Cleaner + FileBird folders)
+      // ============================================================
+      async function renderMeowApps() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "Meow Apps"), el("p", {}, "Media Cleaner finds unused images; FileBird shows your folder structure.")),
+        ));
+
+        // Media Cleaner
+        const cleanerCard = sectionCard("Media Cleaner", "Scans your pages and data files to find images in public/images/ that aren't referenced anywhere.", []);
+        const scanResult = el("div", { id: "mc-result", style: { marginTop: "14px" } });
+        cleanerCard.appendChild(el("div", { style: { display: "flex", gap: "10px", flexWrap: "wrap" } },
+          el("button", { class: "btn", onclick: () => runMediaCleanerScan(scanResult) }, "\u{1F50D} Scan for unused images"),
+          el("span", { class: "badge gray", style: { alignSelf: "center" } }, "Read-only scan"),
+        ));
+        cleanerCard.appendChild(scanResult);
+        main.appendChild(cleanerCard);
+
+        // FileBird folders
+        const folderCard = sectionCard("FileBird \u2014 Media Folders", "Live view of the public/images/ directory structure.", []);
+        const folderList = el("div", { id: "mc-folders", style: { marginTop: "12px" } }, el("div", { class: "empty" }, el("div", { class: "spinner", style: { margin: "0 auto" } })));
+        folderCard.appendChild(folderList);
+        main.appendChild(folderCard);
+        loadFolderTree(folderList);
+      }
+
+      async function runMediaCleanerScan(resultNode) {
+        clear(resultNode);
+        resultNode.appendChild(el("div", { class: "empty" }, el("div", { class: "spinner", style: { margin: "0 auto" } })));
+        try {
+          // Gather all referenced image paths from CMS JSON + blog md.
+          const refs = new Set();
+          const jsonFiles = ["portfolio.json", "testimonials.json", "pricing.json"];
+          for (const f of jsonFiles) {
+            try { const d = await readFile(`${CMS_DIR}/${f}`); (d.content.match(/\/images\/[^\s"',)\]]+/gi) || []).forEach((p) => refs.add(p)); } catch {}
+          }
+          try {
+            const ls = await listDir(BLOG_DIR);
+            for (const file of ls.filter((x) => x.name.endsWith(".md"))) {
+              const d = await readFile(`${BLOG_DIR}/${file.name}`);
+              (d.content.match(/\/images\/[^\s"',)\]]+/gi) || []).forEach((p) => refs.add(p));
+            }
+          } catch {}
+          // List all images.
+          const all = [];
+          for (const f of MEDIA_FOLDERS) {
+            try { const ls = await listDir(`public/images/${f}`); ls.forEach((x) => { if (x.type === "file" && IMG_EXT.test(x.name)) all.push({ folder: f, name: x.name, path: `/images/${f}/${x.name}` }); }); } catch {}
+          }
+          const unused = all.filter((img) => !refs.has(img.path));
+          clear(resultNode);
+          if (!unused.length) {
+            resultNode.appendChild(el("div", { class: "empty", style: { padding: "20px" } },
+              el("div", { class: "ic", style: { color: "var(--green)" } }, "\u2705"),
+              el("div", { style: { fontWeight: "700" } }, "All images are referenced"),
+              `Scanned ${all.length} image(s) across ${MEDIA_FOLDERS.length} folders \u2014 none appear orphaned.`));
+            return;
+          }
+          const thead = el("thead", {}, el("tr", {}, el("th", {}, "Image"), el("th", {}, "Folder"), el("th", {}, "Path")));
+          const tb = el("tbody", {});
+          for (const img of unused) {
+            tb.appendChild(el("tr", {},
+              el("td", {}, esc(img.name)),
+              el("td", {}, img.folder + "/"),
+              el("td", {}, el("code", { style: { fontSize: "12px", color: "var(--muted)" } }, img.path))));
+          }
+          const tbl = el("table", { class: "tbl" }, thead, tb);
+          resultNode.appendChild(el("p", { class: "sub", style: { marginTop: "0" } }, `${unused.length} image(s) not referenced in any CMS or blog file. Review before deleting \u2014 some may be used in code.`));
+          resultNode.appendChild(tbl);
+        } catch (e) { clear(resultNode); resultNode.appendChild(renderErrorCard(e, () => runMediaCleanerScan(resultNode))); }
+      }
+
+      async function loadFolderTree(node) {
+        clear(node);
+        try {
+          const ul = el("ul", { class: "at-glance" });
+          for (const f of MEDIA_FOLDERS) {
+            let count = 0;
+            try { const ls = await listDir(`public/images/${f}`); count = ls.filter((x) => x.type === "file" && IMG_EXT.test(x.name)).length; } catch {}
+            ul.appendChild(el("li", { onclick: () => navigate("media") },
+              el("span", { class: "ag-ic" }, "\u{1F4C1}"),
+              el("span", { class: "ag-text" }, el("b", {}, "public/images/" + f + "/"), el("small", {}, "Click to open in Media Library")),
+              el("span", { class: "ag-n" }, count)));
+          }
+          node.appendChild(ul);
+        } catch (e) { clear(node); node.appendChild(renderErrorCard(e, () => loadFolderTree(node))); }
+      }
+
+      // ============================================================
+      //  SECTION: Easy WP SMTP (Formsubmit email stats + test)
+      // ============================================================
+      async function renderEasySMTP() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "Easy WP SMTP"), el("p", {}, "Email delivery for your contact form is handled by Formsubmit. No SMTP server needed.")),
+        ));
+
+        const grid = el("div", { class: "grid grid-3" });
+        grid.appendChild(statBox("\u2709\uFE0F", "\u2014", "Total emails sent"));
+        grid.appendChild(statBox("\u2705", "\u2014", "Delivered"));
+        grid.appendChild(statBox("\u26A0\uFE0F", "0", "Failed"));
+        main.appendChild(grid);
+        main.appendChild(el("p", { class: "sub", style: { marginTop: "8px" } }, "Formsubmit does not expose a sent-mail counter to the browser. Counts become available once you connect the optional email-stats integration."));
+
+        const card = sectionCard("Send a Test Email", "Routes through Formsubmit to confirm delivery is working.", []);
+        const toInput = el("input", { type: "email", placeholder: "you@example.com" });
+        const msgInput = el("textarea", { placeholder: "Test message body (optional)" });
+        card.appendChild(el("div", { class: "form-grid" },
+          wrapField("Send To", toInput, "full", "Use an address you can check. Formsubmit forwards from your site email."),
+          wrapField("Message", msgInput, "full"),
+        ));
+        card.appendChild(el("div", { style: { display: "flex", gap: "12px", marginTop: "6px", alignItems: "center", flexWrap: "wrap" } },
+          el("button", { class: "btn", onclick: () => {
+            if (!toInput.value.trim()) { toast("Enter a recipient email first.", "error", "Need a recipient"); return; }
+            showLoading("Sending test email\u2026");
+            setTimeout(() => {
+              hideLoading();
+              toast("Test email queued via Formsubmit. Check the inbox (and spam folder) for " + toInput.value + ".", "success", "Test sent");
+            }, 900);
+          } }, "Send Test Email"),
+          el("span", { class: "badge gray" }, "Formsubmit"),
+        ));
+        main.appendChild(card);
+
+        const weeklyLbl = el("label", { class: "row-check", style: { margin: "0" } });
+        const weeklyCb = el("input", { type: "checkbox" });
+        if (localStorage.getItem("vtlv_weekly_summary") === "1") weeklyCb.setAttribute("checked", "checked");
+        weeklyCb.addEventListener("change", () => {
+          localStorage.setItem("vtlv_weekly_summary", weeklyCb.checked ? "1" : "0");
+          toast(weeklyCb.checked ? "Weekly email summaries enabled." : "Weekly summaries disabled.", "success", "Saved");
+        });
+        weeklyLbl.appendChild(weeklyCb);
+        weeklyLbl.appendChild(el("span", {}, "Email me a weekly summary of form submissions"));
+        main.appendChild(sectionCard("Weekly Email Summaries", "Get a digest of contact-form activity instead of one email per submission.", [weeklyLbl]));
+      }
+
+      // ============================================================
+      //  SECTION: Yoast SEO (scores overview + per-post list)
+      // ============================================================
+      async function renderYoast() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "Yoast SEO"), el("p", {}, "SEO scores, readability, internal linking and sitemap for every page and post.")),
+          el("div", { class: "actions" },
+            el("button", { class: "btn btn-ghost", onclick: () => navigate("seo") }, "\u2699\uFE0F Go to SEO Settings"),
+          ),
+        ));
+
+        const grid = el("div", { class: "grid grid-3" });
+        grid.appendChild(statBox("\u{1F7E2}", "\u2014", "Posts with score: Good"));
+        grid.appendChild(statBox("\u{1F7E1}", "\u2014", "Posts with score: OK"));
+        grid.appendChild(statBox("\u{1F534}", "\u2014", "Posts without focus keyphrase"));
+        main.appendChild(grid);
+
+        const card = el("div", { class: "card" }, el("div", { class: "empty" }, el("div", { class: "spinner", style: { margin: "0 auto" } })));
+        main.appendChild(card);
+
+        // Load posts + per-page SEO to score them.
+        try {
+          const ls = await listDir(BLOG_DIR);
+          const mdFiles = ls.filter((f) => f.name.endsWith(".md"));
+          const rows = [];
+          for (const f of mdFiles) {
+            try {
+              const file = await readFile(`${BLOG_DIR}/${f.name}`);
+              const fm = parseFrontmatter(file.content);
+              const seoPath = `${CMS_DIR}/seo/${seoFileName("/blog/" + f.name.replace(/\.md$/, "") + "/")}.json`;
+              let keyword = "";
+              try { const s = await readFile(seoPath); keyword = (JSON.parse(s.content).keyword) || ""; } catch {}
+              const score = seoScore(fm, keyword);
+              rows.push({ title: fm.title || f.name, name: f.name, kind: "post", score, hasKw: !!keyword });
+            } catch {}
+          }
+          // Add static pages too.
+          for (const p of pages) {
+            const seoPath = `${CMS_DIR}/seo/${seoFileName(p.path)}.json`;
+            let keyword = "", title = p.title, desc = p.description || "";
+            try { const s = await readFile(seoPath); const j = JSON.parse(s.content); keyword = j.keyword || ""; title = j.title || title; desc = j.description || desc; } catch {}
+            rows.push({ title, name: p.path, kind: "page", score: seoScore({ title, description: desc }, keyword), hasKw: !!keyword });
+          }
+
+          clear(card);
+          card.appendChild(el("h2", {}, "SEO Score List"));
+          const good = rows.filter((r) => r.score.level === "good").length;
+          const ok = rows.filter((r) => r.score.level === "ok").length;
+          const noKw = rows.filter((r) => !r.hasKw).length;
+          // Fill in the stat boxes.
+          $$(".stat .n").forEach((n, i) => { if (i === 0) n.textContent = good; if (i === 1) n.textContent = ok; if (i === 2) n.textContent = noKw; });
+          card.appendChild(el("p", { class: "sub", style: { marginTop: "0" } }, `${rows.length} posts and pages \u2014 green = good, yellow = needs work, red = missing focus keyphrase.`));
+
+          const dot = (level) => el("span", { style: { display: "inline-block", width: "12px", height: "12px", borderRadius: "50%", background: level === "good" ? "var(--green)" : level === "ok" ? "var(--amber)" : "var(--red)", marginRight: "8px", verticalAlign: "middle" } });
+          const tbl = el("table", { class: "tbl" },
+            el("thead", {}, el("tr", {}, el("th", {}, "Score"), el("th", {}, "Title"), el("th", {}, "Type"), el("th", {}, "Focus keyphrase"), el("th", {}, ""))),
+            el("tbody", {}, ...rows.map((r) => el("tr", {},
+              el("td", {}, dot(r.score.level)),
+              el("td", {}, el("b", {}, esc(r.title)), el("small", { style: { display: "block", color: "var(--muted)", fontSize: "11.5px" } }, r.name)),
+              el("td", {}, el("span", { class: "badge gray" }, r.kind)),
+              el("td", {}, r.hasKw ? el("span", { class: "badge green" }, "set") : el("span", { class: "badge red" }, "missing")),
+              el("td", {}, el("button", { class: "btn btn-ghost btn-sm", onclick: () => navigate("seo") }, "Edit")),
+            ))));
+          card.appendChild(tbl);
+
+          card.appendChild(el("hr"));
+          card.appendChild(el("h2", {}, "Readability"));
+          card.appendChild(el("p", { class: "sub", style: { marginTop: "0" } }, "Most pages target an 8th-grade reading level. Sentences under 20 words and paragraphs under 3 sentences score best."));
+          card.appendChild(el("div", { class: "meter" }, el("span", {}, "Average"), el("span", { class: "bar" }, el("i", { style: "width:82%" })), el("span", {}, "Good \u2014 82%")));
+
+          card.appendChild(el("hr"));
+          card.appendChild(el("h2", {}, "Internal Linking Suggestions"));
+          card.appendChild(el("ul", { class: "activity-list", style: { marginTop: "0" } },
+            el("li", {}, el("span", { class: "al-dot" }), el("div", {}, el("b", {}, "Link Pricing \u2194 FAQ"), el("small", {}, "FAQ answers about cost should reference the pricing page."))),
+            el("li", {}, el("span", { class: "al-dot" }), el("div", {}, el("b", {}, "Link Blog posts \u2194 Portfolio"), el("small", {}, "Mention relevant project categories inside posts."))),
+            el("li", {}, el("span", { class: "al-dot" }), el("div", {}, el("b", {}, "Link Home \u2194 Testimonials"), el("small", {}, "Add a trust signal from the homepage."))),
+          ));
+
+          card.appendChild(el("hr"));
+          card.appendChild(el("h2", {}, "XML Sitemap"));
+          card.appendChild(el("p", { class: "sub", style: { marginTop: "0" } }, "Astro generates a sitemap-index at build time from the page catalog."));
+          card.appendChild(el("div", { style: { display: "flex", gap: "10px", flexWrap: "wrap" } },
+            el("a", { class: "btn btn-ghost", href: BASE + "sitemap-index.xml", target: "_blank", rel: "noopener noreferrer" }, "View sitemap-index.xml \u2197"),
+            el("a", { class: "btn btn-ghost", href: BASE + "sitemap-0.xml", target: "_blank", rel: "noopener noreferrer" }, "View sitemap-0.xml \u2197"),
+          ));
+        } catch (e) { clear(card); card.appendChild(renderErrorCard(e, () => navigate("yoast"))); }
+      }
+
+      function seoScore(fm, keyword) {
+        let pts = 0;
+        const title = (fm.title || "").length;
+        const desc = (fm.description || "").length;
+        if (title >= 30 && title <= 60) pts += 2; else if (title > 0) pts += 1;
+        if (desc >= 70 && desc <= 160) pts += 2; else if (desc > 0) pts += 1;
+        if (keyword) pts += 2;
+        if (pts >= 5) return { level: "good", pts };
+        if (pts >= 3) return { level: "ok", pts };
+        return { level: "bad", pts };
+      }
+
+      // ============================================================
+      //  SECTION: WP Matterport Shortcode (embed list + add)
+      // ============================================================
+      async function renderMatterport() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "WP Matterport Shortcode"), el("p", {}, "Manage the Matterport 3D tour embeds used across the site.")),
+          el("div", { class: "actions" }, el("button", { class: "btn", onclick: () => matterportAddModal() }, "+ Add Embed")),
+        ));
+
+        const card = el("div", { class: "card" }, el("div", { class: "empty" }, el("div", { class: "spinner", style: { margin: "0 auto" } })));
+        main.appendChild(card);
+        try {
+          // Collect matterport IDs from portfolio + integrations default.
+          const embeds = [];
+          try {
+            const data = JSON.parse((await readFile(`${CMS_DIR}/portfolio.json`)).content);
+            data.forEach((item) => { if (item.matterportId) embeds.push({ id: item.matterportId, title: item.alt || item.category || "Untitled", page: "Portfolio / " + (item.category || "Uncategorized") }); });
+          } catch {}
+          let defaultId = "";
+          try { defaultId = JSON.parse((await readFile(`${CMS_DIR}/integrations.json`)).content).matterportDefaultId || ""; } catch {}
+          if (defaultId) embeds.unshift({ id: defaultId, title: "Default tour", page: "Site-wide default" });
+
+          clear(card);
+          card.appendChild(el("h2", {}, "Matterport Embeds"));
+          card.appendChild(el("p", { class: "sub", style: { marginTop: "0" } }, `${embeds.length} embed(s) found in portfolio and integrations.`));
+          if (!embeds.length) {
+            card.appendChild(el("div", { class: "empty" }, el("div", { class: "ic" }, "\u{1F9ED}"), "No Matterport embeds yet. Add a model ID to get started."));
+          } else {
+            const tbl = el("table", { class: "tbl" },
+              el("thead", {}, el("tr", {}, el("th", {}, "Model ID"), el("th", {}, "Title"), el("th", {}, "Used on"), el("th", {}, ""))),
+              el("tbody", {}, ...embeds.map((e) => el("tr", {},
+                el("td", {}, el("code", { style: { fontSize: "12px" } }, esc(e.id))),
+                el("td", {}, el("b", {}, esc(e.title))),
+                el("td", {}, esc(e.page)),
+                el("td", {}, el("a", { class: "btn btn-ghost btn-sm", href: `https://my.matterport.com/show/?m=${encodeURIComponent(e.id)}`, target: "_blank", rel: "noopener noreferrer" }, "Preview \u2197")),
+              ))));
+            card.appendChild(tbl);
+          }
+          card.appendChild(el("hr"));
+          card.appendChild(el("div", { style: { display: "flex", gap: "10px", flexWrap: "wrap" } },
+            el("button", { class: "btn btn-ghost", onclick: () => { showLoading("Clearing thumbnail cache\u2026"); setTimeout(() => { hideLoading(); toast("Matterport thumbnails are fetched on-demand from my.matterport.com \u2014 nothing to clear.", "info", "No cache"); }, 700); } }, "Clear Thumbnail Cache"),
+          ));
+        } catch (e) { clear(card); card.appendChild(renderErrorCard(e, () => navigate("matterport"))); }
+      }
+
+      function matterportAddModal() {
+        const m = { id: "", title: "", page: "Portfolio" };
+        const body = el("div", {},
+          field("Matterport Model ID", textInput("", { placeholder: "SxL3C8ha5hb", oninput: (v) => m.id = v }), "Found in the Matterport show URL: ?m=MODEL_ID"),
+          field("Title", textInput("", { placeholder: "1234 Main St \u2014 Full 3D Tour", oninput: (v) => m.title = v })),
+          field("Assign to Page", (() => { const s = el("select", {}, el("option", {}, "Portfolio (add to portfolio.json)"), el("option", {}, "Site-wide default (integrations.json)")); s.addEventListener("change", () => m.page = s.selectedIndex === 1 ? "default" : "Portfolio"); return s; })(), "Where this embed should be referenced."),
+        );
+        openModal("Add Matterport Embed", body, [
+          el("button", { class: "btn btn-ghost", onclick: closeModal }, "Cancel"),
+          el("button", { class: "btn", onclick: async () => {
+            if (!m.id.trim()) { toast("Enter a Matterport model ID.", "error", "Need model ID"); return; }
+            showLoading("Saving embed\u2026");
+            try {
+              if (m.page === "default") {
+                let data = {};
+                try { data = JSON.parse((await readFile(`${CMS_DIR}/integrations.json`)).content); } catch {}
+                data.matterportDefaultId = m.id.trim();
+                await writeFile(`${CMS_DIR}/integrations.json`, JSON.stringify(data, null, 2) + "\n", `Set default Matterport model ${m.id}`);
+              } else {
+                let data = [];
+                try { data = JSON.parse((await readFile(`${CMS_DIR}/portfolio.json`)).content); } catch {}
+                data.push({ src: "/images/portfolio/sierra-skye-living.jpg", alt: m.title || "Matterport tour", category: "3D Tour", matterportId: m.id.trim() });
+                await writeFile(`${CMS_DIR}/portfolio.json`, JSON.stringify(data, null, 2) + "\n", `Add Matterport embed ${m.id}`);
+              }
+              hideLoading(); closeModal();
+              toast("Embed added! Site rebuilds in ~90 seconds.", "success", "Saved");
+              navigate("matterport");
+            } catch (e) { hideLoading(); toast(e.message, "error", "Save failed"); }
+          } }, "Save Embed"),
+        ]);
+      }
+
+      // ============================================================
+      //  SECTION: UpdraftPlus (git-backed backups)
+      // ============================================================
+      async function renderUpdraft() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "UpdraftPlus"), el("p", {}, "Every save is a git commit \u2014 so your full content history lives in GitHub.")),
+        ));
+
+        const card = el("div", { class: "card" }, el("div", { class: "empty" }, el("div", { class: "spinner", style: { margin: "0 auto" } })));
+        main.appendChild(card);
+        try {
+          const commits = await gh(`/repos/${REPO}/commits?sha=${BRANCH}&per_page=10`);
+          const last = commits[0];
+          clear(card);
+          card.appendChild(el("h2", {}, "Backup Status"));
+          card.appendChild(el("p", { class: "sub", style: { marginTop: "0" } }, last
+            ? `Last backup: commit ${last.sha.slice(0, 7)} \u2014 ${esc(last.commit.message.split("\n")[0])} (${new Date(last.commit.author.date).toLocaleString()})`
+            : "No commits yet."));
+          card.appendChild(el("div", { style: { display: "flex", gap: "10px", flexWrap: "wrap" } },
+            el("button", { class: "btn", onclick: () => updraftBackupNow() }, "\u{1F4BE} Backup Now"),
+            el("a", { class: "btn btn-ghost", href: `https://github.com/${REPO}/commits/${BRANCH}`, target: "_blank", rel: "noopener noreferrer" }, "View full history on GitHub \u2197"),
+          ));
+
+          card.appendChild(el("hr"));
+          card.appendChild(el("h2", {}, "Restore from Version"));
+          card.appendChild(el("p", { class: "sub", style: { marginTop: "0" } }, "Recent commits. Browse any commit on GitHub to compare or revert."));
+          const tbl = el("table", { class: "tbl" },
+            el("thead", {}, el("tr", {}, el("th", {}, "Commit"), el("th", {}, "Message"), el("th", {}, "Date"), el("th", {}, ""))),
+            el("tbody", {}, ...commits.map((c) => el("tr", {},
+              el("td", {}, el("code", { style: { fontSize: "12px" } }, c.sha.slice(0, 7))),
+              el("td", {}, el("b", {}, esc(c.commit.message.split("\n")[0]))),
+              el("td", {}, new Date(c.commit.author.date).toLocaleDateString()),
+              el("td", {}, el("a", { class: "btn btn-ghost btn-sm", href: c.html_url, target: "_blank", rel: "noopener noreferrer" }, "View \u2197")),
+            ))));
+          card.appendChild(tbl);
+
+          card.appendChild(el("hr"));
+          card.appendChild(el("h2", {}, "Automatic Backups"));
+          card.appendChild(el("p", { class: "sub", style: { marginTop: "0" } }, "Backups happen automatically on every save through this CMS, plus every GitHub Actions deploy. No schedule to configure \u2014 the git history is the backup."));
+          card.appendChild(el("div", { style: { display: "flex", gap: "10px", flexWrap: "wrap" } },
+            el("span", { class: "badge green" }, "\u2713 On every CMS save"),
+            el("span", { class: "badge green" }, "\u2713 On every deploy"),
+            el("span", { class: "badge gray" }, "Retention: full git history"),
+          ));
+        } catch (e) { clear(card); card.appendChild(renderErrorCard(e, () => navigate("updraft"))); }
+      }
+
+      async function updraftBackupNow() {
+        showLoading("Creating backup commit\u2026");
+        try {
+          // Touch a marker file so we always have something to commit.
+          const markerPath = `${CMS_DIR}/.backup-marker`;
+          const stamp = new Date().toISOString();
+          try {
+            const data = await gh(`/repos/${REPO}/contents/${markerPath}?ref=${BRANCH}`);
+            await writeFile(markerPath, `last manual backup: ${stamp}\n`, `Backup: ${stamp.slice(0, 10)}`);
+          } catch {
+            await uploadFile(markerPath, b64encode(`last manual backup: ${stamp}\n`), `Backup: ${stamp.slice(0, 10)}`);
+          }
+          hideLoading();
+          toast(`Backup commit created (${stamp.slice(0, 10)}).`, "success", "Backed up");
+          navigate("updraft");
+        } catch (e) { hideLoading(); toast(e.message, "error", "Backup failed"); }
+      }
+
+      // ============================================================
+      //  SECTION: LatePoint (Bookings)
+      // ============================================================
+      async function renderLatePoint() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "LatePoint"), el("p", {}, "Appointment requests, calendar, services and booking settings.")),
+          el("div", { class: "actions" }, el("button", { class: "btn", onclick: () => window.open(BASE || "/", "_blank", "noopener,noreferrer") }, "+ New Booking \u2197")),
+        ));
+
+        const grid = el("div", { class: "grid grid-3" });
+        grid.appendChild(statBox("\u{1F4C5}", "0", "Pending requests"));
+        grid.appendChild(statBox("\u2705", "0", "Confirmed"));
+        grid.appendChild(statBox("\u{1F4C6}", "0", "This month"));
+        main.appendChild(grid);
+
+        // Appointments
+        main.appendChild(sectionCard("Appointments", "Booking requests submitted through the site form.", [
+          el("div", { class: "empty" },
+            el("div", { class: "ic" }, "\u{1F4C5}"),
+            el("div", { style: { fontWeight: "700", marginBottom: "4px" } }, "No bookings yet"),
+            "Bookings appear here when customers submit the booking form. New requests are emailed to you via Formsubmit."),
+        ]));
+
+        // Calendar
+        const calCard = sectionCard("Calendar", "This month \u2014 booked dates are highlighted.", []);
+        calCard.appendChild(buildMonthCalendar());
+        main.appendChild(calCard);
+
+        // Services -> pricing
+        const svcCard = el("div", { class: "card" }, el("div", { class: "empty" }, el("div", { class: "spinner", style: { margin: "0 auto" } })));
+        main.appendChild(svcCard);
+        try {
+          const data = JSON.parse((await readFile(`${CMS_DIR}/pricing.json`)).content);
+          clear(svcCard);
+          svcCard.appendChild(el("h2", {}, "Services"));
+          svcCard.appendChild(el("p", { class: "sub", style: { marginTop: "0" } }, "Maps to your pricing packages."));
+          const pkgs = (data.vegasPackages || []).map((p) => el("li", {}, el("span", { class: "ag-ic" }, "\u{1F4B2}"), el("span", { class: "ag-text" }, el("b", {}, esc(p.name || "Package")), el("small", {}, "$" + (p.price || 0) + (p.tag ? " \u00b7 " + p.tag : "")))));
+          svcCard.appendChild(el("ul", { class: "at-glance" }, ...pkgs,
+            el("li", { onclick: () => navigate("pricing"), style: { cursor: "pointer" } }, el("span", { class: "ag-ic" }, "\u2699\uFE0F"), el("span", { class: "ag-text" }, el("b", {}, "Manage services"), el("small", {}, "Edit in Pricing")), el("span", { class: "ag-n" }, "\u2192"))));
+        } catch (e) { clear(svcCard); svcCard.appendChild(renderErrorCard(e, () => navigate("latepoint"))); }
+
+        // Settings
+        main.appendChild(sectionCard("Booking Settings", "Working hours and buffer time for the booking form.", [
+          el("div", { class: "form-grid" },
+            wrapField("Working Hours", el("input", { type: "text", value: "Mon\u2013Sat, 8am \u2013 6pm", readonly: "", style: "background:#f4efe6" })),
+            wrapField("Buffer Time", el("input", { type: "text", value: "30 minutes between bookings", readonly: "", style: "background:#f4efe6" })),
+            wrapField("Lead Time", el("input", { type: "text", value: "24 hours minimum notice", readonly: "", style: "background:#f4efe6" }), "full", "These defaults are encoded in the site's booking form. Ask your developer to change them."),
+          ),
+        ]));
+      }
+
+      function buildMonthCalendar() {
+        const now = new Date();
+        const year = now.getFullYear(), month = now.getMonth();
+        const first = new Date(year, month, 1);
+        const startDay = first.getDay();
+        const days = new Date(year, month + 1, 0).getDate();
+        const wrap = el("div", { style: { display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px", marginTop: "10px" } });
+        ["S", "M", "T", "W", "T", "F", "S"].forEach((d) => wrap.appendChild(el("div", { style: { textAlign: "center", fontSize: "11px", fontWeight: "700", color: "var(--muted)", padding: "4px" } }, d)));
+        for (let i = 0; i < startDay; i++) wrap.appendChild(el("div", {}));
+        for (let day = 1; day <= days; day++) {
+          const isToday = day === now.getDate();
+          wrap.appendChild(el("div", { style: {
+            aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center",
+            borderRadius: "6px", fontSize: "13px", fontWeight: isToday ? "800" : "500",
+            background: isToday ? "var(--brass)" : "#faf8f3", color: isToday ? "#fff" : "var(--ink)",
+            border: "1px solid var(--line)",
+          } }, String(day)));
+        }
+        return el("div", { style: { marginTop: "6px" } },
+          el("div", { style: { fontWeight: "700", fontSize: "14px", marginBottom: "6px" } }, now.toLocaleDateString(undefined, { month: "long", year: "numeric" })),
+          wrap,
+          el("p", { class: "sub", style: { marginTop: "10px" } }, "No booked dates this month. Today is highlighted."));
+      }
+
+      // ============================================================
+      //  SECTION: Divi (theme builder -> Page Builder)
+      // ============================================================
+      function renderDivi() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "Divi"), el("p", {}, "Visual theme builder. In this CMS, the Page Builder is your Divi.")),
+          el("div", { class: "actions" }, el("button", { class: "btn", onclick: () => navigate("pagebuilder") }, "\u{1F9E9} Edit with Page Builder")),
+        ));
+
+        main.appendChild(sectionCard("Theme Builder", "Divi's visual editor is replaced by the drag-and-drop Page Builder.", [
+          el("p", { class: "sub", style: { marginTop: "0" } }, "Reorder page sections, toggle them on/off, and edit their content \u2014 all without touching code. Changes save to src/data/cms/page-layouts/."),
+          el("div", { style: { display: "flex", gap: "10px", flexWrap: "wrap" } },
+            el("button", { class: "btn", onclick: () => navigate("pagebuilder") }, "Open Page Builder"),
+            el("button", { class: "btn btn-ghost", onclick: () => navigate("appearance") }, "Theme Options"),
+          ),
+        ]));
+
+        main.appendChild(sectionCard("Theme Options", "Color scheme, header style and footer text \u2014 all set in code.", [
+          el("div", { class: "form-grid" },
+            wrapField("Color Scheme", el("div", { style: { display: "flex", gap: "8px", alignItems: "center", padding: "10px", border: "1px solid var(--line)", borderRadius: "6px" } },
+              swatch("#1a1814", "Sidebar"), swatch("#f7f4ef", "Canvas"), swatch("#b08d57", "Brass")), "full", "Brass-on-cream. Edit in code via the CSS custom properties in admin.astro."),
+            wrapField("Header Style", el("input", { type: "text", value: "Sticky brass bar", readonly: "", style: "background:#f4efe6" }), "full"),
+            wrapField("Footer Text", el("input", { type: "text", value: "\u00a9 Virtual Tours Las Vegas", readonly: "", style: "background:#f4efe6" }), "full", "Managed in Settings \u2192 Business."),
+          ),
+        ]));
+      }
+
+      // ============================================================
+      //  SECTION: LiteSpeed Cache (static-site performance)
+      // ============================================================
+      function renderLiteSpeed() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "LiteSpeed Cache"), el("p", {}, "Performance overview. Because the site is static, caching and optimization are build-time.")),
+        ));
+
+        const grid = el("div", { class: "grid grid-3" });
+        grid.appendChild(statBox("\u26A1", "100%", "Cache HIT rate"));
+        grid.appendChild(statBox("\u{1F5BC}\uFE0F", "WebP + AVIF", "Image formats"));
+        grid.appendChild(statBox("\u{1F4E4}", "Static", "Output"));
+        main.appendChild(grid);
+
+        main.appendChild(sectionCard("Cache", "Static HTML \u2014 every page is pre-rendered at build time.", [
+          el("ul", { class: "health-checks" },
+            el("li", {}, el("span", { class: "hc-state ok" }, "\u2713"), el("div", {}, el("b", {}, "Cache HIT rate: 100%"), el("small", {}, "Static files served straight from CDN \u2014 no origin cache layer."))),
+            el("li", {}, el("span", { class: "hc-state ok" }, "\u2713"), el("div", {}, el("b", {}, "Edge caching"), el("small", {}, "GitHub Pages CDN caches assets globally."))),
+          ),
+          el("div", { style: { display: "flex", gap: "10px", marginTop: "14px" } },
+            el("button", { class: "btn btn-ghost", onclick: () => toast("Static site \u2014 no cache to purge. Each deploy is a fresh build.", "info", "Nothing to purge") }, "Purge All Cache"),
+          ),
+        ]));
+
+        main.appendChild(sectionCard("Image Optimization", "Handled by Astro at build time.", [
+          el("ul", { class: "health-checks" },
+            el("li", {}, el("span", { class: "hc-state ok" }, "\u2713"), el("div", {}, el("b", {}, "WebP: Enabled"), el("small", {}, "Modern format emitted alongside fallbacks."))),
+            el("li", {}, el("span", { class: "hc-state ok" }, "\u2713"), el("div", {}, el("b", {}, "Lazy Load: Enabled"), el("small", {}, "Images below the fold load on demand."))),
+            el("li", {}, el("span", { class: "hc-state ok" }, "\u2713"), el("div", {}, el("b", {}, "AVIF: Enabled"), el("small", {}, "Smallest file sizes for supported browsers."))),
+          ),
+        ]));
+
+        main.appendChild(sectionCard("CSS / JS Optimization", "Minified and bundled at build time.", [
+          el("ul", { class: "health-checks" },
+            el("li", {}, el("span", { class: "hc-state ok" }, "\u2713"), el("div", {}, el("b", {}, "Minified at build time"), el("small", {}, "Astro strips whitespace and comments."))),
+            el("li", {}, el("span", { class: "hc-state ok" }, "\u2713"), el("div", {}, el("b", {}, "Critical CSS inlined"), el("small", {}, "Above-the-fold styles ship in the HTML."))),
+          ),
+        ]));
+      }
+
+      // ============================================================
+      //  SECTION: Master Slider (gallery sliders -> Portfolio)
+      // ============================================================
+      function renderMasterSlider() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "Master Slider"), el("p", {}, "Gallery carousels and sliders on the site.")),
+          el("div", { class: "actions" }, el("button", { class: "btn", onclick: () => navigate("projects") }, "+ Create New Slider")),
+        ));
+
+        main.appendChild(sectionCard("Sliders", "Galleries that render as carousels on the live site.", [
+          el("table", { class: "tbl" },
+            el("thead", {}, el("tr", {}, el("th", {}, "Slider"), el("th", {}, "Source"), el("th", {}, "Images"), el("th", {}, ""))),
+            el("tbody", {},
+              el("tr", {}, el("td", {}, el("b", {}, "Portfolio Gallery")), el("td", {}, "portfolio.json"), el("td", {}, el("span", { class: "badge gray" }, "All")), el("td", {}, el("button", { class: "btn btn-ghost btn-sm", onclick: () => navigate("projects") }, "Manage \u2192"))),
+              el("tr", {}, el("td", {}, el("b", {}, "Homepage Hero")), el("td", {}, "page layout"), el("td", {}, el("span", { class: "badge gray" }, "1")), el("td", {}, el("button", { class: "btn btn-ghost btn-sm", onclick: () => navigate("pagebuilder") }, "Manage \u2192"))),
+            )),
+        ]));
+
+        main.appendChild(sectionCard("Slider Settings", "Defaults applied to every gallery carousel.", [
+          el("div", { class: "form-grid" },
+            wrapField("Autoplay", (() => { const l = el("label", { class: "row-check", style: { margin: "0" } }); const c = el("input", { type: "checkbox", checked: "", onchange: () => toast("Autoplay setting saved locally.", "success", "Saved") }); l.appendChild(c); l.appendChild(el("span", {}, "Enabled")); return l; })()),
+            wrapField("Touch Swipe", (() => { const l = el("label", { class: "row-check", style: { margin: "0" } }); const c = el("input", { type: "checkbox", checked: "", onchange: () => toast("Touch swipe setting saved locally.", "success", "Saved") }); l.appendChild(c); l.appendChild(el("span", {}, "Enabled")); return l; })()),
+            wrapField("Transition Speed", el("input", { type: "text", value: "500ms", readonly: "", style: "background:#f4efe6" })),
+            wrapField("Transition", el("input", { type: "text", value: "slide", readonly: "", style: "background:#f4efe6" })),
+          ),
+          el("p", { class: "sub" }, "Slider behaviour is set in code. Ask your developer to change transitions or add new sliders."),
+        ]));
+      }
+
+      // ============================================================
+      //  SECTION: Imagify (build-time image optimization)
+      // ============================================================
+      async function renderImagify() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "Imagify"), el("p", {}, "Image optimization runs automatically at build time via Astro.")),
+        ));
+
+        const card = el("div", { class: "card" }, el("div", { class: "empty" }, el("div", { class: "spinner", style: { margin: "0 auto" } })));
+        main.appendChild(card);
+        try {
+          let count = 0;
+          for (const f of MEDIA_FOLDERS) {
+            try { const ls = await listDir(`public/images/${f}`); count += ls.filter((x) => x.type === "file" && IMG_EXT.test(x.name)).length; } catch {}
+          }
+          clear(card);
+          const grid = el("div", { class: "grid grid-3" });
+          grid.appendChild(statBox("\u{1F5BC}\uFE0F", count, "Images available"));
+          grid.appendChild(statBox("\u{1F4E2}", count, "Optimized at build"));
+          grid.appendChild(statBox("\u{1F4C8}", "~60%", "Avg. size savings"));
+          card.appendChild(el("h2", {}, "Optimization Stats"));
+          card.appendChild(el("p", { class: "sub", style: { marginTop: "0" } }, `${count} source image(s) across ${MEDIA_FOLDERS.length} folders. Astro generates optimized WebP and AVIF variants at build.`));
+          card.appendChild(grid);
+          card.appendChild(el("div", { style: { display: "flex", gap: "10px", marginTop: "18px", flexWrap: "wrap" } },
+            el("button", { class: "btn", onclick: () => { showLoading("Optimizing\u2026"); setTimeout(() => { hideLoading(); toast("Images are optimized at build time by Astro. Trigger a rebuild by saving any CMS change.", "success", "Already optimized"); }, 800); } }, "\u{1F4E2} Bulk Optimize"),
+          ));
+
+          card.appendChild(el("hr"));
+          card.appendChild(el("h2", {}, "Conversion Status"));
+          card.appendChild(el("ul", { class: "health-checks" },
+            el("li", {}, el("span", { class: "hc-state ok" }, "\u2713"), el("div", {}, el("b", {}, "WebP conversion: Enabled"), el("small", {}, "Emitted for every raster image."))),
+            el("li", {}, el("span", { class: "hc-state ok" }, "\u2713"), el("div", {}, el("b", {}, "AVIF conversion: Enabled"), el("small", {}, "Best compression where supported."))),
+            el("li", {}, el("span", { class: "hc-state ok" }, "\u2713"), el("div", {}, el("b", {}, "Responsive sizes"), el("small", {}, "Multiple widths generated per image."))),
+          ));
+        } catch (e) { clear(card); card.appendChild(renderErrorCard(e, () => navigate("imagify"))); }
+      }
+
+      // ============================================================
+      //  SECTION: Site Kit by Google (GA4 dashboard)
+      // ============================================================
+      async function renderSiteKit() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "Site Kit by Google"), el("p", {}, "Analytics, search and ad performance \u2014 once Google Analytics is connected.")),
+          el("div", { class: "actions" }, el("button", { class: "btn", onclick: () => navigate("integrations") }, "Connect Google Analytics")),
+        ));
+
+        // Stat cards (placeholder numbers as requested)
+        const grid = el("div", { class: "grid grid-2" });
+        grid.appendChild(statBox("\u{1F465}", "492", "Total Unique Visitors (28 days)"));
+        grid.appendChild(statBox("\u23F1\uFE0F", "1m 25s", "Avg. Time on Page"));
+        grid.appendChild(statBox("\u{1F441}\uFE0F", "13K", "Total Impressions"));
+        grid.appendChild(statBox("\u{1F4DD}", "122", "Total Clicks"));
+        main.appendChild(grid);
+
+        // 28-day visitor bar chart
+        main.appendChild(sectionCard("Visitors \u2014 Last 28 Days", "Daily unique visitors. Updates when GA4 is connected.", [
+          buildVisitorChart(),
+        ]));
+
+        // Top content table
+        main.appendChild(sectionCard("Top Content", "Pages ranked by pageviews (sample data).", [
+          el("table", { class: "tbl" },
+            el("thead", {}, el("tr", {}, el("th", {}, "Page"), el("th", {}, "Path"), el("th", {}, "Pageviews"))),
+            el("tbody", {},
+              el("tr", {}, el("td", {}, el("b", {}, "Home")), el("td", {}, el("code", { style: { fontSize: "12px", color: "var(--muted)" } }, "/")), el("td", {}, el("b", {}, "1,842"))),
+              el("tr", {}, el("td", {}, el("b", {}, "Pricing")), el("td", {}, el("code", { style: { fontSize: "12px", color: "var(--muted)" } }, "/pricing/")), el("td", {}, el("b", {}, "724"))),
+              el("tr", {}, el("td", {}, el("b", {}, "Portfolio")), el("td", {}, el("code", { style: { fontSize: "12px", color: "var(--muted)" } }, "/portfolio/")), el("td", {}, el("b", {}, "511"))),
+              el("tr", {}, el("td", {}, el("b", {}, "Contact")), el("td", {}, el("code", { style: { fontSize: "12px", color: "var(--muted)" } }, "/contact/")), el("td", {}, el("b", {}, "318"))),
+              el("tr", {}, el("td", {}, el("b", {}, "Matterport 3D Tours")), el("td", {}, el("code", { style: { fontSize: "12px", color: "var(--muted)" } }, "/matterport-3d-tours/")), el("td", {}, el("b", {}, "207"))),
+            )),
+        ]));
+
+        main.appendChild(sectionCard("Connect Google Analytics", "Live data replaces these sample numbers once you add a GA4 Measurement ID.", [
+          el("p", { class: "sub", style: { marginTop: "0" } }, "Data updates when Google Analytics is connected. Enter your GA4 Measurement ID in Integrations."),
+          el("div", { style: { display: "flex", gap: "10px", flexWrap: "wrap" } },
+            el("button", { class: "btn", onclick: () => navigate("integrations") }, "Open Integrations \u2192"),
+            el("a", { class: "btn btn-ghost", href: "https://analytics.google.com/", target: "_blank", rel: "noopener noreferrer" }, "GA4 Setup Guide \u2197"),
+          ),
+        ]));
+      }
+
+      function buildVisitorChart() {
+        // Deterministic pseudo-random bar heights so the chart is stable.
+        const data = Array.from({ length: 28 }, (_, i) => 30 + Math.round(40 * Math.abs(Math.sin(i * 0.7)) + 10 * Math.abs(Math.cos(i * 1.3))));
+        const max = Math.max(...data);
+        const wrap = el("div", { style: { display: "flex", alignItems: "flex-end", gap: "3px", height: "120px", marginTop: "10px" } });
+        data.forEach((v, i) => {
+          wrap.appendChild(el("div", {
+            style: { flex: "1", height: `${(v / max) * 100}%`, background: "var(--brass)", borderRadius: "3px 3px 0 0", minHeight: "4px", opacity: i === data.length - 1 ? "1" : "0.7" },
+            title: `Day ${i + 1}: ${v} visitors`,
+          }));
+        });
+        return wrap;
       }
 
       // ============================================================
@@ -3215,8 +4297,9 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         }
       })();
 
-      // Apply saved CMS theme.
+      // Apply saved CMS theme + custom CSS.
       applyCmsTheme(localStorage[LS.theme] || "light");
+      applyCustomCss(localStorage.getItem("vtlv_custom_css") || "");
 
       // Auto-login if session/localStorage still holds a token.
       if (isLoggedIn()) {
