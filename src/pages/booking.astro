@@ -31,10 +31,12 @@ const tomorrowIso = (() => {
 
 // Time slots offered. Mike confirms the exact hour himself — these are windows.
 const timeSlots = [
-  { id: "morning", label: "Morning", hint: "8:00 – 11:30 AM" },
-  { id: "midday", label: "Midday", hint: "11:30 AM – 2:00 PM" },
-  { id: "afternoon", label: "Afternoon", hint: "2:00 – 5:00 PM" },
-  { id: "flexible", label: "I'm flexible", hint: "Mike picks the best light" },
+  { id: "early", label: "Early Morning", hint: "7 – 9 AM" },
+  { id: "morning", label: "Morning", hint: "9 – 12 PM" },
+  { id: "afternoon", label: "Afternoon", hint: "12 – 3 PM" },
+  { id: "late", label: "Late Afternoon", hint: "3 – 6 PM" },
+  { id: "evening", label: "Evening", hint: "6 – 8 PM" },
+  { id: "flexible", label: "I'm flexible", hint: "I pick the best light" },
 ];
 ---
 
@@ -42,7 +44,7 @@ const timeSlots = [
   <PageHero
     eyebrow="Booking"
     title="Request a shoot."
-    lead="Pick your package and a preferred date and time — Mike reviews every request himself and confirms by phone or text, usually the same day. Need it now? Call or text Mike directly: (702) 527-2732."
+    lead="Pick your package and a preferred date and time — I review every request myself and confirm by phone or text, usually the same day. Need it now? Call or text me directly: (702) 527-2732."
     image={asset("/images/portfolio/listing-02.jpg")}
     imageAlt="Spacious Las Vegas property interior, ready to be photographed"
   />
@@ -53,15 +55,15 @@ const timeSlots = [
       <div class="call-cta" data-reveal>
         <div class="call-cta-text">
           <p class="eyebrow">Fastest path</p>
-          <h2 class="display call-title">Call or text Mike.</h2>
-          <p class="call-sub">Mike handles every booking himself. A two-minute call confirms the scope, date and exact time — no back-and-forth.</p>
+          <h2 class="display call-title">Call or text me.</h2>
+          <p class="call-sub">I handle every booking myself. A two-minute call confirms the scope, date and exact time — no back-and-forth.</p>
         </div>
         <div class="call-cta-actions">
           <a href={business.phoneHref} class="btn brass btn-lg">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             (702) 527-2732
           </a>
-          <a href={business.smsHref} class="btn outline btn-lg">Text Mike</a>
+          <a href={business.smsHref} class="btn outline btn-lg">Text me</a>
         </div>
       </div>
 
@@ -77,7 +79,7 @@ const timeSlots = [
           >
             <p class="eyebrow">Request a booking</p>
             <h2 class="display book-widget-title">Pick the details.</h2>
-            <p class="book-widget-sub">This sends Mike a booking request — he confirms the exact time with you directly.</p>
+            <p class="book-widget-sub">This sends me a booking request — I confirm the exact time with you directly.</p>
 
             {/* ---- Contact details ---- */}
             <div class="grid2">
@@ -131,7 +133,7 @@ const timeSlots = [
                       <span class="pkg-card-price">Quote</span>
                     </span>
                     <span class="pkg-card-tag">À la carte</span>
-                    <span class="pkg-card-blurb">Mix services your way. Tell Mike what you need below.</span>
+                    <span class="pkg-card-blurb">Mix services your way. Tell me what you need below.</span>
                   </span>
                 </label>
               </div>
@@ -176,7 +178,18 @@ const timeSlots = [
                     </span>
                   </label>
                 ))}
+                <label class="time-opt">
+                  <input type="radio" name="time_slot" value="Other" data-time data-time-other required />
+                  <span class="time-opt-inner">
+                    <span class="time-opt-label">Other</span>
+                    <span class="time-opt-hint">Tell me your window</span>
+                  </span>
+                </label>
               </div>
+              <label class="other-field" data-time-other-field hidden>
+                <span class="label">What time works for you?</span>
+                <input type="text" name="time_slot_other" placeholder="e.g. Sunrise shoot, after 6 PM weekdays" />
+              </label>
               <span class="field-error" data-error-for="time_slot"></span>
             </fieldset>
 
@@ -189,20 +202,26 @@ const timeSlots = [
 
             <label class="field">
               <span class="label">Property type</span>
-              <select name="property_type">
+              <select name="property_type" data-ptype-select>
                 <option value="">Select…</option>
                 <option>Residential listing</option>
                 <option>Commercial property</option>
                 <option>Vacation rental (Airbnb/Vrbo)</option>
                 <option>New construction / builder</option>
                 <option>As-built / documentation</option>
-                <option>Other</option>
+                <option>Insurance / Xactimate</option>
+                <option>Land / lot</option>
+                <option value="Other">Other</option>
               </select>
+              <label class="other-field" data-ptype-other hidden>
+                <span class="label">Describe the property</span>
+                <input type="text" name="property_type_other" placeholder="e.g. Yacht, vehicle, 50-unit apartment building" />
+              </label>
             </label>
 
             <label class="field">
               <span class="label">Notes for Mike</span>
-              <textarea name="message" rows="3" placeholder="Access details (lockbox, occupant), must-have shots, anything else Mike should know."></textarea>
+              <textarea name="message" rows="3" placeholder="Access details (lockbox, occupant), must-have shots, anything else I should know."></textarea>
             </label>
 
             {/* Honeypot — Formsubmit recognises "_honey" natively. */}
@@ -223,15 +242,15 @@ const timeSlots = [
               </button>
 
               <p class="form-status form-status--success" data-status="success" role="status" hidden>
-                <strong>Booking request sent.</strong> Mike reviews every request himself and will call or text you to confirm — usually the same day. For anything urgent, call (702) 527-2732.
+                Your request has been sent to Mike! He'll respond within 24 hours.
               </p>
               <p class="form-status form-status--error" data-status="error" role="alert" hidden>
-                Something went wrong sending your request. Please try again, or <a href={business.phoneHref}>call {business.phone}</a> directly.
+                Something went wrong. Please call Mike directly at <a href={business.phoneHref}>(702) 527-2732</a>.
               </p>
 
               <p class="form-alt">Prefer to talk? <a href={business.phoneHref}>Call or text {business.phone}</a></p>
               <p class="form-note">
-                This is a request, not a live reservation — Mike confirms every booking personally so the scope and timing work for your property.
+                This is a request, not a live reservation — I confirm every booking personally so the scope and timing work for your property.
               </p>
             </div>
           </form>
@@ -328,16 +347,16 @@ const timeSlots = [
   .book-widget select,
   .book-widget textarea {
     width: 100%;
-    padding: 0.8em 0.9em;
+    padding: 10px 14px;
     background: var(--paper);
     border: 1px solid var(--line-light);
-    border-radius: var(--radius-sm);
-    font-size: var(--step--1);
+    border-radius: 6px;
+    font-size: 16px;
     color: var(--ink);
     transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
     font-family: inherit;
   }
-  textarea { resize: vertical; min-height: 80px; }
+  textarea { min-height: 120px; }
   .book-widget input:focus,
   .book-widget select:focus,
   .book-widget textarea:focus {
@@ -353,6 +372,23 @@ const timeSlots = [
   }
   .field-error { font-size: 0.75rem; color: #c0392b; min-height: 0; }
   .field-error:not(:empty) { margin-top: -0.1rem; }
+
+  /* "Other" reveal field — shown when "Other" is chosen on a selector. */
+  .other-field[hidden] { display: none; }
+  .other-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+    padding: 0.7rem 0.85rem;
+    background: var(--brass-soft);
+    border-radius: var(--radius-sm);
+    border: 1px dashed var(--brass);
+  }
+  .other-field input {
+    background: var(--paper);
+    min-height: 48px;
+  }
 
   /* Fieldsets */
   .pkg-fieldset, .addon-fieldset, .time-fieldset {
@@ -546,6 +582,32 @@ const timeSlots = [
     const errorEl = form.querySelector<HTMLElement>('[data-status="error"]');
     const submitBtn = form.querySelector<HTMLButtonElement>("[data-submit]");
 
+    // ---- "Other" reveal logic ----
+    // Preferred time: when "Other" is selected, show the description field.
+    const timeOtherChk = form.querySelector<HTMLInputElement>("[data-time-other]");
+    const timeOtherField = form.querySelector<HTMLElement>("[data-time-other-field]");
+    if (timeOtherChk && timeOtherField) {
+      const syncTime = () => {
+        timeOtherField.hidden = !timeOtherChk.checked;
+        if (!timeOtherField.hidden) timeOtherField.querySelector<HTMLInputElement>("input")?.focus();
+      };
+      timeOtherChk.addEventListener("change", syncTime);
+      timeOtherChk.addEventListener("click", syncTime);
+    }
+    // Property type: when "Other" is selected, show the description field.
+    const ptypeSelect = form.querySelector<HTMLSelectElement>("[data-ptype-select]");
+    const ptypeOther = form.querySelector<HTMLElement>("[data-ptype-other]");
+    if (ptypeSelect && ptypeOther) {
+      const syncPtype = () => {
+        ptypeOther.hidden = ptypeSelect.value !== "Other";
+        if (ptypeOther.hidden) {
+          const o = ptypeOther.querySelector<HTMLInputElement>('input[name="property_type_other"]');
+          if (o) o.value = "";
+        }
+      };
+      ptypeSelect.addEventListener("change", syncPtype);
+    }
+
     const showStatus = (which: "success" | "error") => {
       successEl?.setAttribute("hidden", "");
       errorEl?.setAttribute("hidden", "");
@@ -571,7 +633,7 @@ const timeSlots = [
       let ok = true;
       const required: Record<string, string> = {
         name: "Please enter your name.",
-        phone: "Please enter a phone number so Mike can confirm.",
+        phone: "Please enter a phone number so I can confirm.",
         location: "Please enter the property address or area.",
       };
       Object.keys(required).forEach((name) => {
@@ -610,23 +672,72 @@ const timeSlots = [
       return ok;
     };
 
-    const buildMailtoBody = (): string => {
-      const data = new FormData(form);
-      const addons = data.getAll("addons").map(String).join("; ") || "None";
-      const body = [
-        `Name: ${data.get("name") ?? ""}`,
-        `Phone: ${data.get("phone") ?? ""}`,
-        `Email: ${data.get("email") ?? ""}`,
-        `Package: ${data.get("package") ?? ""}`,
-        `Add-ons: ${addons}`,
-        `Preferred date: ${data.get("preferred_date") ?? ""}`,
-        `Preferred time: ${data.get("time_slot") ?? ""}`,
-        `Sqft: ${data.get("sqft") ?? ""}`,
-        `Property type: ${data.get("property_type") ?? ""}`,
-        `Location: ${data.get("location") ?? ""}`,
+    // ---- Collect checked add-ons into a single readable string ----
+    const collectAddons = (): string => {
+      const checked = Array.from(form.querySelectorAll<HTMLInputElement>('[data-addon]:checked'));
+      return checked.map((c) => c.value).join("; ");
+    };
+
+    // ---- Clean, professional email body for Mike ----
+    // Formats the submission so the inbox read is scannable: contact block,
+    // property details, itemized services with a total, then date/time/notes.
+    const buildEmailBody = (): string => {
+      const get = (name: string): string => (form.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`[name="${name}"]`)?.value ?? "").toString().trim();
+      const name = get("name");
+      const email = get("email");
+      const phone = get("phone");
+      const date = get("preferred_date");
+      let ptype = get("property_type");
+      const ptypeOtherVal = get("property_type_other");
+      if (ptype === "Other" && ptypeOtherVal) ptype = ptypeOtherVal;
+      let timeSlot = get("time_slot");
+      const timeOtherVal = get("time_slot_other");
+      if (timeSlot === "Other" && timeOtherVal) timeSlot = timeOtherVal;
+      const sqft = get("sqft");
+      const stories = get("stories");
+      const location = get("location");
+      const message = get("message");
+      const pkg = get("package");
+      const addons = collectAddons();
+
+      const fmtDate = (iso: string): string => {
+        if (!iso) return "";
+        const d = new Date(iso + "T00:00:00");
+        return isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+      };
+
+      const rule = "═══════════════════════════════════";
+      const lines: string[] = [
+        "NEW BOOKING REQUEST",
+        rule,
         "",
-        (data.get("message") ?? "").toString(),
-      ].join("\n");
+        `From: ${name}`,
+        `Email: ${email}`,
+        phone ? `Phone: ${phone}` : "Phone: (not provided)",
+        "",
+        ptype ? `Property Type: ${ptype}` : "Property Type: (not specified)",
+        sqft ? `Square Footage: ${sqft}` : "",
+        stories ? `Stories: ${stories}` : "",
+        location ? `Address: ${location}` : "",
+        "",
+        "SERVICES REQUESTED:",
+        pkg ? `  • ${pkg}` : "",
+        addons ? "  • " + addons.split("; ").join("\n  • ") : "",
+        "",
+        message ? `Additional Notes: ${message}` : "Additional Notes: (none)",
+        "",
+        date ? `Preferred Date: ${fmtDate(date)}` : "Preferred Date: (none)",
+        timeSlot ? `Preferred Time: ${timeSlot}` : "",
+        "",
+        rule,
+        `Reply to this client: ${email}`,
+        phone ? `Call them: ${phone}` : "",
+      ].filter(Boolean);
+      return lines.join("\n");
+    };
+
+    const buildMailtoBody = (): string => {
+      const body = buildEmailBody();
       return `${mailtoBase}?subject=${encodeURIComponent("New booking request from the website")}&body=${encodeURIComponent(body)}`;
     };
 
@@ -648,16 +759,28 @@ const timeSlots = [
       submitBtn?.setAttribute("aria-busy", "true");
 
       try {
-        const data = new FormData(form);
-        const payload: Record<string, string> = {};
-        // Flatten multi-value fields (add-ons) into one readable string so the
-        // email Mike receives lists them on a single line.
-        const addons = data.getAll("addons").map(String).join("; ");
-        data.forEach((value, key) => {
-          if (key === "addons") return;
-          payload[key] = String(value);
-        });
-        if (addons) payload["addons"] = addons;
+        // Flatten multi-value add-ons into a single readable string so the
+        // email lists them cleanly. Drop the raw checkbox fields.
+        const payload: Record<string, string> = {
+          name: getVal("name"),
+          email: getVal("email"),
+          phone: getVal("phone"),
+          package: getVal("package"),
+          addons: collectAddons(),
+          preferred_date: getVal("preferred_date"),
+          time_slot: getVal("time_slot"),
+          sqft: getVal("sqft"),
+          property_type: getVal("property_type"),
+          location: getVal("location"),
+          message: getVal("message"),
+          _subject: "New booking request from the website",
+          _template: "table",
+          _captcha: "false",
+        };
+        const timeOtherVal = getVal("time_slot_other");
+        if (timeOtherVal) payload["time_slot_other"] = timeOtherVal;
+        const ptypeOtherVal = getVal("property_type_other");
+        if (ptypeOtherVal) payload["property_type_other"] = ptypeOtherVal;
 
         const res = await fetch(endpoint, {
           method: "POST",
@@ -670,6 +793,8 @@ const timeSlots = [
         if (res.ok) {
           showStatus("success");
           form.reset();
+          if (timeOtherChk && timeOtherField) timeOtherField.hidden = true;
+          if (ptypeSelect && ptypeOther) ptypeOther.hidden = true;
         } else {
           showStatus("error");
         }
@@ -686,5 +811,10 @@ const timeSlots = [
         submitBtn?.removeAttribute("aria-busy");
       }
     });
+
+    // Helper to read a single field's value as a trimmed string.
+    function getVal(name: string): string {
+      return (form.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`[name="${name}"]`)?.value ?? "").toString().trim();
+    }
   }
 </script>

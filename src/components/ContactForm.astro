@@ -1,5 +1,5 @@
 ---
-import { business, serviceBuyers, tourServices } from "../data/site";
+import { business } from "../data/site";
 
 // Formsubmit.co AJAX endpoint. Free, no signup — the first submission triggers
 // a one-time confirmation email to Mike, then it forwards every submission to
@@ -12,20 +12,18 @@ const FORMSUBMIT_ENDPOINT = "https://formsubmit.co/ajax/virtualtourslasvegas@gma
 // when a visitor's browser refuses the cross-origin POST. Builds a rich body.
 const MAILTO_FALLBACK = business.emailHref;
 
-// Build the service-type dropdown from the canonical service data in site.ts so
-// it never drifts from what the pricing/services pages actually offer. Add the
-// "add-on" services (HDR, drone, etc.) that aren't separate buyer pages.
+// The services a visitor can request. Multi-select (checkboxes) so they can
+// check as many as apply. The labels match what the pricing/services pages
+// advertise. "Other" reveals a free-text field for anything not listed.
 const serviceOptions: string[] = [
-  ...serviceBuyers.map((b) => b.label),
-  ...tourServices.map((t) => t.name),
-  "HDR photos",
-  "Drone photos",
-  "Floor plan",
-  "Virtual staging",
-  "Twilight photos",
-  "Walk-through video",
-  "Full package (recommend)",
-  "Not sure yet",
+  "HDR Photos",
+  "Matterport 3D",
+  "Drone",
+  "Floor Plan",
+  "Virtual Staging",
+  "Twilight Photos",
+  "Walk-Through Video",
+  "Zillow 3D Home",
 ];
 ---
 
@@ -60,28 +58,57 @@ const serviceOptions: string[] = [
     </label>
   </div>
 
-  <div class="grid2">
-    <label class="field">
-      <span class="label">Property type</span>
-      <select name="property_type">
-        <option value="">Select…</option>
-        <option>Residential listing</option>
-        <option>Commercial property</option>
-        <option>Vacation rental (Airbnb/Vrbo)</option>
-        <option>New construction / builder</option>
-        <option>As-built / documentation</option>
-        <option>Insurance / Xactimate</option>
-        <option>Other</option>
-      </select>
-    </label>
-    <label class="field">
-      <span class="label">Service type</span>
-      <select name="services">
-        <option value="">Select…</option>
-        {serviceOptions.map((s) => <option value={s}>{s}</option>)}
-      </select>
+  {/* Property type — with an "Other" reveal field so the visitor can describe a
+      property type we didn't list (boat, vehicle, product shoot, etc.). */}
+  <div class="field">
+    <span class="label">Property type</span>
+    <select name="property_type" data-ptype-select>
+      <option value="">Select…</option>
+      <option>Residential listing</option>
+      <option>Commercial property</option>
+      <option>Vacation rental (Airbnb/Vrbo)</option>
+      <option>New construction / builder</option>
+      <option>As-built / documentation</option>
+      <option>Insurance / Xactimate</option>
+      <option>Land / lot</option>
+      <option value="Other">Other</option>
+    </select>
+    <label class="other-field" data-ptype-other hidden>
+      <span class="label">Describe the property</span>
+      <input type="text" name="property_type_other" placeholder="e.g. Yacht, vehicle, 50-unit apartment building" />
     </label>
   </div>
+
+  {/* Services needed — multi-select checkboxes. The visitor can check any
+     combination, and "Other" reveals a text field. Submitting flattens the
+     checked values into a single readable "Services" string for the email. */}
+  <fieldset class="field services-field">
+    <legend class="label">Services needed <span class="req">*</span></legend>
+    <p class="services-hint">Check all that apply.</p>
+    <div class="services-checks">
+      {serviceOptions.map((s) => (
+        <label class="svc-check">
+          <input type="checkbox" name="services" value={s} data-service-check />
+          <span class="svc-check-box" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+          <span class="svc-check-label">{s}</span>
+        </label>
+      ))}
+      <label class="svc-check svc-check--other">
+        <input type="checkbox" name="services" value="Other" data-service-check data-service-other />
+        <span class="svc-check-box" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </span>
+        <span class="svc-check-label">Other</span>
+      </label>
+    </div>
+    <label class="other-field" data-services-other hidden>
+      <span class="label">What else do you need?</span>
+      <input type="text" name="services_other" placeholder="Describe the service you need" />
+    </label>
+    <span class="field-error" data-error-for="services"></span>
+  </fieldset>
 
   <label class="field">
     <span class="label">Property address / area</span>
@@ -126,15 +153,15 @@ const serviceOptions: string[] = [
 
     {/* Status messages — toggled by the submit handler below. */}
     <p class="form-status form-status--success" data-status="success" role="status" hidden>
-      <strong>Thanks — your request is in.</strong> Mike usually replies the same day. If it's urgent, call or text.
+      <strong>Your request has been sent to Mike! He'll respond within 24 hours.</strong>
     </p>
     <p class="form-status form-status--error" data-status="error" role="alert" hidden>
-      Something went wrong sending your request. Please try again, or <a href={business.phoneHref}>call {business.phone}</a> directly.
+      Something went wrong. Please call Mike directly at <a href={business.phoneHref}>{business.phone}</a>.
     </p>
 
     <p class="form-alt">Prefer to talk? <a href={business.phoneHref}>Call or text {business.phone}</a></p>
     <p class="form-note">
-      Your message goes straight to Mike's inbox. No middleman sees it.
+      Your message goes straight to my inbox. No middleman sees it.
     </p>
   </div>
 </form>
@@ -156,15 +183,15 @@ const serviceOptions: string[] = [
   .req { color: var(--brass); }
   input, select, textarea {
     width: 100%;
-    padding: 0.85em 0.95em;
+    padding: 10px 14px;
     background: var(--paper);
     border: 1px solid var(--line-light);
-    border-radius: var(--radius-sm);
-    font-size: var(--step--1);
+    border-radius: 6px;
+    font-size: 16px;
     color: var(--ink);
     transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
   }
-  textarea { resize: vertical; min-height: 100px; font-family: inherit; }
+  textarea { min-height: 120px; font-family: inherit; }
   input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: var(--brass);
@@ -183,6 +210,67 @@ const serviceOptions: string[] = [
     min-height: 0;
   }
   .field-error:not(:empty) { margin-top: 0.15rem; }
+
+  /* Services multi-select — checkboxes styled as tappable chips. */
+  .services-field { border: none; padding: 0; margin: 0; }
+  .services-hint { font-size: 0.75rem; color: var(--stone-2); margin-top: -0.2rem; margin-bottom: 0.1rem; }
+  .services-checks {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.55rem;
+    margin-top: 0.4rem;
+  }
+  .svc-check {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.7em 0.85em;
+    border: 1.5px solid var(--line-light);
+    border-radius: var(--radius-sm);
+    background: var(--paper);
+    min-height: 48px;
+    transition: border-color 0.2s var(--ease), background 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  }
+  .svc-check input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .svc-check-box {
+    width: 20px; height: 20px;
+    display: grid; place-items: center;
+    border-radius: 5px;
+    border: 1.5px solid var(--line-light);
+    color: transparent;
+    flex-shrink: 0;
+    transition: all 0.2s var(--ease);
+  }
+  .svc-check input:checked + .svc-check-box {
+    background: var(--brass);
+    border-color: var(--brass);
+    color: #fff;
+  }
+  .svc-check:has(input:checked) {
+    border-color: var(--brass);
+    background: var(--brass-soft);
+    box-shadow: 0 0 0 2px var(--brass-soft);
+  }
+  .svc-check input:focus-visible + .svc-check-box { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .svc-check-label { font-size: var(--step--1); color: var(--ink-2); font-weight: 500; }
+
+  /* "Other" reveal field — shown when "Other" is chosen on a selector. */
+  .other-field[hidden] { display: none; }
+  .other-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+    padding: 0.7rem 0.85rem;
+    background: var(--brass-soft);
+    border-radius: var(--radius-sm);
+    border: 1px dashed var(--brass);
+  }
+  .other-field input {
+    background: var(--paper);
+    min-height: 48px;
+  }
 
   /* Honeypot: visually + accessibly hidden, but present in the DOM so bots
      that fill all inputs still trip it. */
@@ -252,6 +340,33 @@ const serviceOptions: string[] = [
     const errorEl = form.querySelector<HTMLElement>('[data-status="error"]');
     const submitBtn = form.querySelector<HTMLButtonElement>("[data-submit]");
 
+    // ---- "Other" reveal logic ----
+    // Property type: when "Other" is selected, show the description field.
+    const ptypeSelect = form.querySelector<HTMLSelectElement>("[data-ptype-select]");
+    const ptypeOther = form.querySelector<HTMLElement>("[data-ptype-other]");
+    if (ptypeSelect && ptypeOther) {
+      const syncPtype = () => {
+        ptypeOther.hidden = ptypeSelect.value !== "Other";
+        if (ptypeOther.hidden) {
+          const o = ptypeOther.querySelector<HTMLInputElement>('input[name="property_type_other"]');
+          if (o) o.value = "";
+        }
+      };
+      ptypeSelect.addEventListener("change", syncPtype);
+    }
+
+    // Services: when "Other" checkbox is checked, show the description field.
+    const serviceOtherChk = form.querySelector<HTMLInputElement>("[data-service-other]");
+    const servicesOther = form.querySelector<HTMLElement>("[data-services-other]");
+    if (serviceOtherChk && servicesOther) {
+      const syncSvc = () => {
+        servicesOther.hidden = !serviceOtherChk.checked;
+        if (!servicesOther.hidden) servicesOther.querySelector<HTMLInputElement>("input")?.focus();
+      };
+      serviceOtherChk.addEventListener("change", syncSvc);
+      serviceOtherChk.addEventListener("click", syncSvc);
+    }
+
     const showStatus = (which: "success" | "error") => {
       successEl?.setAttribute("hidden", "");
       errorEl?.setAttribute("hidden", "");
@@ -298,19 +413,44 @@ const serviceOptions: string[] = [
           ok = false;
         }
       }
+      // At least one service must be selected.
+      const checked = form.querySelectorAll<HTMLInputElement>('[data-service-check]:checked');
+      if (checked.length === 0) {
+        setFieldError("services", "Please pick at least one service.");
+        ok = false;
+      }
       return ok;
     };
 
-    // ---- Pre-fill from query params (?package=, ?total=, ?items=) ----
-    // Lets the price calculator (and pricing cards) carry the visitor's
-    // selection straight into the form so they don't re-explain it.
-    // Progressive enhancement: if JS is off, the form still works empty.
+    // ---- Collect the checked services into one readable string, appending
+    // the "Other" description when relevant. Returns e.g.
+    // "HDR Photos; Matterport 3D; Other: extra drone video" ----
+    const collectServices = (): string => {
+      const checked = Array.from(form.querySelectorAll<HTMLInputElement>('[data-service-check]:checked'));
+      const parts = checked
+        .filter((c) => c.value !== "Other")
+        .map((c) => c.value);
+      const otherChk = checked.find((c) => c.value === "Other");
+      if (otherChk) {
+        const otherText = form.querySelector<HTMLInputElement>('[name="services_other"]')?.value.trim();
+        parts.push(otherText ? `Other: ${otherText}` : "Other");
+      }
+      return parts.join("; ");
+    };
+
+    // ---- Pre-fill from query params (?package=, ?total=, ?items=, ?type=) ----
+    // Lets the price calculator carry the visitor's selection straight into the
+    // form so they don't re-explain it. Progressive enhancement: if JS is off,
+    // the form still works empty.
     try {
       const params = new URLSearchParams(window.location.search);
       const pkg = params.get("package");
       const total = params.get("total");
       const items = params.get("items");
-      if (pkg || total || items) {
+      const type = params.get("type");
+      const addr = params.get("address");
+      const sqft = params.get("sqft");
+      if (pkg || total || items || type) {
         const pkgNames: Record<string, string> = {
           glitz: "Glitz & Glam",
           city: "City Never Sleeps",
@@ -319,23 +459,11 @@ const serviceOptions: string[] = [
         };
         const lines: string[] = [];
         if (pkg && pkgNames[pkg]) lines.push(`Interested in the ${pkgNames[pkg]} package.`);
-        if (items) lines.push("Selected: " + items);
+        if (items) lines.push("Selected from the quote builder:\n" + items.replace(/; /g, "\n  • "));
         if (total) lines.push(`Estimated total from calculator: $${total}`);
-
-        const servicesSelect = form.querySelector<HTMLSelectElement>('select[name="services"]');
-        if (servicesSelect) {
-          const map: Record<string, string> = {
-            glitz: "HDR photos",
-            city: "Matterport 3D",
-            neon: "Drone photos",
-            custom: "Full package (recommend)",
-          };
-          const target = pkg ? map[pkg] : "";
-          if (target) {
-            const opt = Array.from(servicesSelect.options).find((o) => o.value === target);
-            if (opt) servicesSelect.value = opt.value;
-          }
-        }
+        if (type) lines.push(`Property type: ${type}`);
+        if (addr) lines.push(`Address: ${addr}`);
+        if (sqft) lines.push(`Square footage: ${sqft}`);
 
         const msg = form.querySelector<HTMLTextAreaElement>('textarea[name="message"]');
         if (msg && lines.length) {
@@ -348,20 +476,56 @@ const serviceOptions: string[] = [
       // Query-param prefill is a nice-to-have; never block form submission.
     }
 
+    // Build a clean, professional plain-text body for the email Mike receives.
+    // Used both for the Formsubmit POST body and the mailto: fallback.
+    const buildEmailBody = (): string => {
+      const data = new FormData(form);
+      const name = (data.get("name") ?? "").toString().trim();
+      const email = (data.get("email") ?? "").toString().trim();
+      const phone = (data.get("phone") ?? "").toString().trim();
+      const date = (data.get("preferred_date") ?? "").toString().trim();
+      let ptype = (data.get("property_type") ?? "").toString().trim();
+      const ptypeOtherVal = (data.get("property_type_other") ?? "").toString().trim();
+      if (ptype === "Other" && ptypeOtherVal) ptype = ptypeOtherVal;
+      const services = collectServices();
+      const location = (data.get("location") ?? "").toString().trim();
+      const message = (data.get("message") ?? "").toString().trim();
+
+      const fmtDate = (iso: string): string => {
+        if (!iso) return "";
+        const d = new Date(iso + "T00:00:00");
+        return isNaN(d.getTime()) ? iso : d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+      };
+
+      const rule = "═══════════════════════════════════";
+      const lines: string[] = [
+        "NEW BOOKING REQUEST",
+        rule,
+        "",
+        `From: ${name}`,
+        `Email: ${email}`,
+        phone ? `Phone: ${phone}` : "Phone: (not provided)",
+        "",
+        ptype ? `Property Type: ${ptype}` : "Property Type: (not specified)",
+        location ? `Address: ${location}` : "",
+        "",
+        "SERVICES REQUESTED:",
+        services ? "  • " + services.split("; ").join("\n  • ") : "  (none selected)",
+        "",
+        message ? `Additional Notes: ${message}` : "Additional Notes: (none)",
+        "",
+        date ? `Preferred Date: ${fmtDate(date)}` : "Preferred Date: (none)",
+        "",
+        rule,
+        `Reply to this client: ${email}`,
+        phone ? `Call them: ${phone}` : "",
+      ].filter(Boolean);
+      return lines.join("\n");
+    };
+
     // Build a plain-text body for the mailto: fallback, from current field values.
     const buildMailtoBody = (): string => {
-      const data = new FormData(form);
-      const body = [
-        `Name: ${data.get("name") ?? ""}`,
-        `Phone: ${data.get("phone") ?? ""}`,
-        `Email: ${data.get("email") ?? ""}`,
-        `Preferred date: ${data.get("preferred_date") ?? ""}`,
-        `Property type: ${data.get("property_type") ?? ""}`,
-        `Services: ${data.get("services") ?? ""}`,
-        `Location: ${data.get("location") ?? ""}`,
-        "",
-        (data.get("message") ?? "").toString(),
-      ].join("\n");
+      const body = buildEmailBody();
       return `${mailtoBase}?subject=${encodeURIComponent("New booking request from your website")}&body=${encodeURIComponent(body)}`;
     };
 
@@ -385,11 +549,27 @@ const serviceOptions: string[] = [
       submitBtn?.setAttribute("aria-busy", "true");
 
       try {
-        const data = new FormData(form);
-        const payload: Record<string, string> = {};
-        data.forEach((value, key) => {
-          payload[key] = String(value);
-        });
+        // Flatten multi-value service checkboxes into a single readable string
+        // so the email lists them cleanly. Drop the raw checkbox fields.
+        const payload: Record<string, string> = {
+          name: (form.querySelector<HTMLInputElement>('[name="name"]')?.value ?? "").trim(),
+          email: (form.querySelector<HTMLInputElement>('[name="email"]')?.value ?? "").trim(),
+          phone: (form.querySelector<HTMLInputElement>('[name="phone"]')?.value ?? "").trim(),
+          preferred_date: (form.querySelector<HTMLInputElement>('[name="preferred_date"]')?.value ?? "").trim(),
+          property_type: (form.querySelector<HTMLSelectElement>('[name="property_type"]')?.value ?? "").trim(),
+          services: collectServices(),
+          location: (form.querySelector<HTMLInputElement>('[name="location"]')?.value ?? "").trim(),
+          message: (form.querySelector<HTMLTextAreaElement>('[name="message"]')?.value ?? "").trim(),
+          _subject: "New booking request from your website",
+          _template: "table",
+          _captcha: "false",
+        };
+        // Include the "Other" description fields only when filled.
+        const ptypeOther = (form.querySelector<HTMLInputElement>('[name="property_type_other"]')?.value ?? "").trim();
+        if (ptypeOther) payload["property_type_other"] = ptypeOther;
+        const servicesOther = (form.querySelector<HTMLInputElement>('[name="services_other"]')?.value ?? "").trim();
+        if (servicesOther) payload["services_other"] = servicesOther;
+
         const res = await fetch(endpoint, {
           method: "POST",
           headers: {
@@ -401,6 +581,9 @@ const serviceOptions: string[] = [
         if (res.ok) {
           showStatus("success");
           form.reset();
+          // Re-run the "Other" reveal sync so hidden fields stay hidden after reset.
+          if (ptypeSelect && ptypeOther) ptypeOther.hidden = true;
+          if (serviceOtherChk && servicesOther) servicesOther.hidden = true;
         } else {
           showStatus("error");
         }
