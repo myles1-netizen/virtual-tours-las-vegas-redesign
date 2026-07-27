@@ -1,0 +1,250 @@
+---
+// Inline Matterport 3D tour embed with a click-to-load placeholder.
+// The Matterport player is heavy (WASM 3D engine), so we never set the iframe
+// src until the user explicitly opts in via the "Load Tour" button — this keeps
+// below-the-fold tours off the wire on gallery/portfolio pages.
+//
+// Based on the architecture in handoff/plugin-research/wordpress-plugin-equivalents.md
+// (section 10, "Matterport Shortcode" replacement, inline-iframe mode).
+import { asset } from "../data/site";
+
+export interface Props {
+  /** Matterport model SID (the `m=` param). */
+  modelId: string;
+  /** Accessible name / on-screen title for the embed. */
+  title: string;
+  /** Optional placeholder image (absolute path from public/). Defaults to a neutral gradient. */
+  placeholder?: string;
+  /** Aspect ratio of the embed frame. */
+  aspect?: "16/9" | "4/3";
+  /** MLS-compliant mode: hides certain Matterport UI elements. */
+  mls?: boolean;
+  /** Autoplay the tour once loaded. */
+  autoplay?: boolean;
+  /** Remove Matterport branding (plan-dependent). */
+  hideBrand?: boolean;
+}
+
+const {
+  modelId,
+  title,
+  placeholder,
+  aspect = "16/9",
+  mls = false,
+  autoplay = false,
+  hideBrand = false,
+} = Astro.props;
+
+// Build the Matterport showcase URL once. Keep params minimal & standards-based.
+const params = new URLSearchParams();
+if (autoplay) params.set("play", "1");
+if (mls) params.set("mls", "1");
+if (hideBrand) params.set("brand", "0");
+const qs = params.toString() ? `&${params.toString()}` : "";
+const tourUrl = `https://my.matterport.com/show/?m=${modelId}${qs}`;
+
+const frameId = `mp-${modelId.replace(/[^a-z0-9]/gi, "").slice(0, 12)}`;
+---
+
+<div
+  class="mp-embed"
+  data-mp-embed
+  data-tour={tourUrl}
+  style={`aspect-ratio:${aspect};`}
+>
+  {/* Placeholder overlay — shown until the user clicks "Load Tour".
+      Clicking swaps in the iframe and removes the overlay (irreversible per mount). */}
+  <button
+    type="button"
+    class="mp-placeholder"
+    data-mp-load
+    aria-label={`Load 3D tour: ${title}`}
+  >
+    {placeholder ? (
+      <img
+        class="mp-ph-img"
+        src={asset(placeholder)}
+        alt={title}
+        loading="lazy"
+        decoding="async"
+      />
+    ) : (
+      <span class="mp-ph-fallback" aria-hidden="true"></span>
+    )}
+    <span class="mp-ph-veil" aria-hidden="true"></span>
+    <span class="mp-ph-cta">
+      <span class="mp-ph-play" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </span>
+      <span class="mp-ph-text">Load 3D Tour</span>
+      <span class="mp-ph-title">{title}</span>
+    </span>
+  </button>
+
+  {/* The iframe is rendered with NO src; JS sets it on click. loading="lazy" is a
+      belt-and-suspenders guard in case the frame is ever pre-populated. */}
+  <iframe
+    class="mp-frame"
+    id={frameId}
+    data-mp-frame
+    title={title}
+    src=""
+    loading="lazy"
+    allow="xr-spatial-tracking; gyroscope; accelerometer; fullscreen"
+    allowfullscreen
+  ></iframe>
+</div>
+
+<style>
+  .mp-embed {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    background: var(--paper-2, #efeae1);
+    border-radius: var(--radius, 8px);
+    overflow: hidden;
+    box-shadow: var(--shadow-card, 0 4px 24px rgba(0,0,0,0.08));
+  }
+  .mp-frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    background: #1a1814;
+  }
+  /* Hide the frame until the user opts in (src is empty anyway, but this avoids
+     a flash of empty framed box behind the placeholder). */
+  .mp-frame:not([src]),
+  .mp-frame[src=""] { opacity: 0; pointer-events: none; }
+  .mp-frame:not([src=""]) { opacity: 1; }
+
+  /* Placeholder button fills the frame and is the click target. */
+  .mp-placeholder {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    z-index: 2;
+    transition: opacity 0.4s var(--ease, ease);
+  }
+  .mp-embed[data-loaded="true"] .mp-placeholder { opacity: 0; pointer-events: none; }
+
+  .mp-ph-img,
+  .mp-ph-fallback {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  /* Gradient fallback when no placeholder image is supplied. */
+  .mp-ph-fallback {
+    background:
+      radial-gradient(120% 120% at 30% 20%, #2a2620 0%, #1a1814 60%, #0f0e0c 100%);
+  }
+  .mp-ph-veil {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(15,14,12,0.6) 0%, rgba(15,14,12,0.15) 60%);
+    transition: background 0.3s var(--ease, ease);
+  }
+  .mp-placeholder:hover .mp-ph-veil,
+  .mp-placeholder:focus-visible .mp-ph-veil {
+    background: linear-gradient(0deg, rgba(15,14,12,0.7) 0%, rgba(15,14,12,0.3) 60%);
+  }
+  .mp-placeholder:focus-visible {
+    outline: 3px solid var(--brass, #b08d57);
+    outline-offset: -3px;
+  }
+
+  .mp-ph-cta {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--paper, #f7f4ef);
+    text-align: center;
+    padding: 0 1.5rem;
+  }
+  .mp-ph-play {
+    width: 64px;
+    height: 64px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--brass, #b08d57);
+    color: #fff;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    transition: transform 0.3s var(--ease, ease), background 0.3s var(--ease, ease);
+  }
+  .mp-placeholder:hover .mp-ph-play,
+  .mp-placeholder:focus-visible .mp-ph-play {
+    transform: scale(1.08);
+    background: var(--brass-btn, #8a6a3c);
+  }
+  .mp-ph-text {
+    font-family: var(--font-body, system-ui);
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .mp-ph-title {
+    font-family: var(--font-display, Georgia, serif);
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: rgba(247,244,239,0.85);
+    max-width: 40ch;
+    line-height: 1.3;
+  }
+
+  @media (max-width: 540px) {
+    .mp-ph-play { width: 54px; height: 54px; }
+    .mp-ph-title { font-size: 0.95rem; }
+  }
+</style>
+
+<script>
+  // Delegate click → set iframe src, mark loaded, hand focus to the frame.
+  // One listener covers every MatterportEmbed on the page.
+  function initEmbed(root: HTMLElement) {
+    const btn = root.querySelector<HTMLButtonElement>("[data-mp-load]");
+    const frame = root.querySelector<HTMLIFrameElement>("[data-mp-frame]");
+    if (!btn || !frame) return;
+
+    const load = () => {
+      if (root.dataset.loaded === "true") return;
+      frame.src = root.dataset.tour || "";
+      root.dataset.loaded = "true";
+      // Give the player a beat, then move focus inside for keyboard users.
+      window.setTimeout(() => { try { frame.focus({ preventScroll: true }); } catch {} }, 200);
+    };
+
+    btn.addEventListener("click", load);
+    // Auto-load when the embed scrolls into view, if the author opted in via data
+    // (kept opt-in: nothing autoplays without an explicit attribute in markup).
+    if ("IntersectionObserver" in window && root.dataset.autoload === "true") {
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) { load(); io.disconnect(); }
+          }
+        },
+        { rootMargin: "200px" }
+      );
+      io.observe(root);
+    }
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-mp-embed]").forEach(initEmbed);
+</script>

@@ -1,0 +1,59 @@
+---
+// Renders a schema.org Service JSON-LD block, intended for the <slot name="head">
+// in Base.astro. Describes a single service offering tied to this business.
+//
+// All services share the same provider (the LocalBusiness in Base.astro), so we
+// reference it by @id instead of duplicating fields.
+import { business } from "../data/site";
+
+export interface Props {
+  /** Human-readable service name, e.g. "HDR Real Estate Photography". */
+  name: string;
+  /** One-line description of the service. */
+  description: string;
+  /** Optional starting price in USD (number). Emits an Offer + PriceSpecification. */
+  startingPrice?: number;
+  /** Optional service-type categorization (free text). */
+  serviceType?: string;
+  /** Optional URL to the service page; defaults to the current page. */
+  url?: string;
+}
+
+const {
+  name,
+  description,
+  startingPrice,
+  serviceType,
+  url,
+} = Astro.props;
+
+const base = Astro.site?.toString().replace(/\/$/, "") ?? "";
+const serviceUrl = url ?? new URL(Astro.url.pathname, base).toString();
+
+const service: Record<string, unknown> = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  name,
+  description,
+  serviceType: serviceType ?? name,
+  provider: { "@id": `${base}/#business` },
+  areaServed: business.serviceArea.map((a) => ({ "@type": "City", name: a })),
+  url: serviceUrl,
+};
+
+if (typeof startingPrice === "number") {
+  service.offers = {
+    "@type": "Offer",
+    price: String(startingPrice),
+    priceCurrency: "USD",
+    priceSpecification: {
+      "@type": "PriceSpecification",
+      price: startingPrice,
+      priceCurrency: "USD",
+    },
+    availability: "https://schema.org/InStock",
+    url: serviceUrl,
+  };
+}
+---
+<script type="application/ld+json" is:inline set:html={JSON.stringify(service)} />

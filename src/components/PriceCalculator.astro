@@ -1,0 +1,847 @@
+---
+// PriceCalculator — interactive, live-updating quote builder.
+//
+// All pricing is sourced from src/data/site.ts (single source of truth) and
+// serialized to the client as a JSON config. The client script reads that config
+// only — it never hardcodes a price. If site.ts changes, the calculator changes.
+//
+// Progressive enhancement: this whole block is wrapped in a <noscript> fallback
+// note + the static price tables elsewhere on the page remain visible without JS.
+// Nevada does not tax photography services (see handoff/07-LEGAL-ACCURACY-GUIDELINES.md),
+// so NO tax line is added — instead a small note explains that.
+
+import { asset } from "../data/site";
+import {
+  vegasPackages,
+  hdrTiers,
+  matterportTiers,
+  floorPlanTiers,
+  virtualStagingTiers,
+  hdrAddOns,
+  floorPlanAddOns,
+} from "../data/site";
+
+// ---- Build the client config from the real data ----
+
+// HDR tier brackets, ordered by ascending photo count, expressed as numeric
+// upper bounds so the client can bracket a chosen quantity.
+// hdrTiers labels: "10 HDR photos", "11–30 photos", "31–50 photos", "51–70 photos", "71–90 photos"
+const hdrBrackets = [
+  { max: 10, price: hdrTiers[0].price, label: hdrTiers[0].count },
+  { max: 30, price: hdrTiers[1].price, label: hdrTiers[1].count },
+  { max: 50, price: hdrTiers[2].price, label: hdrTiers[2].count },
+  { max: 70, price: hdrTiers[3].price, label: hdrTiers[3].count },
+  { max: 90, price: hdrTiers[4].price, label: hdrTiers[4].count },
+];
+
+// Matterport tier brackets: matterportTiers are size strings with numeric prices.
+// matterportTiers[0..3] are absolute sqft caps; [4] is the "+$55 / additional 1000 sqft".
+const matterportBrackets = [
+  { maxSqft: 1500, price: matterportTiers[0].price, label: matterportTiers[0].size },
+  { maxSqft: 2000, price: matterportTiers[1].price, label: matterportTiers[1].size },
+  { maxSqft: 3000, price: matterportTiers[2].price, label: matterportTiers[2].size },
+  { maxSqft: 4000, price: matterportTiers[3].price, label: matterportTiers[3].size },
+];
+const matterportOveragePer1000 = matterportTiers[4].price; // 55
+
+// Floor plan tiers: tier 4 ("Over 5,000 sq ft") is null price (custom quote).
+// Encode as numeric brackets where possible; the largest is custom.
+const floorPlanBrackets = [
+  { stories: 1, minSqft: 0, maxSqft: 2500, price: floorPlanTiers[0].price, label: floorPlanTiers[0].size },
+  { stories: 2, minSqft: 0, maxSqft: 2500, price: floorPlanTiers[1].price, label: floorPlanTiers[1].size },
+  { stories: 1, minSqft: 3000, maxSqft: 5000, price: floorPlanTiers[2].price, label: floorPlanTiers[2].size },
+  { stories: 2, minSqft: 3000, maxSqft: 5000, price: floorPlanTiers[3].price, label: floorPlanTiers[3].size },
+];
+// Over 5,000 sq ft = custom quote.
+const floorPlanCustomNote = floorPlanTiers[4].note ?? "Custom quote";
+
+// Virtual staging: flat per-photo price.
+const virtualStagingPerPhoto = virtualStagingTiers[0].price; // 25
+
+// Packages — slugs map to the contact form pre-fill (?package=glitz etc.)
+// Explicit slug map keeps URLs clean and matches the PricingCard links.
+const packageSlugs: Record<string, string> = {
+  "Glitz & Glam": "glitz",
+  "City Never Sleeps": "city",
+  "Neon Skyline": "neon",
+};
+const packages = vegasPackages.map((p) => {
+  return {
+    slug: packageSlugs[p.name] ?? p.name.toLowerCase().replace(/[^a-z]+/g, "-").replace(/^-|-$/g, ""),
+    name: p.name,
+    tag: p.tag,
+    price: p.price,
+    blurb: p.blurb,
+    includes: p.includes,
+    sizeNote: p.sizeNote ?? "",
+    featured: !!p.featured,
+  };
+});
+
+// Add-ons drawn from the real add-on strings. Parse the dollar amount out of
+// the published add-on line so the price always tracks the source string.
+type AddOn = { id: string; label: string; price: number };
+function parseAddOn(raw: string, id: string): AddOn {
+  const m = raw.match(/\+\$(\d+)/);
+  const price = m ? Number(m[1]) : 0;
+  // Strip the leading "Name — " for a cleaner toggle label, keep it short.
+  const label = raw.replace(/\s*—\s*\+\$\d+.*$/, "");
+  return { id, label, price };
+}
+const addOns: AddOn[] = [
+  parseAddOn(hdrAddOns[2], "rush"), // "Rush delivery (next morning) — +$40"
+  parseAddOn(hdrAddOns[3], "twilight"), // "Twilight shooting — +$100"
+  parseAddOn(hdrAddOns[4], "sky"), // "Sky replacement (3 images) — +$25"
+  parseAddOn(floorPlanAddOns[0], "colored"), // "Colored living spaces — +$25"
+  parseAddOn(floorPlanAddOns[2], "3d-floorplan"), // "3D floor plan — +$80"
+];
+
+const config = {
+  hdrBrackets,
+  matterportBrackets,
+  matterportOveragePer1000,
+  floorPlanBrackets,
+  floorPlanCustomNote,
+  virtualStagingPerPhoto,
+  packages,
+  addOns,
+  // Nevada does not tax photography services (verified per legal guidelines).
+  taxApplies: false,
+  contactHref: asset("/contact/"),
+};
+
+const configJson = JSON.stringify(config);
+---
+
+<section class="calc" data-calculator aria-labelledby="calc-title" data-reveal>
+  <header class="calc-head">
+    <p class="eyebrow">Build your quote</p>
+    <h2 id="calc-title" class="display calc-title">Price it yourself. Instantly.</h2>
+    <p class="calc-sub">
+      Start from a package or build à la carte. The total updates as you pick — no waiting on a quote.
+      Every number is the real published price.
+    </p>
+  </header>
+
+  {/* ===== Mode toggle (package vs à la carte) ===== */}
+  <div class="calc-mode" role="tablist" aria-label="Quote mode">
+    <button class="mode-btn is-active" role="tab" aria-selected="true" data-mode="package" id="mode-pkg" aria-controls="calc-body">
+      Start from a package
+    </button>
+    <button class="mode-btn" role="tab" aria-selected="false" data-mode="custom" id="mode-cust" aria-controls="calc-body">
+      Build à la carte
+    </button>
+  </div>
+
+  <div class="calc-body" id="calc-body">
+    {/* ===== LEFT: controls ===== */}
+    <div class="calc-controls">
+      {/* Shared sqft input — drives Matterport + floor plan tier selection */}
+      <div class="ctrl ctrl-sqft">
+        <label for="calc-sqft" class="ctrl-label">
+          Property size (sq ft)
+          <span class="ctrl-hint">Drives 3D tour &amp; floor plan pricing</span>
+        </label>
+        <div class="sqft-input">
+          <input
+            id="calc-sqft"
+            type="number"
+            inputmode="numeric"
+            min="0"
+            step="100"
+            value="2000"
+            data-sqft
+            aria-describedby="sqft-note"
+          />
+          <span class="sqft-unit">sq ft</span>
+        </div>
+        <p id="sqft-note" class="ctrl-note">Enter the property's square footage and watch 3D/floor-plan tiers update automatically.</p>
+      </div>
+
+      {/* Stories selector — used by floor plan bracketing */}
+      <div class="ctrl ctrl-stories">
+        <span class="ctrl-label" id="stories-label">Stories</span>
+        <div class="seg" role="group" aria-labelledby="stories-label">
+          <button type="button" class="seg-btn is-active" data-stories="1" aria-pressed="true">Single story</button>
+          <button type="button" class="seg-btn" data-stories="2" aria-pressed="false">Two story</button>
+        </div>
+      </div>
+
+      {/* ===== PACKAGE PICKER (visible in package mode) ===== */}
+      <fieldset class="ctrl-fieldset pkg-picker" data-package-picker>
+        <legend class="ctrl-label">Choose a package</legend>
+        <div class="pkg-options">
+          {packages.map((p) => (
+            <label class:list={["pkg-opt", { featured: p.featured }]}>
+              <input
+                type="radio"
+                name="calc-package"
+                value={p.slug}
+                data-package-radio
+                checked={p.featured}
+              />
+              <span class="pkg-opt-inner">
+                <span class="pkg-opt-head">
+                  <span class="pkg-opt-name">{p.name}</span>
+                  <span class="pkg-opt-price">${p.price}</span>
+                </span>
+                <span class="pkg-opt-tag">{p.tag}</span>
+                <span class="pkg-opt-blurb">{p.blurb}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      {/* ===== À LA CARTE SERVICES (visible in custom mode) ===== */}
+      <fieldset class="ctrl-fieldset ala-picker" data-ala-picker hidden>
+        <legend class="ctrl-label">Services</legend>
+
+        {/* HDR */}
+        <div class="ala-row">
+          <label class="ala-check">
+            <input type="checkbox" data-service="hdr" />
+            <span class="ala-name">HDR photography</span>
+          </label>
+          <div class="ala-ctrl" data-hdr-ctrl hidden>
+            <label for="hdr-count" class="sr-only">Number of HDR photos</label>
+            <div class="num-spin">
+              <button type="button" class="spin-btn" data-dec-for="hdr-count" aria-label="Fewer photos">−</button>
+              <input id="hdr-count" type="number" min="1" max="90" value="10" data-hdr-count />
+              <button type="button" class="spin-btn" data-inc-for="hdr-count" aria-label="More photos">+</button>
+            </div>
+            <span class="ala-tier" data-hdr-tier></span>
+          </div>
+        </div>
+
+        {/* Matterport */}
+        <div class="ala-row">
+          <label class="ala-check">
+            <input type="checkbox" data-service="matterport" />
+            <span class="ala-name">Matterport 3D tour</span>
+          </label>
+          <div class="ala-ctrl" data-matterport-ctrl hidden>
+            <span class="ala-tier" data-matterport-tier></span>
+          </div>
+        </div>
+
+        {/* Floor plan */}
+        <div class="ala-row">
+          <label class="ala-check">
+            <input type="checkbox" data-service="floorplan" />
+            <span class="ala-name">Floor plan</span>
+          </label>
+          <div class="ala-ctrl" data-floorplan-ctrl hidden>
+            <span class="ala-tier" data-floorplan-tier></span>
+          </div>
+        </div>
+
+        {/* Virtual staging */}
+        <div class="ala-row">
+          <label class="ala-check">
+            <input type="checkbox" data-service="staging" />
+            <span class="ala-name">Virtual staging</span>
+          </label>
+          <div class="ala-ctrl" data-staging-ctrl hidden>
+            <label for="staging-count" class="sr-only">Number of photos to stage</label>
+            <div class="num-spin">
+              <button type="button" class="spin-btn" data-dec-for="staging-count" aria-label="Fewer photos">−</button>
+              <input id="staging-count" type="number" min="1" max="50" value="1" data-staging-count />
+              <button type="button" class="spin-btn" data-inc-for="staging-count" aria-label="More photos">+</button>
+            </div>
+            <span class="ala-tier" data-staging-tier></span>
+          </div>
+        </div>
+      </fieldset>
+
+      {/* ===== ADD-ONS (always available) ===== */}
+      <fieldset class="ctrl-fieldset addon-picker">
+        <legend class="ctrl-label">Add-ons</legend>
+        <div class="addon-grid">
+          {addOns.map((a) => (
+            <label class="addon-chip">
+              <input type="checkbox" data-addon={a.id} />
+              <span class="addon-chip-inner">
+                <span class="addon-name">{a.label}</span>
+                <span class="addon-price">+${a.price}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+    </div>
+
+    {/* ===== RIGHT: live summary ===== */}
+    <aside class="calc-summary" aria-live="polite" aria-atomic="true">
+      <div class="summary-card">
+        <p class="eyebrow">Your quote</p>
+
+        {/* Itemized breakdown — populated by JS. */}
+        <ul class="breakdown" role="list" data-breakdown>
+          {/* Fallback line shown before JS runs / if JS disabled. */}
+          <li class="bd-empty">Enable JavaScript or pick a package to see your itemized total.</li>
+        </ul>
+
+        <div class="summary-total">
+          <span class="total-label">Estimated total</span>
+          <span class="total-amount" data-total>$0</span>
+        </div>
+
+        <p class="summary-note">
+          Nevada doesn't tax photography services, so this is the full amount — no surprise fees.
+          Final invoice may vary for unusual scopes (very large homes, custom work).
+        </p>
+
+        <a class="btn brass btn-block summary-cta" data-book href={asset("/contact/")}>
+          Book this
+        </a>
+        <p class="summary-alt">Or <a href={asset("/contact/")}>ask Mike to confirm the scope →</a></p>
+      </div>
+    </aside>
+  </div>
+
+  {/* No-JS fallback: tell the visitor the tables above still work. */}
+  <noscript>
+    <p class="calc-noscript">
+      The live calculator needs JavaScript, but every price is listed in the tables on this page —
+      you can build your total manually, or just <a href={asset("/contact/")}>call Mike</a> for a quote.
+    </p>
+  </noscript>
+</section>
+
+<style>
+  .calc {
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-lg);
+    padding: clamp(1.4rem, 1rem + 2vw, 2.6rem);
+    margin-top: 2.5rem;
+  }
+  .calc-head { max-width: 64ch; margin-bottom: 1.8rem; }
+  .calc-title { font-size: var(--step-3); margin-top: 0.3rem; }
+  .calc-sub { margin-top: 0.9rem; color: var(--stone); font-size: var(--step-0); line-height: 1.55; }
+
+  /* Mode toggle */
+  .calc-mode {
+    display: inline-flex;
+    gap: 0.3rem;
+    padding: 0.35rem;
+    background: var(--paper-2);
+    border: 1px solid var(--line-light);
+    border-radius: 999px;
+    margin-bottom: 1.8rem;
+  }
+  .mode-btn {
+    padding: 0.6em 1.2em;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--stone);
+    border-radius: 999px;
+    border: 1px solid transparent;
+    transition: background 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease);
+    cursor: pointer;
+  }
+  .mode-btn:hover { color: var(--ink); }
+  .mode-btn.is-active {
+    background: var(--dark);
+    color: var(--paper);
+    border-color: var(--dark);
+  }
+
+  .calc-body {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+    align-items: start;
+  }
+
+  .calc-controls { display: flex; flex-direction: column; gap: 1.4rem; }
+
+  .ctrl { display: flex; flex-direction: column; gap: 0.5rem; }
+  .ctrl-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .ctrl-hint { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.02em; text-transform: none; color: var(--stone-2); }
+  .ctrl-note { font-size: 0.75rem; color: var(--stone-2); line-height: 1.45; }
+
+  .sqft-input { display: flex; align-items: center; gap: 0; max-width: 260px; }
+  .sqft-input input {
+    width: 100%;
+    padding: 0.8em 0.9em;
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    font-size: var(--step-0);
+    font-family: var(--font-display);
+    color: var(--ink);
+  }
+  .sqft-input input:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 3px var(--brass-soft); z-index: 1; }
+  .sqft-unit {
+    padding: 0.8em 0.9em;
+    background: var(--paper-2);
+    border: 1px solid var(--line-light);
+    border-left: none;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-size: var(--step--1);
+    color: var(--stone);
+    white-space: nowrap;
+  }
+
+  /* Segmented control */
+  .seg { display: inline-flex; border: 1px solid var(--line-light); border-radius: var(--radius-sm); overflow: hidden; max-width: 100%; }
+  .seg-btn {
+    padding: 0.65em 1.1em;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--stone);
+    background: var(--paper);
+    border: none;
+    border-right: 1px solid var(--line-light);
+    cursor: pointer;
+    transition: background 0.2s var(--ease), color 0.2s var(--ease);
+  }
+  .seg-btn:last-child { border-right: none; }
+  .seg-btn.is-active { background: var(--dark); color: var(--paper); }
+
+  /* Fieldsets */
+  .ctrl-fieldset {
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.1rem 1.2rem;
+    margin: 0;
+    background: var(--paper-2);
+  }
+  .ctrl-fieldset legend {
+    padding: 0 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  /* Package picker */
+  .pkg-options { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.4rem; }
+  .pkg-opt { cursor: pointer; display: block; }
+  .pkg-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .pkg-opt-inner {
+    display: block;
+    padding: 0.9rem 1rem;
+    border: 1.5px solid var(--line-light);
+    border-radius: var(--radius);
+    background: var(--paper);
+    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  }
+  .pkg-opt input:checked + .pkg-opt-inner {
+    border-color: var(--brass);
+    box-shadow: 0 0 0 3px var(--brass-soft);
+  }
+  .pkg-opt input:focus-visible + .pkg-opt-inner { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .pkg-opt.featured .pkg-opt-inner { background: var(--dark); color: var(--paper); border-color: var(--dark); }
+  .pkg-opt.featured input:checked + .pkg-opt-inner { border-color: var(--brass-2); box-shadow: 0 0 0 3px var(--brass-soft); }
+  .pkg-opt-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem; }
+  .pkg-opt-name { font-family: var(--font-display); font-size: var(--step-1); }
+  .pkg-opt-price { font-family: var(--font-display); font-size: var(--step-2); color: var(--brass); }
+  .pkg-opt.featured .pkg-opt-price { color: var(--brass-2); }
+  .pkg-opt-tag { display: inline-block; margin-top: 0.2rem; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brass-2); }
+  .pkg-opt-blurb { display: block; margin-top: 0.4rem; font-size: var(--step--1); line-height: 1.45; color: var(--stone); }
+  .pkg-opt.featured .pkg-opt-blurb { color: rgba(247,244,239,0.72); }
+
+  /* À la carte rows */
+  .ala-picker { display: flex; flex-direction: column; gap: 0.4rem; }
+  .ala-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px dashed var(--line-light);
+  }
+  .ala-row:last-child { border-bottom: none; }
+  .ala-check { display: flex; align-items: center; gap: 0.65rem; cursor: pointer; font-size: var(--step-0); }
+  .ala-check input { width: 18px; height: 18px; accent-color: var(--brass); flex-shrink: 0; }
+  .ala-name { font-weight: 500; color: var(--ink); }
+  .ala-ctrl { display: flex; align-items: center; gap: 0.8rem; }
+  .ala-tier { font-size: var(--step--1); color: var(--stone); font-weight: 600; white-space: nowrap; }
+
+  /* Number spinner */
+  .num-spin { display: inline-flex; align-items: stretch; border: 1px solid var(--line-light); border-radius: var(--radius-sm); overflow: hidden; }
+  .num-spin input {
+    width: 52px;
+    text-align: center;
+    border: none;
+    border-left: 1px solid var(--line-light);
+    border-right: 1px solid var(--line-light);
+    padding: 0.45em 0.2em;
+    font-size: var(--step-0);
+    font-family: var(--font-display);
+    background: var(--paper);
+    -moz-appearance: textfield;
+  }
+  .num-spin input::-webkit-outer-spin-button,
+  .num-spin input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .spin-btn {
+    width: 32px;
+    font-size: var(--step-1);
+    font-weight: 700;
+    color: var(--ink);
+    background: var(--paper-2);
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .spin-btn:hover { background: var(--paper-3); }
+
+  /* Add-ons */
+  .addon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.55rem; margin-top: 0.4rem; }
+  .addon-chip { cursor: pointer; display: block; }
+  .addon-chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .addon-chip-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6em 0.85em;
+    border: 1.5px solid var(--line-light);
+    border-radius: var(--radius-sm);
+    background: var(--paper);
+    font-size: var(--step--1);
+    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  }
+  .addon-chip input:checked + .addon-chip-inner {
+    border-color: var(--brass);
+    background: var(--brass-soft);
+    box-shadow: 0 0 0 2px var(--brass-soft);
+  }
+  .addon-chip input:focus-visible + .addon-chip-inner { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .addon-name { font-weight: 500; color: var(--ink-2); }
+  .addon-price { font-family: var(--font-display); font-weight: 600; color: var(--brass); white-space: nowrap; }
+
+  /* Summary */
+  .calc-summary { position: sticky; top: 100px; }
+  .summary-card {
+    background: var(--dark);
+    color: var(--paper);
+    border-radius: var(--radius-lg);
+    padding: clamp(1.4rem, 1rem + 1.5vw, 2rem);
+    box-shadow: var(--shadow-lift);
+  }
+  .summary-card .eyebrow { color: var(--brass-2); }
+  .breakdown { display: flex; flex-direction: column; gap: 0.55rem; margin: 1rem 0 0; }
+  .breakdown li {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding-bottom: 0.55rem;
+    border-bottom: 1px dashed var(--line-dark);
+    font-size: var(--step--1);
+    color: rgba(247,244,239,0.85);
+  }
+  .breakdown li:last-child { border-bottom: none; }
+  .breakdown .bd-name { line-height: 1.35; padding-right: 0.5rem; }
+  .breakdown .bd-price { font-family: var(--font-display); color: var(--paper); white-space: nowrap; }
+  .breakdown .bd-sub { color: rgba(247,244,239,0.55); font-size: 0.72rem; display: block; margin-top: 0.15rem; }
+  .breakdown .bd-empty {
+    color: rgba(247,244,239,0.6);
+    border-bottom: none;
+    font-style: italic;
+    justify-content: flex-start;
+  }
+  .breakdown .bd-custom { color: var(--brass-2); font-family: var(--font-body); font-size: 0.75rem; }
+
+  .summary-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin-top: 1.2rem;
+    padding-top: 1.2rem;
+    border-top: 2px solid var(--line-dark);
+  }
+  .total-label { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(247,244,239,0.7); }
+  .total-amount { font-family: var(--font-display); font-size: var(--step-5); color: var(--brass-2); line-height: 1; }
+
+  .summary-note {
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: rgba(247,244,239,0.55);
+  }
+  .summary-cta { margin-top: 1.3rem; }
+  .summary-alt { margin-top: 0.8rem; text-align: center; font-size: var(--step--1); color: rgba(247,244,239,0.6); }
+  .summary-alt a { color: var(--brass-2); font-weight: 600; border-bottom: 1px solid transparent; }
+  .summary-alt a:hover { border-bottom-color: var(--brass-2); }
+
+  .calc-noscript {
+    margin-top: 1.5rem;
+    padding: 1rem 1.2rem;
+    background: var(--paper-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--step--1);
+    color: var(--stone);
+    line-height: 1.5;
+  }
+  .calc-noscript a { color: var(--brass); font-weight: 600; }
+
+  @media (max-width: 880px) {
+    .calc-body { grid-template-columns: 1fr; }
+    .calc-summary { position: static; }
+  }
+  @media (max-width: 560px) {
+    .addon-grid { grid-template-columns: 1fr; }
+    .pkg-opt-head { flex-wrap: wrap; }
+    .total-amount { font-size: var(--step-4); }
+  }
+</style>
+
+<script is:inline define:vars={{ config: configJson }}>
+  (() => {
+    const CONFIG = JSON.parse(config);
+    const root = document.currentScript?.closest("[data-calculator]");
+    const calc = root || document.querySelector("[data-calculator]");
+    if (!calc) return;
+
+    // Elements
+    const $ = (sel) => calc.querySelector(sel);
+    const modeBtns = calc.querySelectorAll(".mode-btn");
+    const pkgPicker = calc.querySelector("[data-package-picker]");
+    const alaPicker = calc.querySelector("[data-ala-picker]");
+    const pkgRadios = calc.querySelectorAll("[data-package-radio]");
+    const sqftInput = calc.querySelector("[data-sqft]");
+    const storiesBtns = calc.querySelectorAll("[data-stories]");
+    const hdrCheck = calc.querySelector('[data-service="hdr"]');
+    const matterportCheck = calc.querySelector('[data-service="matterport"]');
+    const floorplanCheck = calc.querySelector('[data-service="floorplan"]');
+    const stagingCheck = calc.querySelector('[data-service="staging"]');
+    const hdrCount = calc.querySelector("[data-hdr-count]");
+    const stagingCount = calc.querySelector("[data-staging-count]");
+    const hdrCtrl = calc.querySelector("[data-hdr-ctrl]");
+    const matterportCtrl = calc.querySelector("[data-matterport-ctrl]");
+    const floorplanCtrl = calc.querySelector("[data-floorplan-ctrl]");
+    const stagingCtrl = calc.querySelector("[data-staging-ctrl]");
+    const addonChecks = calc.querySelectorAll("[data-addon]");
+    const breakdown = calc.querySelector("[data-breakdown]");
+    const totalEl = calc.querySelector("[data-total]");
+    const bookBtn = calc.querySelector("[data-book]");
+
+    let mode = "package";
+    let stories = 1;
+
+    // ---- Pricing helpers (mirror the real bracket logic) ----
+    function sqft() { return Math.max(0, parseInt(sqftInput.value, 10) || 0); }
+
+    function hdrPriceFor(count) {
+      const c = Math.max(0, count | 0);
+      const b = CONFIG.hdrBrackets.find((x) => c <= x.max) || CONFIG.hdrBrackets[CONFIG.hdrBrackets.length - 1];
+      return { price: b.price, label: b.label };
+    }
+
+    function matterportPriceFor(sqftVal) {
+      if (sqftVal <= 0) {
+        const b = CONFIG.matterportBrackets[0];
+        return { price: b.price, label: b.label, overage: 0 };
+      }
+      const b = CONFIG.matterportBrackets.find((x) => sqftVal <= x.maxSqft);
+      if (b) return { price: b.price, label: b.label, overage: 0 };
+      // Over the largest bracket → add overage per full/additional 1000 sqft.
+      const cap = CONFIG.matterportBrackets[CONFIG.matterportBrackets.length - 1].maxSqft; // 4000
+      const base = CONFIG.matterportBrackets[CONFIG.matterportBrackets.length - 1].price; // 350
+      const extra = sqftVal - cap;
+      const additional1000s = Math.ceil(extra / 1000);
+      const overage = additional1000s * CONFIG.matterportOveragePer1000;
+      return { price: base + overage, label: `Over ${cap.toLocaleString()} sq ft (+$${CONFIG.matterportOveragePer1000}/1000)`, overage };
+    }
+
+    function floorPlanPriceFor(sqftVal, stor) {
+      if (sqftVal > 5000) return { price: null, label: CONFIG.floorPlanCustomNote, custom: true };
+      const b = CONFIG.floorPlanBrackets.find(
+        (x) => x.stories === stor && sqftVal >= x.minSqft && sqftVal <= x.maxSqft
+      );
+      if (b) return { price: b.price, label: b.label };
+      // Fallback to the matching-story bracket under 2500.
+      const fb = CONFIG.floorPlanBrackets.find((x) => x.stories === stor && x.maxSqft === 2500);
+      return fb ? { price: fb.price, label: fb.label } : { price: null, label: CONFIG.floorPlanCustomNote, custom: true };
+    }
+
+    // ---- Compute the current quote ----
+    function computeQuote() {
+      const lines = []; // {name, sub, price, custom?}
+      const sqftVal = sqft();
+
+      if (mode === "package") {
+        const sel = calc.querySelector("[data-package-radio]:checked");
+        if (sel) {
+          const pkg = CONFIG.packages.find((p) => p.slug === sel.value);
+          if (pkg) {
+            lines.push({ name: pkg.name + " package", sub: pkg.includes.slice(0, 2).join(" · "), price: pkg.price });
+          }
+        }
+      } else {
+        // HDR
+        if (hdrCheck.checked) {
+          const count = Math.max(1, parseInt(hdrCount.value, 10) || 0);
+          const { price, label } = hdrPriceFor(count);
+          lines.push({ name: `HDR photography (${count} photo${count === 1 ? "" : "s"})`, sub: label, price });
+        }
+        // Matterport
+        if (matterportCheck.checked) {
+          const { price, label } = matterportPriceFor(sqftVal);
+          lines.push({ name: "Matterport 3D tour", sub: label, price });
+        }
+        // Floor plan
+        if (floorplanCheck.checked) {
+          const fp = floorPlanPriceFor(sqftVal, stories);
+          lines.push({ name: "Floor plan", sub: fp.label, price: fp.price, custom: !!fp.custom });
+        }
+        // Virtual staging
+        if (stagingCheck.checked) {
+          const count = Math.max(1, parseInt(stagingCount.value, 10) || 1);
+          lines.push({ name: `Virtual staging (${count} photo${count === 1 ? "" : "s"})`, sub: `$${CONFIG.virtualStagingPerPhoto} / photo`, price: count * CONFIG.virtualStagingPerPhoto });
+        }
+      }
+
+      // Add-ons (apply in both modes)
+      addonChecks.forEach((chk) => {
+        if (chk.checked) {
+          const a = CONFIG.addOns.find((x) => x.id === chk.dataset.addon);
+          if (a) lines.push({ name: a.label, price: a.price });
+        }
+      });
+
+      const total = lines.reduce((sum, l) => sum + (typeof l.price === "number" ? l.price : 0), 0);
+      return { lines, total };
+    }
+
+    // ---- Render ----
+    function render() {
+      const { lines, total } = computeQuote();
+      // Breakdown
+      if (lines.length === 0) {
+        breakdown.innerHTML = '<li class="bd-empty">Pick a service or package to see your total.</li>';
+      } else {
+        breakdown.innerHTML = lines.map((l) => {
+          const priceTxt = l.custom
+            ? '<span class="bd-custom">Custom</span>'
+            : `$${l.price}`;
+          const sub = l.sub ? `<span class="bd-sub">${l.sub}</span>` : "";
+          return `<li><span class="bd-name">${l.name}${sub}</span><span class="bd-price">${priceTxt}</span></li>`;
+        }).join("");
+      }
+      // Total
+      totalEl.textContent = "$" + total.toLocaleString();
+
+      // Book link — carry the package slug + total as context for the contact form.
+      const params = new URLSearchParams();
+      if (mode === "package") {
+        const sel = calc.querySelector("[data-package-radio]:checked");
+        if (sel) params.set("package", sel.value);
+      } else {
+        params.set("package", "custom");
+      }
+      params.set("total", String(total));
+      // Encode the line-item summary so the contact form has full context.
+      if (lines.length) {
+        params.set("items", lines.map((l) => `${l.name}${typeof l.price === "number" ? " $" + l.price : ""}`).join("; "));
+      }
+      const base = CONFIG.contactHref.replace(/\/$/, "");
+      bookBtn.setAttribute("href", base + "/?" + params.toString());
+    }
+
+    // ---- Tier labels for à-la-carte rows ----
+    function renderTierLabels() {
+      const sqftVal = sqft();
+      // HDR tier for current count
+      const hc = Math.max(1, parseInt(hdrCount.value, 10) || 0);
+      const h = hdrPriceFor(hc);
+      const ht = calc.querySelector("[data-hdr-tier]");
+      if (ht) ht.textContent = `$${h.price} · ${h.label}`;
+      // Matterport tier for current sqft
+      const m = matterportPriceFor(sqftVal);
+      const mt = calc.querySelector("[data-matterport-tier]");
+      if (mt) mt.textContent = `$${m.price} · ${m.label}`;
+      // Floor plan tier
+      const f = floorPlanPriceFor(sqftVal, stories);
+      const ft = calc.querySelector("[data-floorplan-tier]");
+      if (ft) ft.textContent = (f.custom ? f.label : `$${f.price} · ${f.label}`);
+      // Staging
+      const sc = Math.max(1, parseInt(stagingCount.value, 10) || 1);
+      const stEl = calc.querySelector("[data-staging-tier]");
+      if (stEl) stEl.textContent = `$${sc * CONFIG.virtualStagingPerPhoto}`;
+    }
+
+    // ---- Mode switching ----
+    function setMode(next) {
+      mode = next;
+      modeBtns.forEach((b) => {
+        const active = b.dataset.mode === next;
+        b.classList.toggle("is-active", active);
+        b.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      if (next === "package") {
+        pkgPicker.hidden = false;
+        alaPicker.hidden = true;
+      } else {
+        pkgPicker.hidden = true;
+        alaPicker.hidden = false;
+      }
+      render();
+    }
+    modeBtns.forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
+
+    // ---- Stories segmented control ----
+    storiesBtns.forEach((b) => b.addEventListener("click", () => {
+      stories = parseInt(b.dataset.stories, 10);
+      storiesBtns.forEach((x) => {
+        const on = x === b;
+        x.classList.toggle("is-active", on);
+        x.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      renderTierLabels();
+      render();
+    }));
+
+    // ---- Number spinners ----
+    calc.querySelectorAll("[data-inc-for], [data-dec-for]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const target = document.getElementById(btn.dataset.incFor || btn.dataset.decFor);
+        if (!target) return;
+        const step = parseInt(target.step, 10) || 1;
+        const cur = parseInt(target.value, 10) || 0;
+        if (btn.dataset.incFor) target.value = Math.min(parseInt(target.max, 10) || 9999, cur + step);
+        else target.value = Math.max(parseInt(target.min, 10) || 0, cur - step);
+        target.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    });
+
+    // ---- Service checkbox reveal + recompute ----
+    function wireService(check, ctrl) {
+      if (!check || !ctrl) return;
+      const sync = () => { ctrl.hidden = !check.checked; };
+      sync();
+      check.addEventListener("change", () => { sync(); render(); });
+    }
+    wireService(hdrCheck, hdrCtrl);
+    wireService(matterportCheck, matterportCtrl);
+    wireService(floorplanCheck, floorplanCtrl);
+    wireService(stagingCheck, stagingCtrl);
+
+    // ---- All change events recompute ----
+    [sqftInput, hdrCount, stagingCount].forEach((el) => {
+      if (el) el.addEventListener("input", () => { renderTierLabels(); render(); });
+    });
+    pkgRadios.forEach((r) => r.addEventListener("change", render));
+    addonChecks.forEach((c) => c.addEventListener("change", render));
+
+    // Initial paint
+    renderTierLabels();
+    render();
+  })();
+</script>

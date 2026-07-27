@@ -220,7 +220,7 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
         eyebrow="What clients say"
         title="Rated five stars by Las Vegas agents & hosts."
       />
-      <div class="t-grid">
+      <div class="t-grid" data-stagger>
         {testimonials.map((t) => <TestimonialCard t={t} />)}
       </div>
     </div>
@@ -244,7 +244,7 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
           </ul>
         </div>
         <div class="area-stat" data-reveal data-reveal-delay="2">
-          <div class="area-img">
+          <div class="area-img photo-frame">
             <img src={asset("/images/portfolio/drone-aerial.jpg")} alt="Aerial drone view of a Las Vegas neighborhood" loading="lazy" width="700" height="525" />
           </div>
           <p class="area-cred">Locally based · Same-day availability · {business.turnaround} delivery</p>

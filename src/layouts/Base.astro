@@ -2,7 +2,7 @@
 import "../styles/global.css";
 import SiteHeader from "../components/SiteHeader.astro";
 import SiteFooter from "../components/SiteFooter.astro";
-import { business, asset } from "../data/site";
+import { business, asset, testimonials } from "../data/site";
 
 export interface Props {
   title: string;
@@ -22,6 +22,84 @@ const canonical = new URL(Astro.url.pathname, base).toString();
 // OG image needs a fully-qualified URL including the deployment base path.
 const ogImage = new URL(asset(image), base).toString();
 
+// ----- SEO length guards: clamp to recommended maxima so the SERP never
+// truncates mid-word. Title < 60 chars, description < 160 chars.
+const TITLE_MAX = 60;
+const DESC_MAX = 160;
+const seoTitle = title.length > TITLE_MAX ? title.slice(0, TITLE_MAX - 1).trimEnd() + "…" : title;
+const seoDescription =
+  description.length > DESC_MAX ? description.slice(0, DESC_MAX - 1).trimEnd() + "…" : description;
+
+// ----- Auto BreadcrumbList from the current path. Home = no breadcrumb. Each
+// deeper segment becomes a crumb; the final segment is the current page (linked
+// only on intermediate levels). Labels map known slugs to friendly names.
+const crumbLabel = (seg: string): string => {
+  const map: Record<string, string> = {
+    work: "Work",
+    services: "Services",
+    pricing: "Pricing",
+    about: "About",
+    contact: "Contact",
+    faq: "FAQ",
+    "3d-tours": "3D & Virtual Tours",
+    "hdr-photography": "HDR Photography",
+    "drone-photography": "Drone Photography",
+    "floor-plans": "Floor Plans",
+    "virtual-staging": "Virtual Staging",
+    "twilight-photography": "Twilight Photography",
+    "google-business-view": "Google Business View",
+    residential: "Residential",
+    commercial: "Commercial",
+    "vacation-rentals": "Vacation Rentals",
+    "as-built": "Builders & Docs",
+    terms: "Terms",
+    privacy: "Privacy",
+  };
+  if (map[seg]) return map[seg];
+  return seg.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+};
+const rawPath = Astro.url.pathname.replace(/\/+/g, "/").replace(/\/$/, "");
+const segs = rawPath ? rawPath.split("/").filter(Boolean) : [];
+// Strip the deployment base path prefix so breadcrumbs reflect logical structure.
+const basePathName = (import.meta.env.BASE_URL ?? "/").replace(/^\/|\/$/g, "");
+const logicalSegs = basePathName && segs[0] === basePathName ? segs.slice(1) : segs;
+
+let breadcrumbLd: object | null = null;
+if (logicalSegs.length > 0) {
+  const itemList: object[] = [
+    { "@type": "ListItem", position: 1, name: "Home", item: `${base}/` },
+  ];
+  let acc = base;
+  logicalSegs.forEach((seg, i) => {
+    acc += `/${seg}`;
+    const isLast = i === logicalSegs.length - 1;
+    const item: { "@type": "ListItem"; position: number; name: string; item?: string } = {
+      "@type": "ListItem",
+      position: i + 2,
+      name: crumbLabel(seg),
+    };
+    if (!isLast) item.item = `${acc}/`;
+    itemList.push(item);
+  });
+  breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: itemList,
+  };
+}
+
+// ----- AggregateRating + Reviews, derived from the real testimonials in site.ts.
+// ratingValue is honest (5.0 across the published testimonials) and reviewCount
+// matches the verbatim testimonials we surface — no fabricated ratings.
+const reviewCount = testimonials.length;
+const ratingValue = 5.0;
+const reviews = testimonials.map((t) => ({
+  "@type": "Review",
+  author: { "@type": "Person", name: t.name },
+  reviewBody: t.quote,
+  reviewRating: { "@type": "Rating", ratingValue: "5", bestRating: "5" },
+}));
+
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": ["LocalBusiness", "ProfessionalService", "Photographer"],
@@ -33,6 +111,7 @@ const jsonLd = {
   telephone: business.phone,
   email: business.email,
   image: ogImage,
+  logo: new URL(asset("/favicon.svg"), base).toString(),
   priceRange: "$$",
   founder: { "@type": "Person", name: business.owner, jobTitle: "Real Estate Photographer" },
   areaServed: business.serviceArea.map((a) => ({ "@type": "City", name: a })),
@@ -42,6 +121,11 @@ const jsonLd = {
     addressRegion: "NV",
     addressCountry: "US",
   },
+  geo: {
+    "@type": "GeoCoordinates",
+    latitude: 36.1699,
+    longitude: -115.1398,
+  },
   openingHoursSpecification: {
     "@type": "OpeningHoursSpecification",
     dayOfWeek: ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
@@ -49,7 +133,19 @@ const jsonLd = {
     closes: "18:00",
   },
   sameAs: [business.social.facebook],
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue,
+    reviewCount,
+    bestRating: "5",
+    worstRating: "1",
+  },
+  review: reviews,
 };
+
+// Compress JSON-LD output (drop insignificant whitespace) — these blocks are
+// large and inline; minifying saves bytes on every page.
+const json = (o: object) => JSON.stringify(o);
 ---
 <!doctype html>
 <html lang="en">
@@ -59,20 +155,29 @@ const jsonLd = {
     {/* Security headers via meta (GitHub Pages can't set HTTP response headers directly). */}
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://formspree.io; form-action 'self' https://formspree.io mailto:; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
-    <title>{title}</title>
-    <meta name="description" content={description} />
+    <title>{seoTitle}</title>
+    <meta name="description" content={seoDescription} />
     <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="en-us" href={canonical} />
+    <link rel="alternate" hreflang="x-default" href={canonical} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
 
+    {/* Geo signals for local search (Las Vegas, NV). */}
+    <meta name="geo.region" content="US-NV" />
+    <meta name="geo.placename" content="Las Vegas" />
+    <meta name="geo.position" content="36.1699;-115.1398" />
+    <meta name="ICBM" content="36.1699, -115.1398" />
+
     <meta property="og:type" content="website" />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content={seoTitle} />
+    <meta property="og:description" content={seoDescription} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
     <meta property="og:site_name" content={business.name} />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={title} />
-    <meta name="twitter:description" content={description} />
+    <meta name="twitter:title" content={seoTitle} />
+    <meta name="twitter:description" content={seoDescription} />
     <meta name="twitter:image" content={ogImage} />
     <meta name="theme-color" content="#1a1814" />
 
@@ -83,15 +188,36 @@ const jsonLd = {
         start hidden only when JS is actually available. No-JS = fully visible. */}
     <script is:inline set:html="document.documentElement.dataset.js=''" />
 
-    <!-- Fonts: Fraunces (display serif) + Inter (body). Two families, subset, display=swap for fast LCP. -->
+    {/* Theme bootstrap — runs before first paint to prevent FOUC.
+        Priority: saved preference > system preference > light.
+        Sets data-theme on <html> so the dark token block applies immediately. */}
+    <script is:inline set:html={`(function(){try{var s=localStorage.getItem('theme');var d=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;var t=s||(d?'dark':'light');document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='light';}})();`} />
+
+    {/* Fonts: Fraunces (display serif) + Inter (body). Preload the critical
+        stylesheet so font CSS is in flight early; the onload swap turns the
+        preload into the live stylesheet. display=swap avoids FOIT, protecting
+        LCP. A <noscript> fallback covers no-JS clients. */}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      rel="stylesheet"
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap"
+      />
+    </noscript>
 
-    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script type="application/ld+json" is:inline set:html={json(jsonLd)} />
+    {breadcrumbLd && (
+      <script type="application/ld+json" is:inline set:html={json(breadcrumbLd)} />
+    )}
+    {/* Per-page additional JSON-LD (Service, FAQPage, Offer, etc.) goes here. */}
+    <slot name="head" />
   </head>
   <body data-hero={heroVariant}>
     <a href="#main" class="skip-link">Skip to content</a>
@@ -120,6 +246,30 @@ const jsonLd = {
       } else {
         els.forEach((el) => el.classList.add("is-visible"));
       }
+
+      // Keep the <meta name="theme-color"> in sync with the active theme so
+      // mobile browser chrome matches the page. Also follow the OS preference
+      // live when the user hasn't explicitly chosen a theme.
+      const themeMeta = document.querySelector('meta[name="theme-color"]');
+      const THEME_COLORS = { light: "#f7f4ef", dark: "#0f0e0c" };
+      const syncMeta = () => {
+        const t = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+        if (themeMeta) themeMeta.setAttribute("content", THEME_COLORS[t]);
+      };
+      syncMeta();
+      const mql = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+      if (mql) {
+        const onSys = (e) => {
+          if (!localStorage.getItem("theme")) {
+            document.documentElement.dataset.theme = e.matches ? "dark" : "light";
+            syncMeta();
+          }
+        };
+        if (mql.addEventListener) mql.addEventListener("change", onSys);
+        else if (mql.addListener) mql.addListener(onSys);
+      }
+      // Re-sync after the toggle in the header runs (it dispatches this event).
+      document.addEventListener("themechange", syncMeta);
     </script>
 
     <style>
@@ -139,8 +289,9 @@ const jsonLd = {
       .skip-link:focus { top: 1rem; }
 
       /* Header is position:fixed (solid, always on top). Light-hero pages have no
-         hero image reserving space behind it, so push content down to clear it. */
-      :global(body[data-hero="light"]) main { padding-top: clamp(100px, 14vh, 124px); }
+         hero image reserving space behind it, so push content down to clear it.
+         Reduced to match the slimmer header bar. */
+      :global(body[data-hero="light"]) main { padding-top: clamp(84px, 12vh, 104px); }
     </style>
   </body>
 </html>

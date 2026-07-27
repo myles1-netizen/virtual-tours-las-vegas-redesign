@@ -291,6 +291,9 @@ export type Shot = {
   alt: string;
   category: "Interior" | "Exterior" | "Drone" | "Staging" | "3D Tour" | "Commercial" | "Floor Plan";
   span?: boolean; // wide tile
+  /** Optional Matterport model SID. When present, the portfolio lightbox
+      offers a "View 3D Tour" button that opens the tour in a dialog popup. */
+  matterportId?: string;
 };
 
 // Every entry below is verified against its actual image content (audited 2026-07-26) —
@@ -307,7 +310,7 @@ export const portfolio: Shot[] = [
   { src: "/images/portfolio/drone-aerial.jpg", alt: "Aerial drone photo of a Las Vegas backyard with pool and spa", category: "Drone", span: true },
   { src: "/images/portfolio/warehouse-drone-1.jpg", alt: "Commercial warehouse documented with aerial drone photography", category: "Drone" },
   { src: "/images/portfolio/warehouse-drone-2.jpg", alt: "Industrial property aerial view captured by an FAA-certified drone pilot", category: "Drone" },
-  { src: "/images/portfolio/matterport-360.jpg", alt: "360-degree virtual tour panorama of a Las Vegas listing", category: "3D Tour" },
+  { src: "/images/portfolio/matterport-360.jpg", alt: "360-degree virtual tour panorama of a Las Vegas listing", category: "3D Tour", matterportId: "SxL3C8ha5hb" },
   { src: "/images/portfolio/360-tiny-planet.jpg", alt: "Tiny-planet 360 panorama from a Las Vegas Matterport virtual tour", category: "3D Tour" },
   { src: "/images/portfolio/matterport-measurements.jpg", alt: "Matterport measurement tool showing precise room dimensions", category: "3D Tour" },
   { src: "/images/portfolio/mattertag.jpg", alt: "Mattertag info hotspot embedded in a Matterport 3D tour", category: "3D Tour" },

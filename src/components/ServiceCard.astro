@@ -32,10 +32,16 @@ const { b, index = 0 } = Astro.props;
     height: 100%;
   }
   .scard:hover {
-    transform: translateY(-4px);
+    transform: translateY(-4px) scale(1.012);
     box-shadow: var(--shadow-lift);
     border-color: transparent;
   }
+  /* Lift the card surface a touch in dark mode so it reads above the paper. */
+  :global([data-theme="dark"]) .scard {
+    background: var(--paper-2);
+    box-shadow: var(--shadow-card);
+  }
+  :global([data-theme="dark"]) .scard:hover { box-shadow: var(--shadow-lift); }
   .scard-img {
     position: relative;
     aspect-ratio: 16 / 11;

@@ -6,12 +6,20 @@ import ServiceBlock from "../../components/ServiceBlock.astro";
 import SectionHeader from "../../components/SectionHeader.astro";
 import CTABand from "../../components/CTABand.astro";
 import PriceTable from "../../components/PriceTable.astro";
+import ServiceSchema from "../../components/ServiceSchema.astro";
 import { commercialHdr, commercialPanoramas, googlePackage, business } from "../../data/site";
 
 const title = "Commercial Real Estate Photography Las Vegas — Office, Retail, Industrial | VTLV";
 const description = "Commercial real estate photography in Las Vegas for offices, retail, restaurants, industrial and event venues. HDR photography, Matterport 3D, 360 virtual tours, Google Business View, drone and as-built surveys — with extended licensing.";
 ---
 <Base title={title} description={description} heroVariant="dark">
+  <ServiceSchema
+    slot="head"
+    name="Commercial Real Estate Photography"
+    description="Commercial real estate photography in Las Vegas for offices, retail, restaurants, industrial and event venues — HDR, Matterport 3D, 360 tours, Google Business View, drone and as-built surveys with extended licensing."
+    serviceType="Commercial Photography"
+    startingPrice={210}
+  />
   <PageHero
     eyebrow="Commercial"
     title="Advertising-grade imagery for commercial space."

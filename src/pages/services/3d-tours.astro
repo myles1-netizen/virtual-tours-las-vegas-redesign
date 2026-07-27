@@ -6,12 +6,22 @@ import ServiceBlock from "../../components/ServiceBlock.astro";
 import SectionHeader from "../../components/SectionHeader.astro";
 import CTABand from "../../components/CTABand.astro";
 import PriceTable from "../../components/PriceTable.astro";
+import ServiceSchema from "../../components/ServiceSchema.astro";
+import MatterportEmbed from "../../components/MatterportEmbed.astro";
+import MatterportPopup from "../../components/MatterportPopup.astro";
 import { matterportTiers, matterportIncludes, zillowTiers, business } from "../../data/site";
 
 const title = "Matterport & Zillow 3D Virtual Tours Las Vegas | VTLV";
 const description = "Las Vegas Matterport 3D virtual tours and Zillow 3D Home tours by Mike Madsen — the brand's namesake service. Dollhouse, floor plan and measurement views, with free hosting and MLS embed links. Book a 3D tour.";
 ---
 <Base title={title} description={description} heroVariant="dark">
+  <ServiceSchema
+    slot="head"
+    name="Matterport & Zillow 3D Virtual Tours"
+    description="Matterport 3D and Zillow 3D Home virtual tours for Las Vegas real estate: walk-through models with dollhouse, floor plan and measurement views, free hosting and MLS embed links."
+    serviceType="3D Virtual Tour"
+    startingPrice={225}
+  />
   <PageHero
     eyebrow="3D & virtual tours · the namesake"
     title="Walk the property. From anywhere."
@@ -27,6 +37,52 @@ const description = "Las Vegas Matterport 3D virtual tours and Zillow 3D Home to
         title="Not a slideshow. A walkthrough."
         lead="Traditional 'virtual tours' are just 2D photo galleries dressed up to look panoramic. You can't actually move through the space. A true Matterport 3D tour stitches up to ~200 photo spheres into a navigable model with dollhouse, floor plan and measurement views. It's an entirely different experience, viewable in VR."
         align="center"
+      />
+    </div>
+  </section>
+
+  <section class="section sm">
+    <div class="container">
+      <div class="demo-grid">
+        <div class="demo-text">
+          <p class="eyebrow">Try it yourself</p>
+          <h2 class="display demo-title">Step inside a real 3D model.</h2>
+          <p class="lead demo-lead">
+            This is a live Matterport showcase. Click below to load the walkthrough —
+            dollhouse view, floor plan and measurement tools all work right in your browser.
+            (We don't load the player until you ask, to keep the page fast.)
+          </p>
+          <p class="demo-note">
+            Prefer the pop-out view? Use the gallery of tour thumbnails below the inline demo —
+            each opens in a full-screen viewer.
+          </p>
+        </div>
+        <div class="demo-embed">
+          <MatterportEmbed
+            modelId="SxL3C8ha5hb"
+            title="Matterport 3D walkthrough demo"
+            placeholder="/images/portfolio/matterport-360.jpg"
+            aspect="16/9"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section sm">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Tour gallery"
+        title="Open a tour, full-screen."
+        lead="Click any thumbnail to launch the Matterport viewer in a pop-up lightbox. The tour only loads once you open it, and stops the moment you close it."
+        align="center"
+      />
+      <MatterportPopup
+        triggers={[
+          { modelId: "SxL3C8ha5hb", thumbnail: "/images/portfolio/matterport-360.jpg", title: "Showcase Home Walkthrough" },
+          { modelId: "ZhM14HXw6ib", thumbnail: "/images/portfolio/360-tiny-planet.jpg", title: "Modern Living Tour" },
+          { modelId: "VfWtuD6UqSw", thumbnail: "/images/portfolio/matterport-measurements.jpg", title: "Measurement Demo" },
+        ]}
       />
     </div>
   </section>
@@ -103,6 +159,21 @@ const description = "Las Vegas Matterport 3D virtual tours and Zillow 3D Home to
     margin-top: 2.5rem;
     max-width: 800px;
     margin-inline: auto;
+  }
+
+  .demo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: center;
+  }
+  .demo-title { font-size: var(--step-3); margin-top: 0.4rem; }
+  .demo-lead { margin-top: 1rem; }
+  .demo-note { font-size: var(--step--1); color: var(--stone); margin-top: 1rem; }
+
+  @media (max-width: 820px) {
+    .demo-grid { grid-template-columns: 1fr; }
+    .demo-embed { order: -1; }
   }
   @media (max-width: 720px) { .ptables { grid-template-columns: 1fr; } }
 </style>

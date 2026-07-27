@@ -5,12 +5,20 @@ import PageHero from "../../components/PageHero.astro";
 import ServiceBlock from "../../components/ServiceBlock.astro";
 import SectionHeader from "../../components/SectionHeader.astro";
 import CTABand from "../../components/CTABand.astro";
+import ServiceSchema from "../../components/ServiceSchema.astro";
 import { googlePackage, commercialPanoramas, business } from "../../data/site";
 
 const title = "Google Business View & Street View 360 Las Vegas | VTLV";
 const description = "Google Trusted Photographer in Las Vegas. 360 virtual tours published directly to your Google Business profile and Google Maps — boosting local discoverability for restaurants, retail, salons and venues. Get Me On Google package from $500.";
 ---
 <Base title={title} description={description} heroVariant="dark">
+  <ServiceSchema
+    slot="head"
+    name="Google Business View & Street View 360"
+    description="Google Trusted Photographer in Las Vegas: 360 virtual tours published to your Google Business profile and Google Maps, boosting local discoverability."
+    serviceType="Google Business View"
+    startingPrice={500}
+  />
   <PageHero
     eyebrow="Google Business View"
     title="Show up on Google Maps with a 360 tour."

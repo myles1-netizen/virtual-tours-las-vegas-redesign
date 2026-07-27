@@ -5,7 +5,7 @@ import { clients, asset } from "../data/site";
   <p class="trust-label">Trusted by Las Vegas agents, brokers &amp; brands</p>
   <div class="logos">
     {clients.map((c) => (
-      <div class="logo">
+      <div class="logo logo-chip">
         <img src={asset(c.src)} alt={`${c.name} — Virtual Tours Las Vegas client`} loading="lazy" />
       </div>
     ))}
@@ -44,6 +44,10 @@ import { clients, asset } from "../data/site";
     transition: filter 0.35s var(--ease), opacity 0.35s var(--ease), border-color 0.35s var(--ease);
   }
   .logo:hover { filter: grayscale(0); opacity: 1; border-color: var(--brass-soft); }
+  /* Dark mode: logos sit on a white chip (see global .logo-chip rule), so drop
+     the grayscale dimming — the logos read at full strength on the white field. */
+  :global([data-theme="dark"]) .logo { filter: grayscale(0); opacity: 1; }
+  :global([data-theme="dark"]) .logo:hover { border-color: var(--brass); }
   .logo img {
     max-height: 34px;
     max-width: 100%;

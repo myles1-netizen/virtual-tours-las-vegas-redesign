@@ -5,12 +5,20 @@ import PageHero from "../../components/PageHero.astro";
 import ServiceBlock from "../../components/ServiceBlock.astro";
 import SectionHeader from "../../components/SectionHeader.astro";
 import CTABand from "../../components/CTABand.astro";
+import ServiceSchema from "../../components/ServiceSchema.astro";
 import { business } from "../../data/site";
 
 const title = "Twilight Photography Las Vegas — Blue Hour Listing Shots | VTLV";
 const description = "Twilight and blue-hour real estate photography in Las Vegas. Warm, dramatic exterior shots that stop the scroll on MLS and social. Available as a $100 add-on to any HDR package or as a standalone shoot.";
 ---
 <Base title={title} description={description} heroVariant="dark">
+  <ServiceSchema
+    slot="head"
+    name="Twilight Photography"
+    description="Twilight and blue-hour real estate photography in Las Vegas: warm, dramatic exterior shots for MLS and social."
+    serviceType="Twilight Photography"
+    startingPrice={100}
+  />
   <PageHero
     eyebrow="Twilight photography"
     title="The blue-hour shot that stops the scroll."

@@ -7,6 +7,7 @@ import SectionHeader from "../../components/SectionHeader.astro";
 import PriceTable from "../../components/PriceTable.astro";
 import CTABand from "../../components/CTABand.astro";
 import Gallery from "../../components/Gallery.astro";
+import ServiceSchema from "../../components/ServiceSchema.astro";
 import { floorPlanTiers, floorPlanAddOns, portfolio, business } from "../../data/site";
 
 const floorShots = portfolio.filter((s) => s.category === "Floor Plan");
@@ -15,6 +16,13 @@ const title = "Floor Plans Las Vegas — Schematic, 3D & CAD | VTLV";
 const description = "Las Vegas real estate floor plans — schematic 2D, colored living spaces, 3D floor plans and CAD files. Buyers retain listings with floor plans longer. 48-hour turnaround, PDF delivery. Pricing from $120.";
 ---
 <Base title={title} description={description} heroVariant="dark">
+  <ServiceSchema
+    slot="head"
+    name="Real Estate Floor Plans"
+    description="Las Vegas real estate floor plans: schematic 2D, colored living spaces, 3D floor plans and CAD files. 48-hour turnaround, PDF delivery."
+    serviceType="Floor Plan"
+    startingPrice={120}
+  />
   <PageHero
     eyebrow="Floor plans"
     title="Help buyers remember the layout."

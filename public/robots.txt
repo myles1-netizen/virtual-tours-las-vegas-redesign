@@ -1,4 +1,26 @@
+# Allow all crawlers — including AI/LLM training and answer-engine bots — full
+# access. This site benefits from being indexed and cited by search engines and
+# AI assistants alike.
 User-agent: *
 Allow: /
 
+# Explicit allow for the major AI crawlers (redundant with the wildcard rule
+# above, but makes intent unambiguous if the wildcard is ever tightened).
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+# Sitemap points at the @astrojs/sitemap output. The site is built with a base
+# path on GitHub Pages; update this URL if the deployment domain changes.
 Sitemap: https://mylesthepro1.github.io/virtual-tours-las-vegas-redesign/sitemap-index.xml

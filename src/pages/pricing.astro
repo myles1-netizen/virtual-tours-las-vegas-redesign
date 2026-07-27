@@ -5,6 +5,7 @@ import PageHero from "../components/PageHero.astro";
 import SectionHeader from "../components/SectionHeader.astro";
 import PricingCard from "../components/PricingCard.astro";
 import PriceTable from "../components/PriceTable.astro";
+import PriceCalculator from "../components/PriceCalculator.astro";
 import CTABand from "../components/CTABand.astro";
 import {
   vegasPackages, hdrTiers, hdrAddOns, matterportTiers, floorPlanTiers,
@@ -14,8 +15,52 @@ import {
 
 const title = "Pricing — Las Vegas Real Estate Photography Packages | VTLV";
 const description = "Real, published Las Vegas real estate photography pricing. Glitz & Glam, City Never Sleeps and Neon Skyline packages plus individual pricing for HDR, Matterport 3D, drone, floor plans, virtual staging, video and commercial work. No quote-and-wait.";
+
+// Pricing JSON-LD: a Service carrying an OfferCatalog of the three residential
+// packages, plus line-item Offers for the headline à la carte tiers. Each Offer
+// uses PriceSpecification so price is unambiguous to crawlers.
+const base = Astro.site?.toString().replace(/\/$/, "") ?? "";
+const pricingUrl = new URL(Astro.url.pathname, base).toString();
+const offers = [
+  ...vegasPackages.map((p) => ({
+    "@type": "Offer",
+    name: p.name,
+    description: p.blurb,
+    price: String(p.price),
+    priceCurrency: "USD",
+    priceSpecification: { "@type": "PriceSpecification", price: p.price, priceCurrency: "USD" },
+    url: pricingUrl,
+    availability: "https://schema.org/InStock",
+  })),
+  {
+    "@type": "Offer",
+    name: "Matterport 3D tour (from)",
+    price: String(matterportTiers[0].price),
+    priceCurrency: "USD",
+    priceSpecification: { "@type": "PriceSpecification", price: matterportTiers[0].price, priceCurrency: "USD" },
+    url: pricingUrl,
+  },
+  {
+    "@type": "Offer",
+    name: "HDR photography (from)",
+    price: String(hdrTiers[0].price),
+    priceCurrency: "USD",
+    priceSpecification: { "@type": "PriceSpecification", price: hdrTiers[0].price, priceCurrency: "USD" },
+    url: pricingUrl,
+  },
+];
+const pricingLd = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  name: "Las Vegas Real Estate Photography Packages",
+  description: "Published pricing for Las Vegas real estate photography, 3D tours, drone, floor plans and virtual staging.",
+  provider: { "@id": `${base}/#business` },
+  url: pricingUrl,
+  offers: { "@type": "OfferCatalog", priceCurrency: "USD", offers },
+};
 ---
 <Base title={title} description={description} heroVariant="dark">
+  <script type="application/ld+json" is:inline slot="head" set:html={JSON.stringify(pricingLd)} />
   <PageHero
     eyebrow="Transparent pricing"
     title="Real prices. No quote-and-wait."
@@ -41,13 +86,25 @@ const description = "Real, published Las Vegas real estate photography pricing. 
     </div>
   </section>
 
-  {/* ===== FULL PRICE LIST ===== */}
+  {/* ===== LIVE CALCULATOR ===== */}
   <section class="section paper-2">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Quote builder"
+        title="Build your exact shoot. See the price now."
+        lead="Start from a package above or skip to à la carte. Pick services, set the square footage, add what you need — the total updates as you go, with a clear line-by-line breakdown. No quote-and-wait."
+      />
+      <PriceCalculator />
+    </div>
+  </section>
+
+  {/* ===== FULL PRICE LIST ===== */}
+  <section class="section">
     <div class="container">
       <SectionHeader
         eyebrow="Full price list"
         title="Build your own shoot."
-        lead="Every service Mike offers, priced individually. Add to a package, or book standalone."
+        lead="Prefer to read the tables? Every service Mike offers, priced individually. Add to a package, or book standalone."
       />
       <div class="ala-grid">
         <PriceTable title="HDR photography" tiers={hdrTiers} />
@@ -81,7 +138,7 @@ const description = "Real, published Las Vegas real estate photography pricing. 
   </section>
 
   {/* ===== COMMERCIAL ===== */}
-  <section class="section">
+  <section class="section paper-2">
     <div class="container">
       <SectionHeader
         eyebrow="Commercial pricing"

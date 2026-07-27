@@ -5,12 +5,19 @@ import PageHero from "../../components/PageHero.astro";
 import ServiceBlock from "../../components/ServiceBlock.astro";
 import SectionHeader from "../../components/SectionHeader.astro";
 import CTABand from "../../components/CTABand.astro";
+import ServiceSchema from "../../components/ServiceSchema.astro";
 import { business } from "../../data/site";
 
 const title = "Vacation Rental Photography Las Vegas — Airbnb & Vrbo | VTLV";
 const description = "Las Vegas vacation rental photography for Airbnb and Vrbo hosts. Listing photography, Matterport 3D tours, floor plans, drone and amenity photos — the imagery that earns more bookings at higher nightly rates.";
 ---
 <Base title={title} description={description} heroVariant="dark">
+  <ServiceSchema
+    slot="head"
+    name="Vacation Rental Photography"
+    description="Las Vegas vacation rental photography for Airbnb and Vrbo hosts: listing photography, Matterport 3D tours, floor plans, drone and amenity photos that earn more bookings."
+    serviceType="Vacation Rental Photography"
+  />
   <PageHero
     eyebrow="Vacation rentals"
     title="Listings that earn the booking."

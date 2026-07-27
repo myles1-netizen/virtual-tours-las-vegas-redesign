@@ -6,6 +6,7 @@ import ServiceBlock from "../../components/ServiceBlock.astro";
 import SectionHeader from "../../components/SectionHeader.astro";
 import CTABand from "../../components/CTABand.astro";
 import Gallery from "../../components/Gallery.astro";
+import ServiceSchema from "../../components/ServiceSchema.astro";
 import { portfolio, business } from "../../data/site";
 
 const droneShots = portfolio.filter((s) => s.category === "Drone");
@@ -15,6 +16,12 @@ const title = "Drone Photography Las Vegas — FAA Part 107 Aerial | VTLV";
 const description = "FAA Part 107 certified drone photography in Las Vegas. Aerial imagery showing lot size, setting and proximity to amenities — airspace-approved near McCarran/Harry Reid airport. Residential and commercial aerial photography.";
 ---
 <Base title={title} description={description} heroVariant="dark">
+  <ServiceSchema
+    slot="head"
+    name="Drone Photography"
+    description="FAA Part 107 certified aerial drone photography in Las Vegas: aerial imagery showing lot size, setting and proximity to amenities, airspace-approved near Las Vegas airports."
+    serviceType="Drone Photography"
+  />
   <PageHero
     eyebrow="Drone photography"
     title="Show the lot, the view and the setting."

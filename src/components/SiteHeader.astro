@@ -9,7 +9,8 @@ const path = Astro.url.pathname.replace(/\/$/, "");
   <input type="checkbox" id="menu-toggle" class="menu-checkbox" aria-hidden="true" />
   <div class="bar">
     <a href={asset("/")} class="brand" aria-label={`${business.name} — home`}>
-      <img class="brand-logo" src={asset("/images/logo-navy.png")} alt={`${business.name}`} width="220" height="75" />
+      <img class="brand-logo logo-light" src={asset("/images/logo-navy.png")} alt={`${business.name}`} width="220" height="75" />
+      <img class="brand-logo logo-dark" src={asset("/images/logo-white.png")} alt="" aria-hidden="true" width="220" height="75" />
     </a>
 
     <nav class="primary-nav" aria-label="Primary">
@@ -37,6 +38,13 @@ const path = Astro.url.pathname.replace(/\/$/, "");
           <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>
         </svg>
       </a>
+
+      <button type="button" class="theme-toggle" data-theme-toggle aria-label="Toggle dark mode" title="Toggle theme">
+        {/* Sun (shown in dark mode → click for light) */}
+        <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        {/* Moon (shown in light mode → click for dark) */}
+        <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
 
       <label for="menu-toggle" class="menu-toggle" aria-label="Open menu" title="Menu">
         <span class="menu-icon" aria-hidden="true"></span>
@@ -81,24 +89,30 @@ const path = Astro.url.pathname.replace(/\/$/, "");
   .bar {
     max-width: var(--container);
     margin-inline: auto;
-    padding: 0.85rem var(--gutter);
+    padding: 0.55rem var(--gutter);
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1.25rem;
   }
 
   .brand {
     display: inline-flex;
     align-items: center;
     margin-right: auto;
-    height: 68px;
+    height: 50px;
     line-height: 0;
   }
   .brand-logo {
-    height: 64px;
+    height: 46px;
     width: auto;
     display: block;
   }
+  /* Dual logo variants: navy wordmark on light header, white on dark header.
+     Both render in markup (with the deployment base path baked in via asset()),
+     and CSS toggles visibility by theme — no hardcoded paths in CSS. */
+  .logo-dark { display: none; }
+  :global([data-theme="dark"]) .logo-light { display: none; }
+  :global([data-theme="dark"]) .logo-dark { display: block; }
 
   .primary-nav {
     display: flex;
@@ -128,22 +142,43 @@ const path = Astro.url.pathname.replace(/\/$/, "");
   .actions {
     display: flex;
     align-items: center;
-    gap: 1.1rem;
+    gap: 0.85rem;
   }
   .phone-link {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    font-size: var(--step--1);
+    font-size: 0.8rem;
     font-weight: 700;
-    padding: 0.5rem 0.85rem;
+    padding: 0.4rem 0.7rem;
     border: 1px solid currentColor;
     border-radius: var(--radius-sm);
     opacity: 0.9;
   }
   .phone-link:hover { color: var(--brass); border-color: var(--brass); opacity: 1; }
 
-  .cta-book { padding: 0.75em 1.3em; }
+  .cta-book { padding: 0.6em 1.1em; font-size: 0.74rem; }
+
+  /* Theme toggle — icon-only, compact, sits with the other actions. Shows the
+     sun in dark mode (click → light) and the moon in light mode (click → dark). */
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--line-light);
+    border-radius: 50%;
+    color: var(--ink);
+    flex-shrink: 0;
+    transition: color 0.2s var(--ease), border-color 0.2s var(--ease), transform 0.2s var(--ease);
+  }
+  .theme-toggle:hover { color: var(--brass); border-color: var(--brass); transform: rotate(-15deg); }
+  .theme-toggle:active { transform: rotate(-15deg) scale(0.94); }
+  .theme-toggle .icon-sun { display: none; }
+  :global([data-theme="dark"]) .theme-toggle { color: var(--paper); border-color: var(--line-light); }
+  :global([data-theme="dark"]) .theme-toggle .icon-sun { display: block; }
+  :global([data-theme="dark"]) .theme-toggle .icon-moon { display: none; }
 
   .phone-fab {
     display: none;
@@ -256,6 +291,26 @@ const path = Astro.url.pathname.replace(/\/$/, "");
         checkbox.checked = false;
         document.body.style.overflow = "";
       }
+    });
+  }
+
+  // Theme toggle — flips data-theme on <html>, persists to localStorage, and
+  // wraps the change in a transient .theme-transitioning class so the global
+  // 0.3s bg/color transition kicks in for this switch only (not on scroll).
+  const themeToggle = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+  if (themeToggle) {
+    const apply = (next: "light" | "dark") => {
+      const root = document.documentElement;
+      root.classList.add("theme-transitioning");
+      root.dataset.theme = next;
+      try { localStorage.setItem("theme", next); } catch (_) { /* private mode etc. */ }
+      // Dispatch a generic event so Base.astro can update <meta name="theme-color">.
+      document.dispatchEvent(new CustomEvent("themechange", { detail: { theme: next } }));
+      window.setTimeout(() => root.classList.remove("theme-transitioning"), 320);
+    };
+    themeToggle.addEventListener("click", () => {
+      const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+      apply(current === "dark" ? "light" : "dark");
     });
   }
 </script>

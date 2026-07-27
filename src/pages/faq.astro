@@ -21,7 +21,7 @@ const faqJsonLd = {
 };
 ---
 <Base title={title} description={description} heroVariant="dark">
-  <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
+  <script type="application/ld+json" is:inline slot="head" set:html={JSON.stringify(faqJsonLd)} />
   <PageHero
     eyebrow="FAQ"
     title="Good questions, straight answers."

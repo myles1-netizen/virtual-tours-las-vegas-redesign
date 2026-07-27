@@ -5,6 +5,7 @@ import PageHero from "../../components/PageHero.astro";
 import ServiceBlock from "../../components/ServiceBlock.astro";
 import SectionHeader from "../../components/SectionHeader.astro";
 import CTABand from "../../components/CTABand.astro";
+import ServiceSchema from "../../components/ServiceSchema.astro";
 import { business, vegasPackages } from "../../data/site";
 import PricingCard from "../../components/PricingCard.astro";
 
@@ -12,6 +13,13 @@ const title = "Residential Real Estate Photography Las Vegas — HDR, 3D & Drone
 const description = "Las Vegas residential real estate photography for agents and sellers. HDR photos, Matterport 3D virtual tours, Zillow 3D Home, drone, floor plans, virtual staging and twilight — delivered MLS-ready in 24–48 hours.";
 ---
 <Base title={title} description={description} heroVariant="dark">
+  <ServiceSchema
+    slot="head"
+    name="Residential Real Estate Photography"
+    description="Las Vegas residential real estate photography for agents and sellers: HDR photos, Matterport 3D, Zillow 3D Home, drone, floor plans, virtual staging and twilight, delivered MLS-ready in 24–48 hours."
+    serviceType="Real Estate Photography"
+    startingPrice={110}
+  />
   <PageHero
     eyebrow="Residential real estate"
     title="Listing media that earns the click."

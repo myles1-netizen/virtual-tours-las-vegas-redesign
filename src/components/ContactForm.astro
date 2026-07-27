@@ -155,6 +155,60 @@ const method = FORM_ENDPOINT ? "POST" : "GET";
   const form = document.querySelector<HTMLFormElement>("[data-form]");
   if (form) {
     const hasEndpoint = form.dataset.endpoint === "true";
+
+    // ---- Pre-fill from query params (?package=, ?total=, ?items=) ----
+    // Lets the price calculator (and pricing cards) carry the visitor's
+    // selection straight into the form so they don't re-explain it.
+    // Progressive enhancement: if JS is off, the form still works empty.
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const pkg = params.get("package");
+      const total = params.get("total");
+      const items = params.get("items");
+      if (pkg || total || items) {
+        // Map known package slugs to human-readable names for the message.
+        const pkgNames: Record<string, string> = {
+          glitz: "Glitz & Glam",
+          city: "City Never Sleeps",
+          neon: "Neon Skyline",
+          custom: "Custom build",
+        };
+        const lines: string[] = [];
+        if (pkg && pkgNames[pkg]) lines.push(`Interested in the ${pkgNames[pkg]} package.`);
+        if (items) lines.push("Selected: " + items);
+        if (total) lines.push(`Estimated total from calculator: $${total}`);
+
+        // If the services <select> has a matching option, set it.
+        const servicesSelect = form.querySelector<HTMLSelectElement>('select[name="services"]');
+        if (servicesSelect) {
+          if (pkg === "custom") {
+            // "Full package (recommend)" is the closest match for a custom build.
+            const opt = Array.from(servicesSelect.options).find((o) => o.value === "Full package (recommend)");
+            if (opt) servicesSelect.value = opt.value;
+          } else if (pkg === "neon") {
+            const opt = Array.from(servicesSelect.options).find((o) => o.value === "Drone photos");
+            if (opt) servicesSelect.value = opt.value;
+          } else if (pkg === "city") {
+            const opt = Array.from(servicesSelect.options).find((o) => o.value === "Matterport 3D tour");
+            if (opt) servicesSelect.value = opt.value;
+          } else if (pkg === "glitz") {
+            const opt = Array.from(servicesSelect.options).find((o) => o.value === "HDR photos");
+            if (opt) servicesSelect.value = opt.value;
+          }
+        }
+
+        const msg = form.querySelector<HTMLTextAreaElement>('textarea[name="message"]');
+        if (msg && lines.length) {
+          msg.value = lines.join("\n") + "\n\n";
+          // Focus the first empty required field so the visitor can keep typing.
+          msg.focus();
+          msg.setSelectionRange(msg.value.length, msg.value.length);
+        }
+      }
+    } catch {
+      // Query-param prefill is a nice-to-have; never block form submission.
+    }
+
     form.addEventListener("submit", (e) => {
       // Honeypot
       const hp = form.querySelector<HTMLInputElement>('input[name="company"]');

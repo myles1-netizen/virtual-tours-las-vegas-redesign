@@ -63,6 +63,36 @@
   color-scheme: light;
 }
 
+/* ===== Dark mode tokens =====
+   Applied via [data-theme="dark"] on <html>, set by an inline head script that
+   runs BEFORE first paint (see Base.astro) to prevent FOUC. We re-map the
+   semantic tokens so every existing var(--paper) / var(--ink) reference adapts
+   automatically; --dark/--dark-2 are nudged so .section.dark and the footer
+   still read as a subtle elevation step above the body, not a flat blend. */
+[data-theme="dark"] {
+  --paper: #0f0e0c;
+  --paper-2: #1c1a16;
+  --paper-3: #2a2620;
+  --ink: #f7f4ef;
+  --ink-2: #e6dfd2;
+  --stone: #8a8275;
+  --stone-2: #6b6358;
+  --line-light: rgba(247,244,239,0.14);
+  --line-dark: rgba(26,24,20,0.4);
+  --brass: #c9a572;
+  --brass-2: #d4b07e;
+  --brass-soft: rgba(201,165,114,0.16);
+  --brass-btn: #c9a572;
+  --brass-btn-2: #b08d57;
+  /* Keep dark sections one step lighter than the body so they stay readable
+     as elevated panels instead of vanishing into the page background. */
+  --dark: #1c1a16;
+  --dark-2: #2a2620;
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.2), 0 8px 30px rgba(0,0,0,0.3);
+  --shadow-lift: 0 2px 4px rgba(0,0,0,0.3), 0 20px 50px rgba(0,0,0,0.4);
+  color-scheme: dark;
+}
+
 /* ===== Reset ===== */
 *, *::before, *::after { box-sizing: border-box; }
 * { margin: 0; }
@@ -281,6 +311,24 @@ html[data-js] [data-reveal][data-reveal-delay="1"] { transition-delay: 0.08s; }
 html[data-js] [data-reveal][data-reveal-delay="2"] { transition-delay: 0.16s; }
 html[data-js] [data-reveal][data-reveal-delay="3"] { transition-delay: 0.24s; }
 html[data-js] [data-reveal][data-reveal-delay="4"] { transition-delay: 0.32s; }
+html[data-js] [data-reveal][data-reveal-delay="5"] { transition-delay: 0.4s; }
+html[data-js] [data-reveal][data-reveal-delay="6"] { transition-delay: 0.48s; }
+
+/* Staggered reveal for grid items: opt a grid in by adding data-stagger to it.
+   Each direct [data-reveal] child gets a cascading delay based on its position,
+   capped so large grids don't trail off too long. No JS change needed — the
+   existing IntersectionObserver marks items .is-visible; we just delay them. */
+html[data-js] [data-stagger] > [data-reveal]:nth-child(1) { transition-delay: 0s; }
+html[data-js] [data-stagger] > [data-reveal]:nth-child(2) { transition-delay: 0.08s; }
+html[data-js] [data-stagger] > [data-reveal]:nth-child(3) { transition-delay: 0.16s; }
+html[data-js] [data-stagger] > [data-reveal]:nth-child(4) { transition-delay: 0.24s; }
+html[data-js] [data-stagger] > [data-reveal]:nth-child(5) { transition-delay: 0.32s; }
+html[data-js] [data-stagger] > [data-reveal]:nth-child(6) { transition-delay: 0.4s; }
+html[data-js] [data-stagger] > [data-reveal]:nth-child(7) { transition-delay: 0.48s; }
+html[data-js] [data-stagger] > [data-reveal]:nth-child(8) { transition-delay: 0.56s; }
+/* Once a staggered item is visible, clear the cascade so hover transitions
+   (which reuse the same transition shorthand) feel immediate. */
+html[data-js] [data-stagger] > [data-reveal].is-visible { transition-delay: 0s; }
 
 /* ===== Utility ===== */
 .text-center { text-align: center; }
@@ -293,3 +341,51 @@ html[data-js] [data-reveal][data-reveal-delay="4"] { transition-delay: 0.32s; }
 }
 .divider { height: 1px; background: var(--line-light); border: 0; }
 .section.dark .divider { background: var(--line-dark); }
+
+/* ===== Theme transition =====
+   Smoothly cross-fade bg + text on theme switch. Scoped to a transient class
+   on <html> that the toggle script adds right before flipping the theme and
+   removes shortly after, so we never pay for these transitions during normal
+   scrolling — only on the actual light/dark switch. */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 0.3s var(--ease), border-color 0.3s var(--ease),
+              color 0.3s var(--ease), fill 0.3s var(--ease), box-shadow 0.3s var(--ease) !important;
+}
+
+/* ===== Dark-mode image polish =====
+   Photos can look flat against the dark paper. A hairline border + subtle
+   shadow lifts them and defines edges. Only applied in dark mode to avoid
+   adding weight to the (already-bordered) light layout. */
+[data-theme="dark"] img {
+  /* Avoid double borders on already-framed images (cards handle their own) by
+     keeping this opt-in via a class rather than blanket. */
+}
+[data-theme="dark"] .photo-frame img,
+[data-theme="dark"] .area-img img,
+[data-theme="dark"] .lb-img {
+  border: 1px solid var(--line-light);
+}
+
+/* ===== Dark-mode logo chips =====
+   Client logos are transparent PNGs designed for light backgrounds. On dark
+   paper they vanish or invert badly. Give their chips a soft white rounded
+   background so the logos read correctly in either theme. */
+[data-theme="dark"] .logo-chip {
+  background: #f7f4ef;
+  border-color: rgba(0,0,0,0.08);
+}
+
+/* ===== Card hover refinement =====
+   Subtle lift + scale on interactive cards, layered on top of each card's own
+   hover rules. Keep the scale tiny so it reads as polish, not bounce. */
+.card-lift {
+  transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease),
+              border-color 0.4s var(--ease), background-color 0.3s var(--ease);
+}
+.card-lift:hover {
+  transform: translateY(-4px) scale(1.012);
+  box-shadow: var(--shadow-lift);
+}

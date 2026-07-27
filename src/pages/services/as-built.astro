@@ -5,12 +5,19 @@ import PageHero from "../../components/PageHero.astro";
 import ServiceBlock from "../../components/ServiceBlock.astro";
 import SectionHeader from "../../components/SectionHeader.astro";
 import CTABand from "../../components/CTABand.astro";
+import ServiceSchema from "../../components/ServiceSchema.astro";
 import { business } from "../../data/site";
 
 const title = "As-Built Surveys & Construction Documentation Las Vegas | VTLV";
 const description = "Las Vegas as-built surveys, 3D reality capture, construction progress documentation and insurance-ready digital twins by Mike Madsen. Matterport-based measurement, Matterpak BIM exports, and aerial progress imagery for builders, contractors, architects and adjusters.";
 ---
 <Base title={title} description={description} heroVariant="dark">
+  <ServiceSchema
+    slot="head"
+    name="As-Built Surveys & Construction Documentation"
+    description="Las Vegas as-built surveys, 3D reality capture, construction progress documentation and insurance-ready digital twins: Matterport-based measurement, Matterpak BIM exports and aerial progress imagery."
+    serviceType="As-Built Survey"
+  />
   <PageHero
     eyebrow="Builders · developers · docs"
     title="3D reality capture, without the return site visit."

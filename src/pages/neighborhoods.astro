@@ -1,0 +1,224 @@
+---
+import { asset } from "../data/site";
+import Base from "../layouts/Base.astro";
+import PageHero from "../components/PageHero.astro";
+import SectionHeader from "../components/SectionHeader.astro";
+import CTABand from "../components/CTABand.astro";
+import { business } from "../data/site";
+
+const title = "Areas We Serve — Las Vegas Valley Real Estate Photography | VTLV";
+const description = "Virtual Tours Las Vegas serves the entire Las Vegas Valley: Summerlin, Henderson, Anthem, Cadence, Lake Las Vegas, MacDonald Highlands, Seven Hills, Inspirada, Centennial Hills, Spring Valley, Boulder City, North Las Vegas and all of Clark County.";
+
+// Real Las Vegas Valley neighborhoods served (sourced from the content audit).
+// Grouped by region so the page reads as a genuine guide, not a doorway-page list.
+const regions = [
+  {
+    name: "Las Vegas (central & west)",
+    blurb: "The urban core, the Strip corridor and the master-planned communities spreading west toward the Spring Mountains.",
+    areas: ["Summerlin", "Summerlin South", "Centennial Hills", "Spring Valley", "The Lakes", "Skye Canyon", "Providence", "Lone Mountain"],
+  },
+  {
+    name: "Henderson & the southeast",
+    blurb: "The fastest-growing edge of the valley, with established luxury enclaves and brand-new master-planned communities.",
+    areas: ["Anthem", "Anthem Country Club", "Cadence", "Inspirada", "Lake Las Vegas", "MacDonald Highlands", "Seven Hills", "Green Valley", "Whitney Ranch"],
+  },
+  {
+    name: "North Las Vegas",
+    blurb: "Expanding master-planned communities and new construction, including much of Lennar's footprint.",
+    areas: ["Aliante", "Eldorado", "Skye Canyon (north edge)", "Valley View", "Northern Las Vegas"],
+  },
+  {
+    name: "Boulder City & outlying Clark County",
+    blurb: "Smaller towns and rural stretches of Clark County, reached from a central valley base roughly three miles east of the Strip.",
+    areas: ["Boulder City", "Enterprise", "Paradise", "Spring Mountain Range areas", "Clark County (unincorporated)"],
+  },
+];
+
+const flatCount = regions.reduce((n, r) => n + r.areas.length, 0);
+---
+
+<Base title={title} description={description} heroVariant="dark">
+  <PageHero
+    eyebrow="Service area"
+    title="Serving the entire Las Vegas Valley."
+    lead={`One photographer, one valley. Mike shoots real estate photography and 3D tours from Summerlin to Boulder City, Henderson to North Las Vegas. ${business.areaNote}. If your listing is in Clark County, it's in range.`}
+    image={asset("/images/portfolio/spitze-interior.jpg")}
+    imageAlt="Las Vegas Strip skyline view captured from a property, real estate photography"
+  />
+
+  {/* ===== INTRO ===== */}
+  <section class="section">
+    <div class="container">
+      <div class="area-intro" data-reveal>
+        <SectionHeader
+          eyebrow="Where we work"
+          title="Every neighborhood. One photographer."
+          lead={`Real estate moves fast across the valley — a Summerlin listing Monday, a Henderson new-build Wednesday, a Boulder City custom home Friday. Because there's no crew to coordinate, scheduling flexes around the property, not a subcontractor's route sheet.`}
+        />
+        <p class="area-body">
+          The Las Vegas Valley covers roughly 600 square miles of Clark County, and Mike has been photographing
+          it since {business.since}. From the luxury hillsides of MacDonald Highlands and Lake Las Vegas to the
+          high-volume new construction of Cadence and Inspirada, the same eye and the same edit standard apply
+          to every shoot. {flatCount}+ neighborhoods and counting — if your street isn't listed below, it's
+          still covered.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== AREA GRID ===== */}
+  <section class="section paper-2">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Neighborhoods served"
+        title="The valley, broken down by region."
+        lead="A real guide to where Mike shoots, not a list of keyword pages. Pick your region to see the communities covered."
+      />
+      <div class="region-grid">
+        {regions.map((r, i) => (
+          <article class="region-card" data-reveal data-reveal-delay={(i % 3) + 1}>
+            <header class="region-head">
+              <h2 class="region-name">{r.name}</h2>
+              <span class="region-count">{r.areas.length} areas</span>
+            </header>
+            <p class="region-blurb">{r.blurb}</p>
+            <ul class="area-list" role="list">
+              {r.areas.map((a) => <li>{a}</li>)}
+            </ul>
+          </article>
+        ))}
+      </div>
+      <p class="area-footnote" data-reveal>
+        Don't see your neighborhood? It's still covered — this list highlights the most active markets.
+        <a href={business.phoneHref}>Call {business.phone}</a> to confirm your address.
+      </p>
+    </div>
+  </section>
+
+  {/* ===== PRACTICAL ===== */}
+  <section class="section">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Practical details"
+        title="What serving the whole valley means in practice."
+      />
+      <div class="practical-grid">
+        <article data-reveal>
+          <h3>No travel fees in the valley</h3>
+          <p>Clark County is home base. Standard shoots across Las Vegas, Henderson, Summerlin, North Las Vegas and Boulder City don't carry a travel surcharge. Outlying and rural properties are quoted case by case.</p>
+        </article>
+        <article data-reveal data-reveal-delay="1">
+          <h3>Airspace-aware drone work</h3>
+          <p>Las Vegas is ringed by controlled airspace around Harry Reid International and other fields. Mike holds an FAA Part 107 license and handles airspace authorizations, so drone shots near the approach corridors are done legally or not at all.</p>
+        </article>
+        <article data-reveal data-reveal-delay="2">
+          <h3>Fast valley-wide turnaround</h3>
+          <p>24–48 hour standard delivery on HDR photos and 3D tours wherever the property sits in the valley. Rush next-morning delivery is available when a listing needs to go live fast.</p>
+        </article>
+        <article data-reveal data-reveal-delay="3">
+          <h3>New construction specialist</h3>
+          <p>As the sole Matterport provider for Lennar Homes in Las Vegas, Mike documents new-build communities across Henderson and North Las Vegas regularly — model homes, inventory homes and progress documentation.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* LocalBusiness service-area JSON-LD so search engines see one authoritative page
+      covering the whole metro, rather than dozens of thin doorway pages. */}
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": ["LocalBusiness", "ProfessionalService", "Photographer"],
+    name: business.name,
+    telephone: business.phone,
+    url: "https://virtualtourslasvegas.com",
+    image: asset("/images/portfolio/spitze-interior.jpg"),
+    areaServed: [
+      { "@type": "City", name: "Las Vegas" },
+      { "@type": "City", name: "Henderson" },
+      { "@type": "City", name: "North Las Vegas" },
+      { "@type": "City", name: "Boulder City" },
+      { "@type": "AdministrativeArea", name: "Clark County" },
+      ...regions.flatMap((r) => r.areas.map((a) => ({ "@type": "Place", name: `${a}, NV` }))),
+    ],
+  })} />
+
+  <CTABand
+    title={`Ready to book a shoot in your neighborhood?`}
+    body={`Call or text ${business.phone}. Most valley shoots are on the calendar within 48 hours.`}
+  />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .area-intro { max-width: 70ch; }
+  .area-body { margin-top: 1.4rem; color: var(--stone); line-height: 1.65; }
+
+  .region-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+  }
+  .region-card {
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-lg);
+    padding: clamp(1.4rem, 1rem + 1.5vw, 2rem);
+  }
+  .region-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid var(--line-light);
+  }
+  .region-name { font-size: var(--step-2); }
+  .region-count {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brass);
+    white-space: nowrap;
+  }
+  .region-blurb { margin-top: 1rem; color: var(--stone); font-size: var(--step--1); line-height: 1.55; }
+  .area-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.2rem;
+  }
+  .area-list li {
+    font-size: var(--step--1);
+    font-weight: 500;
+    color: var(--ink-2);
+    padding: 0.4em 0.85em;
+    background: var(--paper-2);
+    border: 1px solid var(--line-light);
+    border-radius: 999px;
+  }
+
+  .area-footnote {
+    text-align: center;
+    color: var(--stone);
+    font-size: var(--step--1);
+    margin-top: 2.2rem;
+  }
+  .area-footnote a { color: var(--brass); font-weight: 600; }
+
+  .practical-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+  }
+  .practical-grid article { display: flex; flex-direction: column; gap: 0.6rem; }
+  .practical-grid h3 { font-size: var(--step-1); }
+  .practical-grid p { color: var(--stone); font-size: var(--step--1); line-height: 1.55; }
+
+  @media (max-width: 880px) {
+    .region-grid { grid-template-columns: 1fr; }
+    .practical-grid { grid-template-columns: 1fr; }
+  }
+</style>

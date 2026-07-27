@@ -7,6 +7,7 @@ import SectionHeader from "../../components/SectionHeader.astro";
 import PriceTable from "../../components/PriceTable.astro";
 import CTABand from "../../components/CTABand.astro";
 import Gallery from "../../components/Gallery.astro";
+import ServiceSchema from "../../components/ServiceSchema.astro";
 import { hdrTiers, hdrAddOns, portfolio, business } from "../../data/site";
 
 const interiorShots = portfolio.filter((s) => s.category === "Interior").slice(0, 8);
@@ -15,6 +16,13 @@ const title = "HDR Real Estate Photography Las Vegas | VTLV";
 const description = "Professional HDR real estate photography in Las Vegas. High dynamic range photos with clean windows, true colors and real shadow detail — MLS-ready and delivered in 24–48 hours. Pricing from $110.";
 ---
 <Base title={title} description={description} heroVariant="dark">
+  <ServiceSchema
+    slot="head"
+    name="HDR Real Estate Photography"
+    description="Professional HDR real estate photography in Las Vegas: high dynamic range photos with clean windows, true colors and real shadow detail, MLS-ready in 24–48 hours."
+    serviceType="Real Estate Photography"
+    startingPrice={110}
+  />
   <PageHero
     eyebrow="HDR photography"
     title="HDR photos that make a listing click."

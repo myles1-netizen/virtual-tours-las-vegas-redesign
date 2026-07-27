@@ -5,12 +5,20 @@ import PageHero from "../../components/PageHero.astro";
 import BeforeAfterSlider from "../../components/BeforeAfterSlider.astro";
 import SectionHeader from "../../components/SectionHeader.astro";
 import CTABand from "../../components/CTABand.astro";
+import ServiceSchema from "../../components/ServiceSchema.astro";
 import { stagingPairs, virtualStagingTiers, business } from "../../data/site";
 
 const title = "Virtual Staging Las Vegas — Empty Rooms Furnished | VTLV";
 const description = "Las Vegas virtual staging by Mike Madsen. Empty rooms become fully furnished, photorealistic living spaces — faster and cheaper than physical staging. $25/photo. See real before/after examples.";
 ---
 <Base title={title} description={description} heroVariant="dark">
+  <ServiceSchema
+    slot="head"
+    name="Virtual Staging"
+    description="Las Vegas virtual staging: empty rooms become fully furnished, photorealistic living spaces — faster and cheaper than physical staging."
+    serviceType="Virtual Staging"
+    startingPrice={25}
+  />
   <PageHero
     eyebrow="Virtual staging"
     title="Stage vacant rooms in post."
