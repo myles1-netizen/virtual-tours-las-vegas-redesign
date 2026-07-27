@@ -14,7 +14,13 @@ This `handoff/` folder is a briefing package for continuing this project. Read t
 10. **`10-ADMIN-PANEL-SPEC.md`** — mapping Mike's current WordPress admin habits to the new editing system
 11. **`11-VOICE-AND-TONE.md`** — how to actually write as Mike (first person, direct, no corporate filler)
 12. **`content-audit/`** — real page-by-page content extracted from the live site (every service, pricing, location, and about page) — use this as source material for rewrites, not `content-audit/` files as final copy verbatim (except testimonials, which must stay verbatim)
-13. **`plugin-research/`** — for every WordPress plugin the current site runs, either why it's unnecessary on the new stack or what modern tool replaces it (booking system, image optimization, spam protection, Matterport embeds, etc.)
+13. **`plugin-research/`** — a real, buildable admin-panel feature for **every single WordPress plugin** the current site runs. Per the client's explicit instruction, nothing is dismissed as "not needed" — every plugin gets a concrete feature spec living in the new site's own admin panel:
+    - `latepoint-booking-system.md` — booking/scheduling/payments/reminders (Cal.com recommended)
+    - `admin-content-tools.md` — database cleanup, media folders/rename, page ordering, duplicate/rewrite-republish, version history UI (git history surfaced in plain English, no git jargon)
+    - `seo-analytics-performance.md` — per-page SEO checklist, live GA4/Search Console/PageSpeed dashboard inside the admin, image optimization stats, cache/performance dashboard
+    - `security-reliability-comms.md` — spam/bot protection (Cloudflare Turnstile), transactional email + delivery log, real scheduled backups with a restore button, a redirects manager with 404 log
+    - `wordpress-plugin-equivalents.md` — original pass; superseded by the four docs above for the plugins they cover, still useful as background on what each plugin originally did
+    - Total additional infrastructure cost across all of this: **$0/month** at Mike's expected traffic (Cloudflare's free tiers for Workers/D1/R2, Resend's free email tier, Turnstile is free)
 
 ## Read this before anything else
 
