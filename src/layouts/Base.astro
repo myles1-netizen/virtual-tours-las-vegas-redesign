@@ -171,17 +171,25 @@ const json = (o: object) => JSON.stringify(o);
 //   - Matterport 3D embeds (already used by MatterportEmbed/Popup)
 //   - formsubmit.co (the contact + booking forms POST their AJAX submissions there)
 //   - mailto: fallback for the forms
+//   - Google Analytics 4 (gtag.js) — only added when GA4_MEASUREMENT_ID is set
 // The /admin page ships its own self-contained CSP (no external sources at all).
 const DEFAULT_CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  // GA4 loads gtag.js from www.googletagmanager.com and sends hits to
+  // *.google-analytics.com / *.googletagmanager.com. Only widened when GA4 is on.
+  ga4Enabled
+    ? "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com"
+    : "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: https:",
   // Matterport 3D embeds load from my.matterport.com (already used by MatterportEmbed/Popup).
   "frame-src https://my.matterport.com",
   // formsubmit.co receives the contact + booking form submissions (AJAX POST).
-  "connect-src 'self' https://formsubmit.co",
+  // GA4 beacons to its measurement endpoints (only added when GA4 is on).
+  ga4Enabled
+    ? "connect-src 'self' https://formsubmit.co https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com"
+    : "connect-src 'self' https://formsubmit.co",
   // form-action covers the formsubmit.co POST + the mailto: fallback.
   "form-action 'self' https://formsubmit.co mailto:",
   // frame-ancestors 'none' = clickjacking protection (also enforced via X-Frame-Options below).
@@ -268,6 +276,20 @@ const csp = cspOverride ?? DEFAULT_CSP;
     {breadcrumbLd && (
       <script type="application/ld+json" is:inline set:html={json(breadcrumbLd)} />
     )}
+
+    {/* ===== Google Analytics 4 (optional, env-gated) =====
+        Two inline snippets run BEFORE gtag.js loads:
+          1. dataLayer + gtag shim  — defines gtag() so queued calls aren't lost.
+          2. Consent Mode v2 DEFAULT DENY — must run before any gtag config so the
+             GA script boots cookieless. Until a consent banner calls
+             gtag('consent','update',{...granted}), GA stores nothing. */}
+    {ga4Enabled && (
+      <script is:inline set:html={`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('consent','default',{'ad_storage':'denied','ad_user_data':'denied','ad_personalization':'denied','analytics_storage':'denied','functionality_storage':'denied','security_storage':'granted','wait_for_update':500});gtag('config',${JSON.stringify(GA4_ID)},{'anonymize_ip':true});`} />
+    )}
+    {ga4Enabled && (
+      <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`} />
+    )}
+
     {/* Per-page additional JSON-LD (Service, FAQPage, Offer, etc.) goes here. */}
     <slot name="head" />
   </head>

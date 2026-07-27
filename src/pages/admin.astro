@@ -24,6 +24,8 @@ import {
   zillowTiers, commercialHdr, googlePackage, testimonials, faqs,
   serviceBuyers, clients,
 } from "../data/site";
+import { seoCatalog } from "../data/seo-catalog";
+import { redirects } from "../data/redirects";
 
 // Build the SHA-256 hash of the admin password (if set). The hash — never the
 // plaintext password — is what gets shipped to the browser. If no password is
@@ -64,6 +66,24 @@ const snapshot = {
   faqs: faqs.map((f) => ({ q: f.q, a: f.a })),
   services: serviceBuyers.map((s) => ({ label: s.label, audience: s.audience })),
   clients: clients.map((c) => c.name),
+  // SEO overview (replaces Yoast's per-page meta view). Title lengths are
+  // validated against the same 60/160-char thresholds Base.astro enforces so
+  // Mike can spot an overlong title here before it gets clamped in the SERP.
+  seo: seoCatalog.map((p) => ({
+    path: p.path,
+    title: p.title,
+    titleLen: p.title.length,
+    description: p.description,
+    descLen: p.description.length,
+    schema: (p.schema ?? []).join(", ") || "—",
+    noindex: !!p.noindex,
+  })),
+  // Redirect map (replaces the Redirection plugin's redirect list). Shows every
+  // old WordPress URL that now bounces to a new Astro page.
+  redirects: redirects.map((r) => ({
+    from: "/" + r.from.replace(/\/index$/, "") + "/",
+    to: r.to,
+  })),
 };
 const snapshotJson = JSON.stringify(snapshot);
 ---
@@ -200,8 +220,18 @@ const snapshotJson = JSON.stringify(snapshot);
       table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
       th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
       th { color: var(--muted); font-weight: 600; font-size: 0.74rem; letter-spacing: 0.04em; text-transform: uppercase; }
-      td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+      td.num, th.num { font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
       tr:last-child td { border-bottom: none; }
+      .muted { color: var(--muted); }
+      .hint { color: var(--muted); font-size: 0.82rem; margin: -0.4rem 0 1rem; line-height: 1.5; }
+      .hint code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82em; color: var(--brass); }
+      .warn { color: var(--danger); }
+      .tag { display: inline-block; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted-2); border: 1px solid var(--line); border-radius: 999px; padding: 0.1em 0.5em; margin-left: 0.4rem; vertical-align: middle; }
+      /* Wide SEO table: allow the title/description columns to wrap and the
+         path to stay on one line so each row reads cleanly. */
+      .seo-table td { font-size: 0.82rem; }
+      .seo-table td code { white-space: nowrap; }
+      .seo-table { display: block; overflow-x: auto; }
 
       .kv { display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1.2rem; font-size: 0.9rem; }
       .kv dt { color: var(--muted); }
@@ -294,6 +324,8 @@ const snapshotJson = JSON.stringify(snapshot);
           <a href="#faq">FAQ</a>
           <a href="#services">Services</a>
           <a href="#clients">Clients</a>
+          <a href="#seo">SEO</a>
+          <a href="#redirects">Redirects</a>
         </nav>
 
         <div id="content"><!-- rendered by JS from the snapshot --></div>
@@ -505,6 +537,32 @@ const snapshotJson = JSON.stringify(snapshot);
           h.push('<section id="clients"><div class="card"><h2>Client logos <span class="count">' + arr(d.clients).length + '</span></h2>');
           h.push('<div class="chips">' + arr(d.clients).map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join("") + '</div>');
           h.push('</div></section>');
+
+          // SEO — per-page meta overview (replaces Yoast's meta list)
+          var seoRows = arr(d.seo);
+          h.push('<section id="seo"><div class="card"><h2>SEO <span class="count">' + seoRows.length + ' pages</span></h2>');
+          h.push('<p class="hint">What Google sees for each page. Titles are clamped at 60 chars and descriptions at 160 on the live site; over-long rows here are flagged so you can trim them before they get cut off in search results.</p>');
+          h.push('<table class="seo-table"><thead><tr><th>Page</th><th>Title</th><th class="num">Chars</th><th>Description</th><th class="num">Chars</th><th>Schema</th></tr></thead><tbody>');
+          seoRows.forEach(function (p) {
+            var titleWarn = p.titleLen > 60 ? ' class="warn"' : '';
+            var descWarn = p.descLen > 160 ? ' class="warn"' : '';
+            var badge = p.noindex ? ' <span class="tag">noindex</span>' : '';
+            h.push('<tr><td><code>' + esc(p.path) + '</code>' + badge + '</td>');
+            h.push('<td' + titleWarn + '>' + esc(p.title) + '</td><td class="num"' + titleWarn + '>' + p.titleLen + '</td>');
+            h.push('<td' + descWarn + '>' + esc(p.description) + '</td><td class="num"' + descWarn + '>' + p.descLen + '</td>');
+            h.push('<td class="muted">' + esc(p.schema) + '</td></tr>');
+          });
+          h.push('</tbody></table></div></section>');
+
+          // Redirects — old WordPress URL → new Astro URL map
+          var redirRows = arr(d.redirects);
+          h.push('<section id="redirects"><div class="card"><h2>Redirects <span class="count">' + redirRows.length + '</span></h2>');
+          h.push('<p class="hint">Old WordPress permalinks that now bounce to their new Astro URLs, preserving SEO rankings and inbound links. Edit <code>src/data/redirects.ts</code> and run <code>npm run gen:redirects</code> to change this list.</p>');
+          h.push('<table class="seo-table"><thead><tr><th>Old WordPress URL</th><th>→ New URL</th></tr></thead><tbody>');
+          redirRows.forEach(function (r) {
+            h.push('<tr><td><code>' + esc(r.from) + '</code></td><td><code>' + esc(r.to) + '</code></td></tr>');
+          });
+          h.push('</tbody></table></div></section>');
 
           document.getElementById("content").innerHTML = h.join("");
         }

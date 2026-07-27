@@ -1,24 +1,128 @@
 ---
 import { asset } from "../data/site";
+import { redirects } from "../data/redirects";
 import Base from "../layouts/Base.astro";
 const title = "Page not found — Virtual Tours Las Vegas";
 const description = "That page moved or never existed. Head back to the portfolio or get in touch.";
+
+// Build a lookup of old WordPress path (without /index, with surrounding slashes)
+// → new destination. We hand this to the client so the 404 page can instantly
+// suggest the right destination if a visitor (or a stale inbound link) lands on
+// an old WordPress URL we know about. This is the 404-monitoring half of the
+// WordPress "Redirection" plugin, implemented as a static client-side lookup.
+const knownRedirects = redirects.map((r) => ({
+  from: "/" + r.from.replace(/\/index$/, "") + "/",
+  to: r.to,
+}));
 ---
 <Base title={title} description={description} noindex>
   <section class="section nf">
     <div class="container narrow text-center">
       <p class="eyebrow center">404</p>
       <h1 class="display nf-title">This shot isn't in the gallery.</h1>
-      <p class="lead" style="margin-inline:auto">The page you're after has moved or never existed. Let's point you somewhere useful.</p>
+      <p class="lead" style="margin-inline:auto">
+        The page you're after has moved or never existed. Let's point you somewhere useful.
+      </p>
+
+      {/* If the requested URL matches a known redirect, this fills in
+          dynamically with a direct link to the right page. */}
+      <p class="nf-suggest" id="nf-suggest" hidden></p>
+
       <div class="btn-row" style="justify-content:center; margin-top:2rem">
         <a href={asset("/")} class="btn brass">Back to home</a>
         <a href={asset("/work/")} class="btn outline">View the portfolio</a>
         <a href={asset("/contact/")} class="btn outline">Get in touch</a>
       </div>
+
+      <p class="nf-search-hint">
+        Looking for something specific? Try the
+        <a href={asset("/services/")}>services</a>,
+        <a href={asset("/pricing/")}>pricing</a>, or
+        <a href={asset("/neighborhoods/")}>neighborhoods</a> pages.
+      </p>
     </div>
   </section>
+
+  <script is:inline define:vars={{ knownRedirects, basePath: asset("/") }}>
+    (function () {
+      var path = window.location.pathname;
+      var referrer = document.referrer;
+      // Normalise: ensure exactly one leading + trailing slash so the lookup
+      // matches regardless of how the link was written.
+      var norm = path.replace(/\/+/g, "/");
+      if (norm.length > 1 && !norm.endsWith("/")) norm += "/";
+      if (!norm.startsWith("/")) norm = "/" + norm;
+
+      // 1) Console-log the miss — a developer with the console open (or a
+      //    GA4/Plausible integration reading page_view titles) can see exactly
+      //    which URLs are leaking, which is how broken inbound links get found.
+      //    This is the lightweight static-site equivalent of Redirection's
+      //    404 log table.
+      try {
+        console.info(
+          "[404] not found: " + path +
+          (referrer ? "  referrer: " + referrer : "") +
+          "  — if this is an old WordPress URL, add it to src/data/redirects.ts"
+        );
+      } catch (e) {}
+
+      // 2) If GA4 (gtag) is present, send a dedicated 404 event so it shows up
+      //    as its own row in the GA4 reports instead of being buried in pageviews.
+      try {
+        if (typeof window.gtag === "function") {
+          window.gtag("event", "page_not_found", {
+            page_path: path,
+            referrer: referrer || "(direct)",
+          });
+        }
+      } catch (e) {}
+
+      // 3) Smart suggestion: does the requested path look like one of our
+      //    known old WordPress URLs (with a typo, missing slash, or trailing
+      //    .html)? If so, surface a direct link to its destination.
+      var suggestEl = document.getElementById("nf-suggest");
+      if (!suggestEl) return;
+      var match = null;
+      // Exact normalised match first.
+      for (var i = 0; i < knownRedirects.length; i++) {
+        if (knownRedirects[i].from === norm) { match = knownRedirects[i]; break; }
+      }
+      // Fuzzy: strip trailing .html / index.html and try again.
+      if (!match) {
+        var stripped = norm
+          .replace(/\.html?\/?$/, "/")
+          .replace(/\/index\/?$/, "/");
+        for (var j = 0; j < knownRedirects.length; j++) {
+          if (knownRedirects[j].from === stripped) { match = knownRedirects[j]; break; }
+        }
+      }
+      if (match) {
+        suggestEl.hidden = false;
+        suggestEl.innerHTML =
+          'That page moved to <a href="' + basePath.replace(/\/$/, "") + match.to + '">' +
+          match.to + '</a>. Taking you there in a moment…';
+        // Auto-forward known old URLs from the 404 too, as a safety net in case
+        // a generated redirect page is ever missing or mis-deployed. 3-second
+        // delay so the message is readable and not jarring.
+        setTimeout(function () {
+          window.location.replace(basePath.replace(/\/$/, "") + match.to);
+        }, 3000);
+      }
+    })();
+  </script>
 </Base>
 <style>
   .nf { min-height: 60vh; display: grid; place-items: center; }
   .nf-title { font-size: var(--step-5); margin-bottom: 1rem; }
+  .nf-suggest {
+    margin-top: 1.25rem;
+    padding: 0.8rem 1.1rem;
+    border: 1px solid var(--brass, #c9a04a);
+    border-radius: 6px;
+    background: rgba(201, 160, 74, 0.08);
+    font-weight: 600;
+    display: inline-block;
+  }
+  .nf-search-hint { margin-top: 2rem; color: var(--muted, #6b6358); font-size: var(--step--1); }
+  .nf-search-hint a { color: var(--brass, #c9a04a); }
 </style>
