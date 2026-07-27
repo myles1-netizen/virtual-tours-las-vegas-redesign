@@ -1,6 +1,14 @@
 # WordPress Plugin → Static Site (Astro/Cloudflare Pages) Equivalents
 
-Context: Rebuilding Virtual Tours Las Vegas (Mike Madsen's real estate photography site) as an Astro static site on Cloudflare Pages with a git-based CMS. This maps every current WP plugin to either "not needed" (the static architecture removes the problem) or "needs a replacement" (with a specific modern tool/approach).
+Context: Rebuilding Virtual Tours Las Vegas (Mike Madsen's real estate photography site) as an Astro static site on Cloudflare Pages with a git-based CMS.
+
+**SUPERSEDED NOTE:** this file's original pass marked several plugins "NOT NEEDED" on the reasoning that the static architecture removes the underlying problem. **The client explicitly rejected that framing** — the instruction was: every plugin needs a real, recreated feature built into the new site's own admin panel, not a dismissal, regardless of whether the underlying WordPress-specific problem technically still applies. Three follow-up docs in this same folder now give the actual concrete build specs and supersede any "NOT NEEDED" verdict below for the plugins they cover:
+
+- **`admin-content-tools.md`** — Advanced Database Cleaner, Advanced Editor Tools, Disable Gutenberg, FileBird Lite, Media Cleaner, Phoenix Media Rename, Simple Page Ordering, Yoast Duplicate Post, Plugin Activation Status
+- **`seo-analytics-performance.md`** — Yoast SEO + Premium, Site Kit by Google, Imagify, LiteSpeed Cache
+- **`security-reliability-comms.md`** — Akismet, Simple Google reCAPTCHA, Easy WP SMTP, UpdraftPlus, Redirection
+
+Treat the sections below as background/history on what each plugin originally did (still useful context) — but for the plugins listed above, the real build spec is in the follow-up doc, not the "NOT NEEDED" verdict here. Matterport Shortcode and Master Slider Pro were already given real recreated-feature specs in the original pass below and don't need a follow-up (LatePoint has its own dedicated doc, `latepoint-booking-system.md`).
 
 ---
 

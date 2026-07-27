@@ -409,7 +409,7 @@ export const faqs = [
   },
   {
     q: "How long is a Matterport 3D tour hosted?",
-    a: "The first 6 months of hosting are included free. After that it's $10/month per model, billed in 6-month intervals, and you can cancel any time. One model covers up to 99 scans, so very large properties may need two.",
+    a: "The first 6 months of hosting are included free. After that it's $72 for an additional 6 months (1-99 scan points), and you can cancel any time. One model covers up to 99 scans, so very large properties may need two.",
   },
   {
     q: "What's your turnaround time?",
