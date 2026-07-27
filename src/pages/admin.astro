@@ -312,7 +312,7 @@ const tierCount = [hdrTiers, matterportTiers, floorPlanTiers, virtualStagingTier
   </head>
   <body>
     {/* ===== Password gate ===== */}
-    <div class="gate" id="gate" hidden>
+    <div class="gate" id="gate">
       <form class="gate-card" id="gate-form">
         <h1>{business.shortName} Admin</h1>
         <p>Enter the admin password to edit site content.</p>
@@ -332,7 +332,7 @@ const tierCount = [hdrTiers, matterportTiers, floorPlanTiers, virtualStagingTier
     </div>
 
     {/* ===== Dashboard ===== */}
-    <div class="dash" id="dash" hidden>
+    <div class="dash" id="dash" style="display:none">
       <div class="wrap">
         <div class="dash-head">
           <div>
@@ -595,7 +595,7 @@ const tierCount = [hdrTiers, matterportTiers, floorPlanTiers, virtualStagingTier
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script is:inline define:vars={{ snapshot: snapshotJson, usingDefaultPassword: USING_DEFAULT_PASSWORD, adminPassword: ADMIN_PASSWORD }}>
-      (function () {
+      document.addEventListener("DOMContentLoaded", function() {
         "use strict";
         var DATA = JSON.parse(snapshot);
         var files = DATA.files;
@@ -613,32 +613,34 @@ const tierCount = [hdrTiers, matterportTiers, floorPlanTiers, virtualStagingTier
         var STORAGE_KEY = "vtlv_admin_unlocked";
         var FIRST_LOGIN_KEY = "vtlv_admin_first_login_seen";
 
-        function showDash() { gate.hidden = true; dash.hidden = false; buildAll(); }
+        function showDash() {
+          var g = document.getElementById("gate");
+          var d = document.getElementById("dash");
+          if (g) g.style.display = "none";
+          if (d) d.style.display = "block";
+          buildAll();
+        }
 
         function tryUnlock() {
           var saved = "no";
           try { saved = localStorage.getItem(STORAGE_KEY) || "no"; } catch (e) {}
           if (saved === "yes") { showDash(); return; }
-          gate.hidden = false; dash.hidden = true;
+          var g = document.getElementById("gate");
+          var d = document.getElementById("dash");
+          if (g) g.style.display = "flex";
+          if (d) d.style.display = "none";
         }
-        function tryUnlock() {
-          var saved = "no";
-          try { saved = localStorage.getItem(STORAGE_KEY) || "no"; } catch (e) {}
-          if (saved === "yes") { showDash(); return; }
-          gate.hidden = false; dash.hidden = true;
-        }
+
         if (gateForm) {
           gateForm.addEventListener("submit", function (e) {
             e.preventDefault();
             gateError.textContent = "";
             var value = pwdInput ? pwdInput.value : "";
             if (!value) { gateError.textContent = "Please enter the password."; return; }
-            // Direct comparison — this is a client-side gate on a static site.
-            // The content shown is already public; the password just hides the editor UI.
             if (value === adminPassword) {
               try { localStorage.setItem(STORAGE_KEY, "yes"); } catch (e) {}
               if (usingDefaultPassword) {
-                try { if (!localStorage.getItem(FIRST_LOGIN_KEY)) { showToast("Default password is VTLV-admin-2026 — change it via ADMIN_PASSWORD env var."); localStorage.setItem(FIRST_LOGIN_KEY, "yes"); } } catch (e) {}
+                try { if (!localStorage.getItem(FIRST_LOGIN_KEY)) { showToast("Default password is VTLV-admin-2026"); localStorage.setItem(FIRST_LOGIN_KEY, "yes"); } } catch (e) {}
               }
               showDash();
             } else {
@@ -1599,7 +1601,7 @@ const tierCount = [hdrTiers, matterportTiers, floorPlanTiers, virtualStagingTier
 
         // Boot.
         tryUnlock();
-      })();
+      });
     </script>
   </body>
 </html>
