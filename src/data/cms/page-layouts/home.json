@@ -1,0 +1,55 @@
+{
+  "slug": "/",
+  "sections": [
+    {
+      "id": "hero-home",
+      "type": "hero",
+      "name": "Hero",
+      "enabled": true,
+      "fields": {
+        "headline": "The photographer Zillow & Lennar trusted with their listings.",
+        "subhead": "Mike Madsen: full-service Las Vegas real estate photographer and 3D virtual tour provider. HDR photography, Matterport, drone, floor plans and virtual staging, delivered in 24–48 hours.",
+        "image": "/images/portfolio/sierra-skye-living.jpg"
+      }
+    },
+    {
+      "id": "portfolio-home",
+      "type": "gallery",
+      "name": "Portfolio Gallery",
+      "enabled": true,
+      "fields": {
+        "heading": "Photography that sells the listing."
+      }
+    },
+    {
+      "id": "why-home",
+      "type": "text",
+      "name": "Why Mike",
+      "enabled": true,
+      "fields": {
+        "heading": "You hire the photographer. Not a gig worker.",
+        "body": "Most real estate photo companies are middlemen who outsource your listing to whoever's closest. Mike shoots every property himself."
+      }
+    },
+    {
+      "id": "testimonials-home",
+      "type": "testimonials",
+      "name": "Testimonials",
+      "enabled": true,
+      "fields": {
+        "heading": "What clients say"
+      }
+    },
+    {
+      "id": "cta-home",
+      "type": "cta",
+      "name": "Call to Action",
+      "enabled": true,
+      "fields": {
+        "headline": "Book your shoot today",
+        "buttonLabel": "Get started",
+        "buttonHref": "/contact/"
+      }
+    }
+  ]
+}

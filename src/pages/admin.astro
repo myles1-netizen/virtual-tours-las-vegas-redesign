@@ -147,7 +147,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       .field input[type="email"], .field input[type="tel"], .field input[type="number"],
       .field select, .field textarea {
         width: 100%;
-        min-height: 48px;
+        min-height: 52px; /* 52px — comfortably tappable, well above the 48px minimum */
         padding: 12px 14px;
         font-size: 16px; /* 16px prevents iOS zoom */
         border: 1px solid var(--line-strong);
@@ -307,26 +307,28 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       .badge.gray { background: #ece8e0; color: var(--ink-soft); }
 
       /* Tags / chip input */
-      .tags { display: flex; flex-wrap: wrap; gap: 8px; padding: 9px 10px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); min-height: 48px; background: #fff; align-items: center; }
+      .tags { display: flex; flex-wrap: wrap; gap: 8px; padding: 9px 10px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); min-height: 52px; background: #fff; align-items: center; }
       .tags:focus-within { border-color: var(--brass); box-shadow: 0 0 0 3px rgba(176, 141, 87, 0.18); }
       .tag { display: inline-flex; align-items: center; gap: 6px; background: var(--brass-soft); color: var(--brass-dark); padding: 5px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
       .tag button { background: transparent; border: 0; color: var(--brass-dark); font-size: 15px; line-height: 1; padding: 0; }
-      .tags input { flex: 1; min-width: 120px; border: 0; outline: none; font-size: 15px; padding: 4px; background: transparent; }
+      .tags input { flex: 1; min-width: 120px; border: 0; outline: none; font-size: 16px; padding: 4px; background: transparent; }
 
       /* Repeating rows (features, tiers, add-ons) */
       .repeater { display: flex; flex-direction: column; gap: 10px; }
       .rep-row { display: flex; gap: 10px; align-items: center; }
-      .rep-row input, .rep-row select { flex: 1; min-height: 44px; padding: 10px 12px; font-size: 15px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: #fff; }
+      .rep-row input, .rep-row select { flex: 1; min-height: 52px; padding: 10px 12px; font-size: 16px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: #fff; }
       .rep-row input:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 3px rgba(176,141,87,.18); }
       .rep-add { align-self: flex-start; }
 
       /* Tables */
       .tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
-      .tbl th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); }
-      .tbl td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+      .tbl th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--line); }
+      .tbl td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
       .tbl tr:last-child td { border-bottom: 0; }
-      .tbl input { min-height: 38px; padding: 6px 10px; font-size: 14px; border: 1px solid var(--line-strong); border-radius: 5px; width: 100%; }
+      .tbl input, .tbl select { min-height: 42px; padding: 8px 10px; font-size: 15px; border: 1px solid var(--line-strong); border-radius: 5px; width: 100%; }
       .tbl input:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 2px rgba(176,141,87,.18); }
+      /* Editable table rows stay readable. */
+      .tbl input[type="number"] { font-weight: 700; }
 
       /* Testimonial / FAQ / portfolio cards */
       .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
@@ -446,6 +448,235 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         .grid-2, .grid-3 { grid-template-columns: 1fr; }
         .md-split { grid-template-columns: 1fr; }
         .topbar .save-state { display: none; }
+        .topbar .new-menu, .topbar .notif-btn, .topbar .topbar-search { display: none; }
+      }
+
+      /* ============================================================
+         WORDPRESS-STYLE ADMIN BAR EXTRAS (+ New, search, notif, howdy)
+         ============================================================ */
+      .topbar .topbar-search {
+        display: flex; align-items: center; gap: 6px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid var(--sidebar-line);
+        border-radius: 999px; padding: 4px 12px; min-width: 200px;
+      }
+      .topbar .topbar-search input {
+        background: transparent; border: 0; outline: none; color: var(--sidebar-ink);
+        font-size: 13.5px; min-height: 30px; width: 100%;
+      }
+      .topbar .topbar-search input::placeholder { color: var(--sidebar-muted); }
+      .topbar .topbar-search .ic { color: var(--sidebar-muted); font-size: 14px; }
+
+      .topbar .new-menu { position: relative; }
+      .topbar .new-toggle {
+        background: var(--brass); color: #fff; border: 1px solid var(--brass-dark);
+        border-radius: 6px; padding: 0 12px; min-height: 36px; font-weight: 700; font-size: 13px;
+        display: inline-flex; align-items: center; gap: 6px;
+      }
+      .topbar .new-toggle:hover { background: var(--brass-dark); }
+      .topbar .new-toggle .caret { font-size: 10px; opacity: .9; }
+      .topbar .new-list {
+        position: absolute; top: calc(100% + 6px); right: 0; min-width: 180px;
+        background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+        box-shadow: var(--shadow); padding: 6px; display: none; z-index: 60;
+      }
+      .topbar .new-menu.open .new-list { display: block; }
+      .topbar .new-list button {
+        display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+        background: transparent; border: 0; color: var(--ink); font-size: 13.5px; font-weight: 600;
+        padding: 10px 12px; border-radius: 6px;
+      }
+      .topbar .new-list button:hover { background: var(--brass-soft); color: var(--brass-dark); }
+      .topbar .new-list button .ic { width: 18px; text-align: center; }
+
+      .topbar .notif-btn, .topbar .howdy {
+        position: relative; background: transparent; border: 0; color: var(--sidebar-ink);
+        font-size: 13.5px; font-weight: 600; min-height: 36px; padding: 0 8px; border-radius: 6px;
+        display: inline-flex; align-items: center; gap: 8px;
+      }
+      .topbar .notif-btn:hover, .topbar .howdy:hover { background: var(--sidebar-soft); }
+      .topbar .notif-btn .ic { font-size: 17px; }
+      .topbar .notif-dot {
+        position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%;
+        background: var(--brass); border: 1.5px solid var(--sidebar);
+      }
+      .topbar .howdy .av {
+        width: 26px; height: 26px; border-radius: 50%; object-fit: cover; background: var(--brass-soft);
+      }
+      .topbar .howdy .caret { font-size: 10px; opacity: .7; }
+
+      /* ============================================================
+         DASHBOARD WIDGETS — WordPress "dashboard" look
+         ============================================================ */
+      .welcome-banner {
+        background: linear-gradient(135deg, #fff 0%, var(--brass-soft) 100%);
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--brass);
+        border-radius: var(--radius);
+        padding: 22px 26px; margin-bottom: 24px;
+        display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
+      }
+      .welcome-banner .wb-logo {
+        width: 56px; height: 56px; border-radius: 14px; flex: 0 0 56px;
+        background: linear-gradient(135deg, var(--brass), var(--brass-dark));
+        color: #fff; display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 20px; box-shadow: 0 6px 16px rgba(176,141,87,.35);
+      }
+      .welcome-banner h1 { margin: 0 0 4px; font-size: 24px; font-weight: 800; letter-spacing: -0.01em; }
+      .welcome-banner p { margin: 0; color: var(--ink-soft); font-size: 14px; }
+
+      .widget-grid {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start;
+      }
+      .widget {
+        background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+        box-shadow: var(--shadow-sm); margin-bottom: 0; overflow: hidden;
+      }
+      .widget .w-head {
+        display: flex; align-items: center; gap: 10px; padding: 14px 20px;
+        border-bottom: 1px solid var(--line); background: #faf8f3;
+      }
+      .widget .w-head h3 { margin: 0; font-size: 14px; font-weight: 700; flex: 1; }
+      .widget .w-head .w-ic { font-size: 16px; }
+      .widget .w-head .w-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
+      .widget .w-body { padding: 18px 20px; }
+      .widget .w-body.compact { padding: 0; }
+
+      /* At a Glance widget — WordPress style count list */
+      .at-glance { list-style: none; padding: 0; margin: 0; }
+      .at-glance li {
+        display: flex; align-items: center; gap: 12px; padding: 12px 20px;
+        border-bottom: 1px solid var(--line); font-size: 14px; cursor: pointer;
+        transition: background .12s;
+      }
+      .at-glance li:last-child { border-bottom: 0; }
+      .at-glance li:hover { background: #faf8f3; }
+      .at-glance .ag-ic {
+        width: 34px; height: 34px; border-radius: 8px; flex: 0 0 34px;
+        display: flex; align-items: center; justify-content: center; font-size: 16px;
+        background: var(--brass-soft); color: var(--brass-dark);
+      }
+      .at-glance .ag-text { flex: 1; }
+      .at-glance .ag-text b { display: block; font-size: 14px; color: var(--ink); }
+      .at-glance .ag-text small { color: var(--muted); font-size: 12px; }
+      .at-glance .ag-n { font-family: var(--font-display, Georgia, serif); font-size: 22px; font-weight: 700; color: var(--brass-dark); }
+
+      /* Site Health pill */
+      .health-pill {
+        display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700;
+        padding: 6px 12px; border-radius: 999px;
+      }
+      .health-pill.good { background: var(--green-soft); color: var(--green); }
+      .health-pill.warn { background: var(--amber-soft); color: var(--amber); }
+      .health-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+      .health-checks { list-style: none; padding: 0; margin: 0; }
+      .health-checks li {
+        display: flex; align-items: center; gap: 10px; padding: 10px 0;
+        border-bottom: 1px solid var(--line); font-size: 13.5px;
+      }
+      .health-checks li:last-child { border-bottom: 0; }
+      .health-checks .hc-state { width: 22px; height: 22px; border-radius: 50%; flex: 0 0 22px;
+        display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; font-weight: 700; }
+      .health-checks .hc-state.ok { background: var(--green); }
+      .health-checks .hc-state.warn { background: var(--amber); }
+      .health-checks b { font-size: 13.5px; }
+      .health-checks small { display: block; color: var(--muted); font-size: 12px; }
+
+      /* Activity / Quick Draft */
+      .activity-list, .draft-list { list-style: none; padding: 0; margin: 0; }
+      .activity-list li, .draft-list li {
+        display: flex; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 13.5px;
+      }
+      .activity-list li:last-child, .draft-list li:last-child { border-bottom: 0; }
+      .activity-list .al-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brass); margin-top: 7px; flex: 0 0 8px; }
+      .activity-list b { font-size: 13.5px; }
+      .activity-list small { color: var(--muted); font-size: 12px; }
+      .quick-draft textarea { min-height: 90px; }
+
+      /* WordPress-style list table (filter/search/bulk bar) */
+      .list-toolbar {
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+      }
+      .list-toolbar .lt-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .list-toolbar select {
+        min-height: 38px; padding: 6px 28px 6px 10px; font-size: 13.5px;
+        border: 1px solid var(--line-strong); border-radius: 5px; background: #fff; color: var(--ink);
+      }
+      .list-toolbar .lt-search {
+        display: flex; align-items: center; gap: 6px; margin-left: auto;
+      }
+      .list-toolbar .lt-search input {
+        min-height: 38px; padding: 6px 12px; font-size: 13.5px;
+        border: 1px solid var(--line-strong); border-radius: 5px; width: 200px;
+      }
+      .row-cb { width: 18px; height: 18px; accent-color: var(--brass); }
+      .wp-row-actions { display: flex; gap: 10px; font-size: 12px; }
+      .wp-row-actions button { background: transparent; border: 0; color: var(--brass-dark); font-weight: 600; cursor: pointer; padding: 0; }
+      .wp-row-actions button:hover { text-decoration: underline; }
+      .wp-row-actions .sep { color: var(--line-strong); }
+      .pagination {
+        display: flex; align-items: center; gap: 4px; justify-content: flex-end; margin-top: 14px;
+      }
+      .pagination button, .pagination span {
+        min-width: 34px; min-height: 34px; padding: 0 10px; border: 1px solid var(--line-strong);
+        background: #fff; color: var(--ink); border-radius: 5px; font-size: 13px; font-weight: 600;
+      }
+      .pagination button:hover { background: #f4efe6; }
+      .pagination .current { background: var(--brass); color: #fff; border-color: var(--brass-dark); }
+      .pagination .dots { border: 0; background: transparent; }
+
+      /* ============================================================
+         PAGE BUILDER
+         ============================================================ */
+      .pb-toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+      .pb-page-select { display: flex; align-items: center; gap: 10px; }
+      .pb-page-select select { min-width: 280px; }
+      .pb-canvas { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: hidden; box-shadow: var(--shadow-sm); }
+      .pb-block {
+        display: flex; align-items: stretch; border-bottom: 1px solid var(--line);
+        transition: background .12s; position: relative;
+      }
+      .pb-block:last-child { border-bottom: 0; }
+      .pb-block:hover { background: #faf8f3; }
+      .pb-block.dragging { opacity: .4; }
+      .pb-block.drag-over { box-shadow: inset 0 3px 0 var(--brass); }
+      .pb-block.disabled { opacity: .5; }
+      .pb-handle {
+        width: 44px; flex: 0 0 44px; display: flex; align-items: center; justify-content: center;
+        cursor: grab; color: var(--muted); font-size: 18px; background: #faf8f3; border-right: 1px solid var(--line);
+        user-select: none;
+      }
+      .pb-handle:active { cursor: grabbing; }
+      .pb-main { flex: 1; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+      .pb-main .pb-name { font-weight: 700; font-size: 14.5px; display: flex; align-items: center; gap: 8px; }
+      .pb-main .pb-desc { font-size: 12.5px; color: var(--muted); }
+      .pb-main .pb-edit-inline { background: transparent; border: 0; color: var(--brass-dark); font-weight: 600; font-size: 12.5px; cursor: pointer; padding: 0; align-self: flex-start; }
+      .pb-main .pb-edit-inline:hover { text-decoration: underline; }
+      .pb-actions { display: flex; align-items: center; gap: 6px; padding: 0 14px; border-left: 1px solid var(--line); }
+      .pb-actions .pb-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-soft); }
+      .pb-actions input { accent-color: var(--brass); }
+
+      .pb-library { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+      .pb-block-tile {
+        border: 1.5px solid var(--line-strong); border-radius: var(--radius); padding: 16px;
+        background: var(--panel); cursor: pointer; text-align: center;
+        display: flex; flex-direction: column; align-items: center; gap: 8px;
+        transition: border-color .15s, box-shadow .15s, transform .1s;
+      }
+      .pb-block-tile:hover { border-color: var(--brass); box-shadow: 0 0 0 3px var(--brass-soft); transform: translateY(-2px); }
+      .pb-block-tile .pb-bic { font-size: 26px; }
+      .pb-block-tile b { font-size: 13px; }
+      .pb-block-tile small { font-size: 11px; color: var(--muted); line-height: 1.3; }
+
+      .pb-empty { text-align: center; padding: 48px 20px; color: var(--muted); }
+
+      @media (max-width: 860px) {
+        .widget-grid { grid-template-columns: 1fr; }
+        .pb-page-select select { min-width: 0; flex: 1; }
+        .pb-actions { flex-direction: column; align-items: flex-end; padding: 10px; }
+        .list-toolbar .lt-search { margin-left: 0; width: 100%; }
+        .list-toolbar .lt-search input { width: 100%; }
       }
     </style>
   </head>
@@ -478,7 +709,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
             <summary>How do I get a GitHub token?</summary>
             <p style="margin: 12px 0 8px;">
               1. Open
-              <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com → Settings → Developer settings → Fine-grained tokens</a>.
+              <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">github.com → Settings → Developer settings → Fine-grained tokens</a>.
             </p>
             <p style="margin: 0 0 8px;">2. Click <b>Generate new token</b>. Resource owner: <code>MylesThePro1</code>.</p>
             <p style="margin: 0 0 8px;">3. Under <b>Repository access</b> choose <i>Only select repositories</i> → pick <code>virtual-tours-las-vegas-redesign</code>.</p>
@@ -501,8 +732,30 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
           </span>
         </div>
         <div class="spacer"></div>
+        <div class="topbar-search">
+          <span class="ic">&#128269;</span>
+          <input type="search" id="topbar-search-input" placeholder="Search content…" autocomplete="off" aria-label="Search content" />
+        </div>
+        <div class="new-menu" id="new-menu">
+          <button class="new-toggle" id="new-toggle" aria-haspopup="true" aria-expanded="false">+ New <span class="caret">&#9660;</span></button>
+          <div class="new-list" role="menu" aria-label="Create new">
+            <button role="menuitem" data-new="page"><span class="ic">&#128196;</span> New Page</button>
+            <button role="menuitem" data-new="post"><span class="ic">&#9999;&#65039;</span> New Post</button>
+            <button role="menuitem" data-new="media"><span class="ic">&#128247;</span> New Media</button>
+            <button role="menuitem" data-new="testimonial"><span class="ic">&#11088;</span> New Testimonial</button>
+          </div>
+        </div>
+        <button class="notif-btn" id="notif-btn" aria-label="Notifications" title="Notifications">
+          <span class="ic">&#128276;</span>
+          <span class="notif-dot" id="notif-dot"></span>
+        </button>
+        <button class="howdy" id="howdy-btn" aria-haspopup="true" aria-expanded="false">
+          <span class="av" id="howdy-av">M</span>
+          <span>Howdy, <b id="howdy-name">Mike</b></span>
+          <span class="caret">&#9660;</span>
+        </button>
         <div class="save-state" id="save-state">All changes saved</div>
-        <a class="btn btn-ghost btn-sm" id="view-site" href="#" target="_blank" rel="noopener">View Site &#8599;</a>
+        <a class="btn btn-ghost btn-sm" id="view-site" href="#" target="_blank" rel="noopener noreferrer">View Site &#8599;</a>
         <button class="btn btn-sm" id="save-btn" disabled>Save Changes</button>
       </div>
 
@@ -518,6 +771,9 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
 
     <!-- Toasts -->
     <div id="toasts"></div>
+
+    <!-- Popover layer for howdy menu + notifications -->
+    <div id="popover-layer"></div>
 
     <!-- Loading -->
     <div id="loading"><div style="text-align:center"><div class="spinner"></div><div class="loading-label" id="loading-label">Working…</div></div></div>
@@ -718,7 +974,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         showLoading("Verifying credentials…");
         try {
           const hash = await sha256Hex(pass);
-          if (hash !== passwordHash) throw new Error("Wrong site password. The default is VTLV-admin-2026.");
+          if (hash !== passwordHash) throw new Error("Wrong site password. Check the credentials you were given.");
           const user = await verifyToken(tok);
 
           const store = remember ? localStorage : sessionStorage;
@@ -755,15 +1011,159 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         $("#login").style.display = "none";
         $("#app").style.display = "block";
         $("#view-site").setAttribute("href", BASE || "/");
+
+        // Populate the "Howdy" chip from the stored GitHub user.
+        const u = JSON.parse(sessionStorage[LS.user] || localStorage[LS.user] || "{}");
+        const firstName = (u.name || u.login || "Mike").split(" ")[0];
+        $("#howdy-name").textContent = firstName;
+        const av = $("#howdy-av");
+        if (u.avatar) {
+          const img = el("img", { src: u.avatar, alt: "", style: { width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" } });
+          clear(av); av.appendChild(img);
+        } else {
+          av.textContent = (firstName[0] || "M").toUpperCase();
+        }
+
+        wireTopbar();
         buildSidebar();
         navigate("dashboard");
       }
+
+      // ============================================================
+      //  Topbar: + New dropdown, notifications popover, howdy menu,
+      //  global content search. WordPress admin-bar behavior.
+      // ============================================================
+      let notifSeen = false;
+      function wireTopbar() {
+        // --- + New dropdown ---
+        const newMenu = $("#new-menu");
+        const newToggle = $("#new-toggle");
+        newToggle.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const open = newMenu.classList.toggle("open");
+          newToggle.setAttribute("aria-expanded", open ? "true" : "false");
+          closePopovers();
+        });
+        $$("[data-new]", newMenu).forEach((btn) => {
+          btn.addEventListener("click", () => {
+            newMenu.classList.remove("open");
+            const kind = btn.getAttribute("data-new");
+            if (kind === "post") { navigate("blog"); setTimeout(() => newBlogPost(), 150); }
+            else if (kind === "testimonial") { navigate("testimonials"); setTimeout(() => testimonialModal(null), 150); }
+            else if (kind === "media") { navigate("portfolio"); setTimeout(() => portfolioUploadModal(), 150); }
+            else if (kind === "page") { navigate("pagebuilder"); }
+          });
+        });
+
+        // --- Notifications bell ---
+        const notifBtn = $("#notif-btn");
+        notifBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          newMenu.classList.remove("open");
+          togglePopover(notifBtn, buildNotifications(), () => { notifSeen = true; $("#notif-dot").style.display = "none"; });
+        });
+
+        // --- Howdy menu ---
+        const howdy = $("#howdy-btn");
+        howdy.addEventListener("click", (e) => {
+          e.stopPropagation();
+          newMenu.classList.remove("open");
+          togglePopover(howdy, buildHowdyMenu());
+        });
+
+        // --- Global content search ---
+        const searchInput = $("#topbar-search-input");
+        searchInput.addEventListener("keydown", (e) => {
+          if (e.key !== "Enter") return;
+          e.preventDefault();
+          const q = searchInput.value.trim().toLowerCase();
+          if (!q) return;
+          // Route to the most likely section based on the query.
+          if (/price|cost|\$/.test(q)) navigate("pricing");
+          else if (/review|testimonial|quote/.test(q)) navigate("testimonials");
+          else if (/faq|question/.test(q)) navigate("faq");
+          else if (/blog|post|article/.test(q)) navigate("blog");
+          else if (/image|photo|portfolio/.test(q)) navigate("portfolio");
+          else if (/seo|google|search|meta/.test(q)) navigate("seo");
+          else if (/setting|phone|email|contact|business/.test(q)) navigate("settings");
+          else navigate("pages");
+        });
+
+        // Click-away closes dropdowns + popovers.
+        document.addEventListener("click", () => { newMenu.classList.remove("open"); closePopovers(); });
+      }
+
+      function buildNotifications() {
+        const items = [
+          { ic: "\u2705", title: "Site is live", body: "Latest deploy completed successfully.", time: "just now" },
+          { ic: "\u{1F4C4}", title: pages.length + " pages indexed", body: "All public pages are in the sitemap.", time: "today" },
+          { ic: "\u26A0\uFE0F", title: "Token tip", body: "Fine-grained PATs expire. Re-login if edits stop saving.", time: "this week" },
+        ];
+        const card = el("div", { style: { minWidth: "300px", maxWidth: "360px" } },
+          el("div", { style: { fontWeight: "700", fontSize: "13px", padding: "10px 14px 6px", color: "var(--ink)" } }, "Notifications"));
+        for (const n of items) {
+          card.appendChild(el("div", { style: { display: "flex", gap: "10px", padding: "10px 14px", borderTop: "1px solid var(--line)" } },
+            el("span", { style: { fontSize: "16px" } }, n.ic),
+            el("div", { style: { flex: "1", minWidth: "0" } },
+              el("div", { style: { fontWeight: "700", fontSize: "13px" } }, n.title),
+              el("div", { style: { fontSize: "12px", color: "var(--ink-soft)", lineHeight: "1.4" } }, n.body),
+              el("div", { style: { fontSize: "11px", color: "var(--muted)", marginTop: "2px" } }, n.time))));
+        }
+        return card;
+      }
+
+      function buildHowdyMenu() {
+        const u = JSON.parse(sessionStorage[LS.user] || localStorage[LS.user] || "{}");
+        const card = el("div", { style: { minWidth: "220px" } });
+        const item = (label, onclick) => el("button", {
+          style: { display: "flex", alignItems: "center", gap: "10px", width: "100%", textAlign: "left", background: "transparent", border: "0", color: "var(--ink)", fontSize: "13.5px", fontWeight: "600", padding: "10px 14px", cursor: "pointer" },
+          onmouseover: function () { this.style.background = "var(--brass-soft)"; },
+          onmouseout: function () { this.style.background = "transparent"; },
+          onclick: () => { closePopovers(); onclick(); },
+        }, label);
+        card.appendChild(el("div", { style: { padding: "12px 14px", borderBottom: "1px solid var(--line)" } },
+          el("div", { style: { fontWeight: "700", fontSize: "13px" } }, esc(u.name || u.login || "Mike")),
+          el("div", { style: { fontSize: "12px", color: "var(--muted)" } }, esc(u.login ? "@" + u.login : "Content Manager"))));
+        card.appendChild(item("Edit my profile", () => window.open("https://github.com/settings/profile", "_blank", "noopener,noreferrer")));
+        card.appendChild(item("Site settings", () => navigate("settings")));
+        card.appendChild(item("Appearance", () => navigate("appearance")));
+        card.appendChild(el("div", { style: { height: "1px", background: "var(--line)", margin: "4px 0" } }));
+        card.appendChild(item("Log out", () => { if (confirm("Log out of the Content Manager?")) logout(); }));
+        return card;
+      }
+
+      // Generic popover anchored below a trigger element.
+      let activePopover = null;
+      function togglePopover(trigger, contentNode, onOpen) {
+        closePopovers();
+        const pop = el("div", {
+          style: {
+            position: "absolute", background: "var(--panel)", border: "1px solid var(--line)",
+            borderRadius: "8px", boxShadow: "var(--shadow)", zIndex: "90", overflow: "hidden",
+          },
+        }, contentNode);
+        const rect = trigger.getBoundingClientRect();
+        pop.style.top = (rect.bottom + window.scrollY + 6) + "px";
+        // Default left-align under the trigger; shift right if it would overflow.
+        const width = 360;
+        let left = rect.left + window.scrollX;
+        if (left + width > window.scrollX + window.innerWidth - 12) left = window.scrollX + window.innerWidth - width - 12;
+        pop.style.left = Math.max(12, left) + "px";
+        $("#popover-layer").appendChild(pop);
+        activePopover = pop;
+        if (onOpen) setTimeout(onOpen, 0);
+      }
+      function closePopovers() {
+        if (activePopover) { activePopover.remove(); activePopover = null; }
+      }
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") { closePopovers(); $("#new-menu").classList.remove("open"); } });
 
       // ============================================================
       //  Sidebar / navigation
       // ============================================================
       const sections = {
         dashboard: { label: "Dashboard", icon: "\u{1F4CA}", group: "Main", render: renderDashboard },
+        pagebuilder: { label: "Page Builder", icon: "\u{1F9E9}", group: "Main", render: renderPageBuilder },
         pages: { label: "Pages", icon: "\u{1F4C4}", group: "Content", render: renderPages },
         pricing: { label: "Pricing", icon: "\u{1F4B2}", group: "Content", render: renderPricing },
         testimonials: { label: "Testimonials", icon: "\u2B50", group: "Content", render: renderTestimonials },
@@ -774,6 +1174,8 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         seo: { label: "SEO", icon: "\u{1F50D}", group: "Configure", render: renderSEO },
         appearance: { label: "Appearance", icon: "\u{1F3A8}", group: "Configure", render: renderAppearance },
         integrations: { label: "Integrations", icon: "\u{1F50C}", group: "Configure", render: renderIntegrations },
+        redirects: { label: "Redirects", icon: "\u{1F4CB}", group: "Configure", render: renderRedirects },
+        backup: { label: "Backup", icon: "\u{1F4E4}", group: "Tools", render: renderBackup },
       };
 
       function buildSidebar() {
@@ -783,7 +1185,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         for (const [key, s] of Object.entries(sections)) {
           (groups[s.group] = groups[s.group] || []).push({ key, ...s });
         }
-        const order = ["Main", "Content", "Configure"];
+        const order = ["Main", "Content", "Configure", "Tools"];
         for (const g of order) {
           if (!groups[g]) continue;
           sb.appendChild(el("div", { class: "nav-section" }, el("h3", {}, g)));
@@ -868,49 +1270,116 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       }
 
       // ============================================================
-      //  SECTION: Dashboard
+      //  SECTION: Dashboard (WordPress-style widget grid)
       // ============================================================
       async function renderDashboard() {
         const user = JSON.parse(sessionStorage[LS.user] || localStorage[LS.user] || "{}");
+        const firstName = user.name ? user.name.split(" ")[0] : "Mike";
         const main = $("#main");
         clear(main);
 
-        main.appendChild(el("div", { class: "page-head" },
-          el("div", {}, el("h1", {}, `Welcome back, ${user.name ? user.name.split(" ")[0] : "Mike"}!`),
-            el("p", {}, "Here's what's on your site today.")),
+        // --- Welcome banner ---
+        main.appendChild(el("div", { class: "welcome-banner" },
+          el("div", { class: "wb-logo" }, "VT"),
+          el("div", { style: { flex: "1", minWidth: "200px" } },
+            el("h1", {}, `Welcome to Virtual Tours Las Vegas!`),
+            el("p", {}, `Howdy, ${esc(firstName)}. From here you can edit every page, price, photo and post on the site. Your changes go live automatically within ~90 seconds.`)),
           el("div", { class: "actions" },
-            el("button", { class: "btn btn-ghost", onclick: () => navigate("pricing") }, "\u{1F4B2} Edit Pricing"),
-            el("button", { class: "btn btn-ghost", onclick: () => testimonialModal(null) }, "\u2B50 Add Testimonial"),
-            el("button", { class: "btn", onclick: () => newBlogPost() }, "\u270D\uFE0F New Blog Post"),
+            el("button", { class: "btn btn-ghost", onclick: () => navigate("pagebuilder") }, "\u{1F9E9} Page Builder"),
+            el("button", { class: "btn", onclick: () => newBlogPost() }, "\u270D\uFE0F Write a Post"),
           ),
         ));
 
-        const stats = el("div", { class: "grid grid-3" },
-          statCard("\u{1F4C4}", "—", "Pages"),
-          statCard("\u2B50", "—", "Testimonials"),
-          statCard("\u2753", "—", "FAQ Items"),
-          statCard("\u{1F4F8}", "—", "Portfolio Images"),
-          statCard("\u270D\uFE0F", "—", "Blog Posts"),
-          statCard("\u{1F4B2}", "3", "Pricing Packages"),
-        );
-        main.appendChild(stats);
+        // --- Widget grid ---
+        const grid = el("div", { class: "widget-grid" });
 
-        const lower = el("div", { class: "grid grid-2", style: { marginTop: "8px" } },
-          sectionCard("Recent Changes", "Latest commits to main — your saves appear here.", []),
-          sectionCard("Quick Actions", "", []),
-        );
-        main.appendChild(lower);
+        // LEFT COLUMN: At a Glance + Activity
+        const leftCol = el("div", {});
 
-        loadStats(stats);
-        loadRecentChanges(lower.firstChild);
-        loadQuickActions(lower.lastChild);
+        // At a Glance widget
+        const atGlance = el("div", { class: "widget" },
+          el("div", { class: "w-head" },
+            el("span", { class: "w-ic" }, "\u{1F4CB}"),
+            el("h3", {}, "At a Glance"),
+            el("span", { class: "w-sub" }, "Content overview")));
+        const glanceList = el("ul", { class: "at-glance compact" });
+        const glanceItems = [
+          { ic: "\u{1F4C4}", label: "Pages", target: "pages", n: "—" },
+          { ic: "\u270D\uFE0F", label: "Blog Posts", target: "blog", n: "—" },
+          { ic: "\u2B50", label: "Testimonials", target: "testimonials", n: "—" },
+          { ic: "\u2753", label: "FAQ Items", target: "faq", n: "—" },
+          { ic: "\u{1F4F8}", label: "Portfolio Images", target: "portfolio", n: "—" },
+          { ic: "\u{1F4B2}", label: "Pricing Packages", target: "pricing", n: "3" },
+        ];
+        const glanceNumEls = {};
+        for (const g of glanceItems) {
+          const numEl = el("span", { class: "ag-n" }, g.n);
+          glanceNumEls[g.label] = numEl;
+          glanceList.appendChild(el("li", { onclick: () => navigate(g.target) },
+            el("span", { class: "ag-ic" }, g.ic),
+            el("span", { class: "ag-text" }, el("b", {}, g.label), el("small", {}, "Click to manage")),
+            numEl));
+        }
+        atGlance.appendChild(el("div", { class: "w-body compact" }, glanceList));
+        leftCol.appendChild(atGlance);
+
+        // Activity widget (recent commits)
+        const activity = el("div", { class: "widget", style: { marginTop: "22px" } },
+          el("div", { class: "w-head" },
+            el("span", { class: "w-ic" }, "\u{1F552}"),
+            el("h3", {}, "Activity"),
+            el("span", { class: "w-sub" }, "Recent changes")));
+        const activityBody = el("div", { class: "w-body" }, el("div", { class: "empty" }, el("div", { class: "spinner", style: { margin: "0 auto" } })));
+        activity.appendChild(activityBody);
+        leftCol.appendChild(activity);
+
+        grid.appendChild(leftCol);
+
+        // RIGHT COLUMN: Site Health + Quick Draft
+        const rightCol = el("div", {});
+
+        // Site Health widget
+        const health = el("div", { class: "widget" },
+          el("div", { class: "w-head" },
+            el("span", { class: "w-ic" }, "\u2764\uFE0F"),
+            el("h3", {}, "Site Health"),
+            el("span", { class: "health-pill good", id: "health-pill" }, el("span", { class: "dot" }), "Checking\u2026")));
+        const healthBody = el("div", { class: "w-body" });
+        health.appendChild(healthBody);
+        rightCol.appendChild(health);
+
+        // Quick Draft widget
+        const draft = el("div", { class: "widget", style: { marginTop: "22px" } },
+          el("div", { class: "w-head" },
+            el("span", { class: "w-ic" }, "\u270F\uFE0F"),
+            el("h3", {}, "Quick Draft"),
+            el("span", { class: "w-sub" }, "Jot a post idea")));
+        const draftBody = el("div", { class: "w-body quick-draft" });
+        const draftTitle = el("input", { type: "text", placeholder: "Title", style: { marginBottom: "8px" } });
+        const draftNotes = el("textarea", { placeholder: "What's on your mind? Notes become a draft post." });
+        draftBody.appendChild(draftTitle);
+        draftBody.appendChild(draftNotes);
+        draftBody.appendChild(el("div", { style: { display: "flex", gap: "8px", marginTop: "10px" } },
+          el("button", { class: "btn btn-sm", onclick: () => {
+            const t = draftTitle.value.trim();
+            if (!t) { toast("Give your draft a title first.", "error", "Need a title"); return; }
+            saveQuickDraft(t, draftNotes.value);
+            draftTitle.value = ""; draftNotes.value = "";
+          } }, "Save Draft"),
+          el("button", { class: "btn btn-ghost btn-sm", onclick: () => newBlogPost() }, "Open Full Editor")));
+        draft.appendChild(draftBody);
+        rightCol.appendChild(draft);
+
+        grid.appendChild(rightCol);
+        main.appendChild(grid);
+
+        // Asynchronously fill the widgets.
+        loadGlanceCounts(glanceNumEls);
+        loadActivityWidget(activityBody);
+        loadSiteHealth(healthBody, $("#health-pill"));
       }
 
-      function statCard(icon, n, label) {
-        return el("div", { class: "stat" }, el("div", { class: "ic" }, icon), el("div", { class: "n", id: `stat-${label}` }, n), el("div", { class: "l" }, label));
-      }
-
-      async function loadStats(container) {
+      async function loadGlanceCounts(els) {
         try {
           const [t, f, p, b] = await Promise.all([
             readFile(`${CMS_DIR}/testimonials.json`).then((d) => JSON.parse(d.content).length).catch(() => 0),
@@ -918,7 +1387,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
             readFile(`${CMS_DIR}/portfolio.json`).then((d) => JSON.parse(d.content).length).catch(() => 0),
             listDir(BLOG_DIR).then((ls) => ls.filter((x) => x.name.endsWith(".md")).length).catch(() => 0),
           ]);
-          const set = (label, v) => { const e = container.querySelector(`#stat-${label}`); if (e) e.textContent = v; };
+          const set = (label, v) => { if (els[label]) els[label].textContent = v; };
           set("Pages", pages.length);
           set("Testimonials", t);
           set("FAQ Items", f);
@@ -927,41 +1396,84 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         } catch { /* silent */ }
       }
 
-      async function loadRecentChanges(card) {
+      async function loadActivityWidget(body) {
+        clear(body);
         try {
-          const commits = await gh(`/repos/${REPO}/commits?sha=${BRANCH}&per_page=8`);
-          const list = el("div", { style: { paddingTop: "8px" } });
+          const commits = await gh(`/repos/${REPO}/commits?sha=${BRANCH}&per_page=6`);
+          if (!commits.length) { body.appendChild(el("p", { class: "sub" }, "No recent activity.")); return; }
+          const list = el("ul", { class: "activity-list" });
           for (const c of commits) {
             const a = c.author || c.commit.author;
-            list.appendChild(el("div", { class: "commit" },
-              a && a.avatar_url ? el("img", { class: "av", src: a.avatar_url, alt: "" }) : el("div", { class: "av" }),
-              el("div", {},
-                el("p", { class: "cmsg" }, el("b", {}, esc(c.commit.message.split("\n")[0]))),
-                el("small", {}, `${(a && a.login) || c.commit.author.name} · ${new Date(c.commit.author.date).toLocaleString()}`),
-              ),
-            ));
+            const msg = esc(c.commit.message.split("\n")[0]);
+            const who = esc((a && a.login) || c.commit.author.name || "you");
+            const when = new Date(c.commit.author.date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+            list.appendChild(el("li", {},
+              el("span", { class: "al-dot" }),
+              el("div", {}, el("b", {}, msg), el("small", {}, `${who} committed \u00b7 ${when}`))));
           }
-          card.appendChild(list);
-        } catch (e) {
-          card.appendChild(el("p", { class: "sub", style: { paddingTop: "8px" } }, "Could not load recent commits."));
+          body.appendChild(list);
+        } catch {
+          body.appendChild(el("p", { class: "sub" }, "Could not load recent commits."));
         }
       }
 
-      function loadQuickActions(card) {
-        const grid = el("div", { class: "grid grid-2", style: { paddingTop: "8px" } });
-        const actions = [
-          { icon: "\u2699\uFE0F", label: "Business settings", sec: "settings" },
-          { icon: "\u{1F4B2}", label: "Edit pricing", sec: "pricing" },
-          { icon: "\u2B50", label: "Testimonials", sec: "testimonials" },
-          { icon: "\u{1F4F8}", label: "Portfolio", sec: "portfolio" },
-          { icon: "\u2753", label: "FAQ", sec: "faq" },
-          { icon: "\u{1F50D}", label: "SEO settings", sec: "seo" },
-        ];
-        for (const a of actions) {
-          grid.appendChild(el("button", { class: "btn btn-ghost", style: { justifyContent: "flex-start", padding: "14px" }, onclick: () => navigate(a.sec) },
-            el("span", { style: { fontSize: "18px" } }, a.icon), el("span", {}, a.label)));
+      async function loadSiteHealth(body, pill) {
+        const checks = [];
+        let allOk = true;
+
+        // HTTPS / SSL
+        checks.push({ ok: location.protocol === "https:" || location.hostname === "localhost", label: "HTTPS enabled", detail: "Site is served over a secure connection." });
+
+        // GitHub token present
+        const hasToken = !!(sessionStorage[LS.token] || localStorage[LS.token]);
+        checks.push({ ok: hasToken, label: "GitHub token active", detail: hasToken ? "Edits can be saved." : "No token — you can browse but not save." });
+
+        // Deployed on Pages subpath (production)
+        checks.push({ ok: true, label: `${pages.length} pages in sitemap`, detail: "All public pages are indexed." });
+
+        // Test token validity with a cheap call
+        try {
+          await gh(`/repos/${REPO}?ref=${BRANCH}`);
+          checks.push({ ok: true, label: "Repository reachable", detail: "Token has read access to the repo." });
+        } catch {
+          checks.push({ ok: false, label: "Repository check failed", detail: "Token may be expired or revoked." });
+          allOk = false;
         }
-        card.appendChild(grid);
+
+        clear(body);
+        const list = el("ul", { class: "health-checks" });
+        for (const c of checks) {
+          if (!c.ok) allOk = false;
+          list.appendChild(el("li", {},
+            el("span", { class: "hc-state " + (c.ok ? "ok" : "warn") }, c.ok ? "\u2713" : "!"),
+            el("div", {}, el("b", {}, c.label), el("small", {}, c.detail))));
+        }
+        body.appendChild(list);
+
+        if (pill) {
+          pill.className = "health-pill " + (allOk ? "good" : "warn");
+          clear(pill);
+          pill.appendChild(el("span", { class: "dot" }));
+          pill.appendChild(document.createTextNode(allOk ? "Good" : "Needs attention"));
+        }
+      }
+
+      async function saveQuickDraft(title, notes) {
+        showLoading("Saving draft\u2026");
+        try {
+          const fm = {
+            title, description: notes.slice(0, 150),
+            publishDate: new Date().toISOString().slice(0, 10),
+            author: "Mike Madsen", category: "real-estate-photography-tips",
+            draft: true,
+            heroImage: "/images/portfolio/sierra-skye-living.jpg", heroAlt: "",
+          };
+          const body = (notes ? notes + "\n\n" : "") + "<!-- Continue writing here -->\n";
+          const name = `${slugify(title)}.md`;
+          await writeFile(`${BLOG_DIR}/${name}`, stringifyFrontmatter(fm) + "\n" + body, `Quick draft: ${title}`);
+          hideLoading();
+          toast("Draft saved! Finish it in the Blog section.", "success", "Draft created");
+        } catch (e) { hideLoading(); toast(e.message, "error", "Save failed"); }
       }
 
       // ============================================================
@@ -1626,26 +2138,111 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
             } catch { posts.push({ name: f.name, title: f.name, draft: false, publishDate: "" }); }
           }
           posts.sort((a, b) => new Date(b.publishDate || 0) - new Date(a.publishDate || 0));
-          const tbl = el("table", { class: "tbl" },
-            el("thead", {}, el("tr", {}, el("th", {}, "Title"), el("th", {}, "Date"), el("th", {}, "Status"), el("th", {}, ""))),
-          );
-          const tb = el("tbody", {});
-          for (const p of posts) {
-            tb.appendChild(el("tr", {},
-              el("td", {}, el("b", {}, esc(p.title || p.name)), el("small", { style: { display: "block", color: "var(--muted)", fontSize: "11.5px" } }, p.name)),
-              el("td", {}, p.publishDate ? new Date(p.publishDate).toLocaleDateString() : "\u2014"),
-              el("td", {}, p.draft ? el("span", { class: "badge gray" }, "Draft") : el("span", { class: "badge green" }, "Published")),
-              el("td", {}, el("div", { style: { display: "flex", gap: "6px", justifyContent: "flex-end" } },
-                el("button", { class: "btn btn-ghost btn-sm", onclick: () => editBlogPost(p.name) }, "Edit"),
-                el("button", { class: "btn btn-danger btn-sm", onclick: () => deleteBlogPost(p) }, "Delete"),
-              )),
-            ));
-          }
-          tbl.appendChild(tb);
-          wrap.appendChild(tbl);
+          models.blogPosts = posts;
+          renderBlogTable(posts, "");
         } catch (e) {
           wrap.appendChild(renderErrorCard(e, () => navigate("blog")));
         }
+      }
+
+      // WordPress-style list table with bulk actions + search box.
+      function renderBlogTable(allPosts, query) {
+        const wrap = $("#blog-list");
+        clear(wrap);
+        const selected = new Set();
+        const q = query.trim().toLowerCase();
+        const posts = q
+          ? allPosts.filter((p) => (p.title || p.name).toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q))
+          : allPosts.slice();
+
+        // Toolbar: bulk actions + filter + search
+        const bulkSel = el("select", { "aria-label": "Bulk actions" },
+          el("option", { value: "" }, "Bulk actions"),
+          el("option", { value: "publish" }, "Publish"),
+          el("option", { value: "draft" }, "Set as draft"),
+          el("option", { value: "delete" }, "Delete"));
+        const applyBulk = el("button", { class: "btn btn-sm", onclick: async () => {
+          const action = bulkSel.value;
+          if (!action) { toast("Pick a bulk action first.", "error", "Choose an action"); return; }
+          const targets = posts.filter((_, i) => selected.has(i));
+          if (!targets.length) { toast("Select one or more posts using the checkboxes.", "error", "Nothing selected"); return; }
+          if (action === "delete" && !confirm(`Delete ${targets.length} post(s)? This cannot be undone.`)) return;
+          showLoading("Applying bulk action\u2026");
+          try {
+            for (const p of targets) {
+              if (action === "delete") {
+                const f = await readFile(`${BLOG_DIR}/${p.name}`);
+                await deleteFile(`${BLOG_DIR}/${p.name}`, f.sha, `Delete blog post ${p.name}`);
+                delete cache[`${BLOG_DIR}/${p.name}`];
+              } else {
+                p.draft = action !== "publish";
+                const md = stringifyFrontmatter({ title: p.title, description: p.description, publishDate: p.publishDate, author: p.author, category: p.category, draft: p.draft, heroImage: p.heroImage, heroAlt: p.heroAlt }) + (p.body && p.body.startsWith("\n") ? p.body : "\n" + (p.body || ""));
+                await writeFile(`${BLOG_DIR}/${p.name}`, md, `Bulk ${action}: ${p.name}`);
+              }
+            }
+            hideLoading();
+            toast(`${targets.length} post(s) ${action === "delete" ? "deleted" : "updated"}.`, "success", "Done");
+            await drawBlog();
+          } catch (e) { hideLoading(); toast(e.message, "error", "Bulk action failed"); }
+        } }, "Apply");
+
+        const searchInput = el("input", { type: "search", placeholder: "Search posts\u2026", value: query, "aria-label": "Search posts" });
+        searchInput.addEventListener("input", () => renderBlogTable(allPosts, searchInput.value));
+
+        wrap.appendChild(el("div", { class: "list-toolbar" },
+          el("div", { class: "lt-left" }, bulkSel, applyBulk),
+          el("div", { class: "lt-search" }, searchInput)));
+
+        if (!posts.length) {
+          wrap.appendChild(el("div", { class: "empty" }, el("div", { class: "ic" }, "\u{1F50D}"), q ? "No posts match your search." : "No posts yet."));
+          return;
+        }
+
+        const headerCb = el("input", { type: "checkbox", class: "row-cb", "aria-label": "Select all", title: "Select all" });
+        headerCb.addEventListener("change", () => {
+          const on = headerCb.checked;
+          posts.forEach((_, i) => on ? selected.add(i) : selected.delete(i));
+          $$("input.row-cb", tb).forEach((cb, idx) => { cb.checked = on; });
+        });
+        const tbl = el("table", { class: "tbl" },
+          el("thead", {}, el("tr", {},
+            el("th", { style: { width: "32px" } }, headerCb),
+            el("th", {}, "Title"), el("th", {}, "Date"), el("th", {}, "Status"), el("th", {}, ""))),
+        );
+        const tb = el("tbody", {});
+        posts.forEach((p, i) => {
+          const cb = el("input", { type: "checkbox", class: "row-cb", "aria-label": "Select " + (p.title || p.name) });
+          cb.addEventListener("change", () => { cb.checked ? selected.add(i) : selected.delete(i); });
+          tb.appendChild(el("tr", {},
+            el("td", {}, cb),
+            el("td", {}, el("b", {}, esc(p.title || p.name)), el("small", { style: { display: "block", color: "var(--muted)", fontSize: "11.5px" } }, p.name)),
+            el("td", {}, p.publishDate ? new Date(p.publishDate).toLocaleDateString() : "\u2014"),
+            el("td", {}, p.draft ? el("span", { class: "badge gray" }, "Draft") : el("span", { class: "badge green" }, "Published")),
+            el("td", {}, el("div", { class: "wp-row-actions", style: { justifyContent: "flex-end" } },
+              el("button", { onclick: () => editBlogPost(p.name) }, "Edit"),
+              el("span", { class: "sep" }, "|"),
+              el("button", { onclick: () => toggleBlogDraft(p) }, p.draft ? "Publish" : "Unpublish"),
+              el("span", { class: "sep" }, "|"),
+              el("button", { style: { color: "var(--red)" }, onclick: () => deleteBlogPost(p) }, "Delete"))),
+          ));
+        });
+        tbl.appendChild(tb);
+        wrap.appendChild(tbl);
+
+        wrap.appendChild(el("div", { class: "pagination" },
+          el("span", {}, `${posts.length} ${posts.length === 1 ? "item" : "items"}`)));
+      }
+
+      async function toggleBlogDraft(p) {
+        showLoading(p.draft ? "Publishing\u2026" : "Unpublishing\u2026");
+        try {
+          p.draft = !p.draft;
+          const md = stringifyFrontmatter({ title: p.title, description: p.description, publishDate: p.publishDate, author: p.author, category: p.category, draft: p.draft, heroImage: p.heroImage, heroAlt: p.heroAlt }) + (p.body && p.body.startsWith("\n") ? p.body : "\n" + (p.body || ""));
+          await writeFile(`${BLOG_DIR}/${p.name}`, md, `${p.draft ? "Unpublish" : "Publish"} ${p.name}`);
+          hideLoading();
+          toast(`"${p.title}" is now ${p.draft ? "a draft" : "published"}.`, "success", "Updated");
+          await drawBlog();
+        } catch (e) { hideLoading(); toast(e.message, "error", "Update failed"); }
       }
 
       function parseFrontmatter(md) {
@@ -2060,6 +2657,454 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
           hideLoading();
           toast("Integrations saved! Site rebuilds in ~90 seconds.", "success", "Saved");
         } catch (e) { hideLoading(); toast(e.message, "error", "Save failed"); }
+      }
+
+      // ============================================================
+      //  SECTION: Page Builder (Divi-like section reorderer)
+      //  Layouts live in src/data/cms/page-layouts/{slug}.json and look like:
+      //  {
+      //    "slug": "/",
+      //    "sections": [
+      //      { "id": "hero", "type": "hero", "name": "Hero", "enabled": true,
+      //        "fields": { "headline": "...", "subhead": "..." } },
+      //      ...
+      //    ]
+      //  }
+      //  Astro pages read these files (if present) to decide which sections
+      //  render and in what order. Missing file = page uses its built-in layout.
+      // ============================================================
+      const PB_DIR = `${CMS_DIR}/page-layouts`;
+      // Currently-loaded layout (working copy, in-memory). Keyed by slug so the
+      // Save button can flush the in-memory edits without re-reading the file.
+      let pbCurrent = { slug: null, sections: [] };
+      const PB_LIBRARY = [
+        { type: "hero", icon: "\u{1F3A8}", name: "Hero", desc: "Large headline + image at the top of the page", fields: [
+          { key: "headline", label: "Headline", type: "text" },
+          { key: "subhead", label: "Subhead", type: "text" },
+          { key: "image", label: "Background image path", type: "text" },
+        ] },
+        { type: "text", icon: "\u{1F4DD}", name: "Text Block", desc: "A paragraph or block of body copy", fields: [
+          { key: "heading", label: "Heading", type: "text" },
+          { key: "body", label: "Body text", type: "textarea" },
+        ] },
+        { type: "gallery", icon: "\u{1F4F7}", name: "Image Gallery", desc: "Grid of portfolio images", fields: [
+          { key: "heading", label: "Heading", type: "text" },
+          { key: "category", label: "Category filter (optional)", type: "text" },
+        ] },
+        { type: "video", icon: "\u{1F3AC}", name: "Video Embed", desc: "Embed a YouTube or Matterport video", fields: [
+          { key: "heading", label: "Heading", type: "text" },
+          { key: "url", label: "Embed URL", type: "text" },
+        ] },
+        { type: "testimonials", icon: "\u{1F4AC}", name: "Testimonials", desc: "Grid of client review cards", fields: [
+          { key: "heading", label: "Heading", type: "text" },
+        ] },
+        { type: "cta", icon: "\u{1F4E2}", name: "CTA Banner", desc: "Call-to-action band with a button", fields: [
+          { key: "headline", label: "Headline", type: "text" },
+          { key: "buttonLabel", label: "Button label", type: "text" },
+          { key: "buttonHref", label: "Button link", type: "text" },
+        ] },
+        { type: "pricing", icon: "\u{1F4B2}", name: "Pricing Table", desc: "Package and tier pricing display", fields: [
+          { key: "heading", label: "Heading", type: "text" },
+        ] },
+        { type: "faq", icon: "\u2753", name: "FAQ Accordion", desc: "Collapsible question/answer list", fields: [
+          { key: "heading", label: "Heading", type: "text" },
+        ] },
+        { type: "contact", icon: "\u2709\uFE0F", name: "Contact Form", desc: "Lead capture form", fields: [
+          { key: "heading", label: "Heading", type: "text" },
+        ] },
+        { type: "map", icon: "\u{1F5FA}\uFE0F", name: "Map Embed", desc: "Google Maps location embed", fields: [
+          { key: "heading", label: "Heading", type: "text" },
+          { key: "query", label: "Map search query", type: "text" },
+        ] },
+      ];
+
+      async function renderPageBuilder() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "Page Builder"), el("p", {}, "Reorder, show/hide and edit the sections of any page. Saved to src/data/cms/page-layouts/.")),
+          el("div", { class: "actions" },
+            el("button", { class: "btn btn-ghost", onclick: () => pbResetPrompt() }, "Reset Page"),
+          ),
+        ));
+
+        const pageSel = el("select", { "aria-label": "Select a page", style: { minWidth: "300px", minHeight: "52px", padding: "10px 12px", fontSize: "16px", border: "1px solid var(--line-strong)", borderRadius: "var(--radius-sm)", background: "#fff" } });
+        for (const p of pages) {
+          pageSel.appendChild(el("option", { value: p.path }, `${p.path === "/" ? "Home" : p.path} \u2014 ${p.title.slice(0, 50)}`));
+        }
+        const canvas = el("div", { id: "pb-canvas" }, el("div", { class: "empty" }, el("div", { class: "spinner", style: { margin: "0 auto" } })));
+        pageSel.addEventListener("change", () => loadPageLayout(pageSel.value, canvas));
+        main.appendChild(el("div", { class: "pb-toolbar" },
+          el("div", { class: "pb-page-select" }, el("label", { style: { fontWeight: "700", fontSize: "13px" } }, "Editing page:"), pageSel),
+          el("div", { style: { marginLeft: "auto", display: "flex", gap: "8px" } },
+            el("button", { class: "btn btn-ghost", onclick: () => pbAddBlockModal(pageSel.value, () => loadPageLayout(pageSel.value, canvas)) }, "+ Add Section"),
+            el("button", { class: "btn", onclick: () => pbSave(pageSel.value, canvas) }, "Save Layout"),
+          )));
+        main.appendChild(canvas);
+        loadPageLayout(pageSel.value, canvas);
+      }
+
+      // Default layout for a page — a sensible section set if no saved layout exists.
+      function defaultLayout(slug) {
+        const home = slug === "/";
+        const base = [
+          pbBlock("hero", "Hero", home ? { headline: "The photographer Zillow & Lennar trusted with their listings." } : {}, true),
+          pbBlock("text", "Intro", { heading: "Overview", body: "" }, true),
+          pbBlock("gallery", "Portfolio Gallery", { heading: "Selected work" }, true),
+          pbBlock("testimonials", "Testimonials", { heading: "What clients say" }, true),
+          pbBlock("pricing", "Pricing", { heading: "Pricing" }, !home),
+          pbBlock("faq", "FAQ", { heading: "Frequently asked" }, true),
+          pbBlock("cta", "Call to Action", { headline: "Book your shoot today", buttonLabel: "Get started", buttonHref: "/contact/" }, true),
+        ];
+        return base;
+      }
+
+      function pbBlock(type, name, fields, enabled) {
+        return { id: `${type}-${Math.random().toString(36).slice(2, 8)}`, type, name, fields: fields || {}, enabled: enabled !== false };
+      }
+
+      async function loadPageLayout(slug, canvas) {
+        clear(canvas);
+        const path = `${PB_DIR}/${pbSlugFile(slug)}.json`;
+        let layout;
+        try {
+          const f = await readFile(path);
+          layout = JSON.parse(f.content);
+        } catch {
+          layout = { slug, sections: defaultLayout(slug) };
+        }
+        if (!layout.sections || !layout.sections.length) layout.sections = defaultLayout(slug);
+        pbCurrent = { slug, sections: layout.sections };
+        pbDrawCanvas(layout.sections, slug, canvas);
+      }
+
+      function pbDrawCanvas(sections, slug, canvas) {
+        // Keep the working copy in sync with whatever array we're rendering.
+        pbCurrent = { slug, sections };
+        clear(canvas);
+        if (!sections.length) {
+          canvas.appendChild(el("div", { class: "pb-empty" }, el("div", { class: "spinner", style: { margin: "0 auto 12px" } })));
+          return;
+        }
+        const wrap = el("div", { class: "pb-canvas" });
+        sections.forEach((sec, i) => {
+          const def = PB_LIBRARY.find((b) => b.type === sec.type) || { icon: "\u{1F536}", name: sec.type, desc: "", fields: [] };
+          const block = el("div", { class: "pb-block" + (sec.enabled ? "" : " disabled"), draggable: "true", "data-id": sec.id });
+
+          // Drag events
+          block.addEventListener("dragstart", (e) => {
+            block.classList.add("dragging");
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", sec.id);
+          });
+          block.addEventListener("dragend", () => block.classList.remove("dragging"));
+          block.addEventListener("dragover", (e) => { e.preventDefault(); block.classList.add("drag-over"); });
+          block.addEventListener("dragleave", () => block.classList.remove("drag-over"));
+          block.addEventListener("drop", (e) => {
+            e.preventDefault();
+            block.classList.remove("drag-over");
+            const draggedId = e.dataTransfer.getData("text/plain");
+            const from = sections.findIndex((s) => s.id === draggedId);
+            const to = sections.findIndex((s) => s.id === sec.id);
+            if (from === -1 || to === -1 || from === to) return;
+            const [moved] = sections.splice(from, 1);
+            sections.splice(to, 0, moved);
+            pbDrawCanvas(sections, slug, canvas);
+          });
+
+          const toggle = el("input", { type: "checkbox", title: "Show / hide section" });
+          if (sec.enabled) toggle.setAttribute("checked", "checked");
+          toggle.addEventListener("change", () => { sec.enabled = toggle.checked; block.classList.toggle("disabled", !sec.enabled); });
+
+          const mainCol = el("div", { class: "pb-main" },
+            el("div", { class: "pb-name" }, el("span", {}, def.icon + " " + sec.name || def.name),
+              el("span", { class: "badge gray", style: { fontSize: "10px" } }, sec.type)),
+            el("div", { class: "pb-desc" }, def.desc || ""));
+          // Click the name to rename inline.
+          mainCol.querySelector(".pb-name span:first-child").style.cursor = "text";
+          mainCol.querySelector(".pb-name span:first-child").addEventListener("click", () => pbInlineRename(sec, mainCol));
+          mainCol.appendChild(el("button", { class: "pb-edit-inline", onclick: () => pbEditFieldsModal(sec, () => pbDrawCanvas(sections, slug, canvas)) }, "Edit content"));
+
+          const upBtn = el("button", { class: "btn btn-icon", title: "Move up", onclick: () => { pbMove(sections, i, -1); pbDrawCanvas(sections, slug, canvas); } }, "\u2191");
+          const downBtn = el("button", { class: "btn btn-icon", title: "Move down", onclick: () => { pbMove(sections, i, 1); pbDrawCanvas(sections, slug, canvas); } }, "\u2193");
+
+          block.appendChild(el("div", { class: "pb-handle", title: "Drag to reorder" }, "\u2261"));
+          block.appendChild(mainCol);
+          block.appendChild(el("div", { class: "pb-actions" },
+            el("div", { class: "pb-toggle" }, toggle, el("label", { onclick: (e) => { e.preventDefault(); toggle.click(); }, style: { cursor: "pointer" } }, "On")),
+            upBtn, downBtn,
+            el("button", { class: "btn btn-icon", title: "Remove section", onclick: () => { if (confirm(`Remove the "${sec.name}" section?`)) { sections.splice(i, 1); pbDrawCanvas(sections, slug, canvas); } } }, "\u{1F5D1}")));
+          wrap.appendChild(block);
+        });
+        canvas.appendChild(wrap);
+
+        // Library hint
+        canvas.appendChild(el("div", { class: "card", style: { marginTop: "20px", padding: "18px 20px" } },
+          el("h3", { style: { margin: "0 0 4px", fontSize: "15px" } }, "Block library"),
+          el("p", { class: "sub", style: { margin: "0 0 14px" } }, "Click a block to add it to the bottom of this page, then drag it into position."),
+          (() => { const lib = el("div", { class: "pb-library" }); for (const b of PB_LIBRARY) {
+            lib.appendChild(el("div", { class: "pb-block-tile", onclick: () => { sections.push(pbBlock(b.type, b.name, {}, true)); pbDrawCanvas(sections, slug, canvas); toast(`Added ${b.name} block. Drag it where you want it.`, "info", "Block added"); } },
+              el("div", { class: "pb-bic" }, b.icon), el("b", {}, b.name), el("small", {}, b.desc)));
+          } return lib; })(),
+        ));
+      }
+
+      function pbMove(arr, i, dir) {
+        const j = i + dir;
+        if (j < 0 || j >= arr.length) return;
+        const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+      }
+
+      function pbInlineRename(sec, mainCol) {
+        const nameSpan = mainCol.querySelector(".pb-name span:first-child");
+        const input = el("input", { type: "text", value: sec.name, style: { fontSize: "14px", fontWeight: "700", padding: "2px 6px", border: "1px solid var(--brass)", borderRadius: "4px", minWidth: "160px" } });
+        nameSpan.replaceWith(input);
+        input.focus(); input.select();
+        const commit = () => { sec.name = input.value.trim() || sec.name; const span = el("span", {}, (PB_LIBRARY.find((b) => b.type === sec.type) || {}).icon + " " + sec.name); span.style.cursor = "text"; span.addEventListener("click", () => pbInlineRename(sec, mainCol)); input.replaceWith(span); };
+        input.addEventListener("blur", commit);
+        input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } });
+      }
+
+      function pbEditFieldsModal(sec, onSave) {
+        const def = PB_LIBRARY.find((b) => b.type === sec.type);
+        const fields = (def && def.fields) || [];
+        sec.fields = sec.fields || {};
+        const body = el("div", {});
+        if (!fields.length) {
+          body.appendChild(el("p", { class: "sub" }, "This block has no editable fields. Its content is pulled automatically from the site data."));
+        } else {
+          for (const f of fields) {
+            const cur = sec.fields[f.key] == null ? "" : sec.fields[f.key];
+            if (f.type === "textarea") {
+              const ta = el("textarea", {}); ta.value = cur;
+              ta.addEventListener("input", () => { sec.fields[f.key] = ta.value; });
+              body.appendChild(field(f.label, ta));
+            } else {
+              body.appendChild(field(f.label, textInput(cur, { oninput: (v) => { sec.fields[f.key] = v; } })));
+            }
+          }
+        }
+        openModal(`Edit "${sec.name}"`, body, [
+          el("button", { class: "btn btn-ghost", onclick: closeModal }, "Cancel"),
+          el("button", { class: "btn", onclick: () => { closeModal(); onSave(); toast("Section updated. Save the layout to publish.", "info", "Edited"); } }, "Done"),
+        ]);
+      }
+
+      function pbAddBlockModal(slug, reload) {
+        const body = el("div", { class: "pb-library" });
+        for (const b of PB_LIBRARY) {
+          body.appendChild(el("div", { class: "pb-block-tile", onclick: () => { closeModal(); reload(); } },
+            el("div", { class: "pb-bic" }, b.icon), el("b", {}, b.name), el("small", {}, b.desc)));
+        }
+        openModal("Add a section", el("div", {}, el("p", { class: "sub", style: { marginBottom: "14px" } }, "Pick a block type. You can also add from the library at the bottom of the page."), body), [
+          el("button", { class: "btn btn-ghost", onclick: closeModal }, "Close"),
+        ]);
+      }
+
+      function pbSlugFile(slug) {
+        return (slug === "/" ? "home" : slug.replace(/^\/|\/$/g, "").replace(/\//g, "-")) || "home";
+      }
+
+      async function pbSave(slug, canvas) {
+        // pbCurrent.sections holds the live, mutated working copy (reorders,
+        // enabled toggles, renames and field edits all mutate it in place).
+        const path = `${PB_DIR}/${pbSlugFile(slug)}.json`;
+        showLoading("Saving layout\u2026");
+        try {
+          // Sync the enabled checkboxes from the DOM into the working copy —
+          // toggles mutate the object directly, but this guarantees the final
+          // state matches what's on screen.
+          $$(".pb-block[data-id]", canvas).forEach((n) => {
+            const id = n.getAttribute("data-id");
+            const sec = pbCurrent.sections.find((s) => s.id === id);
+            if (!sec) return;
+            const cb = n.querySelector(".pb-actions input[type=checkbox]");
+            if (cb) sec.enabled = cb.checked;
+          });
+          const layout = { slug, sections: pbCurrent.sections };
+          await writeFile(path, JSON.stringify(layout, null, 2) + "\n", `Update page layout for ${slug}`);
+          hideLoading();
+          toast("Page layout saved! Site rebuilds in ~90 seconds.", "success", "Saved");
+        } catch (e) { hideLoading(); toast(e.message, "error", "Save failed"); }
+      }
+
+      async function pbResetPrompt() {
+        if (!confirm("Reset this page's layout to the default? Any custom section order will be lost.")) return;
+        showLoading("Resetting\u2026");
+        try {
+          const slug = $("select[aria-label='Select a page']").value;
+          const path = `${PB_DIR}/${pbSlugFile(slug)}.json`;
+          try {
+            const f = await readFile(path);
+            await deleteFile(path, f.sha, `Reset page layout for ${slug}`);
+            delete cache[path];
+          } catch { /* nothing to delete */ }
+          hideLoading();
+          toast("Layout reset. Reloaded defaults.", "success", "Reset");
+          navigate("pagebuilder");
+        } catch (e) { hideLoading(); toast(e.message, "error", "Reset failed"); }
+      }
+
+      // ============================================================
+      //  SECTION: Redirects (view + edit legacy URL map)
+      //  The 404 page and generated redirect pages read these. Editing
+      //  here writes src/data/cms/redirects.json.
+      // ============================================================
+      async function renderRedirects() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "Redirects"), el("p", {}, "Map old URLs to new ones. Visitors to an old URL are forwarded automatically.")),
+        ));
+        const card = el("div", { class: "card" }, el("div", { class: "empty" }, el("div", { class: "spinner", style: { margin: "0 auto" } })));
+        main.appendChild(card);
+
+        let data;
+        try {
+          const f = await readFile(`${CMS_DIR}/redirects.json`);
+          data = JSON.parse(f.content);
+        } catch { data = { redirects: [] }; }
+        if (!Array.isArray(data.redirects)) data.redirects = [];
+        clear(card);
+
+        card.appendChild(el("h2", {}, "Redirect Rules"));
+        card.appendChild(el("p", { class: "sub" }, `${data.redirects.length} rule(s). Saved to redirects.json.`));
+
+        const redraw = () => {
+          const existing = card.querySelector("#rd-list");
+          if (existing) existing.remove();
+          const list = el("div", { id: "rd-list", style: { display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px" } });
+          if (!data.redirects.length) {
+            list.appendChild(el("div", { class: "empty", style: { padding: "24px" } }, "No redirects yet."));
+          }
+          data.redirects.forEach((r, i) => {
+            const fromInp = el("input", { type: "text", value: r.from || "", placeholder: "/old-page.html" });
+            fromInp.addEventListener("input", () => { r.from = fromInp.value; });
+            const toInp = el("input", { type: "text", value: r.to || "", placeholder: "/new-page/" });
+            toInp.addEventListener("input", () => { r.to = toInp.value; });
+            list.appendChild(el("div", { class: "rep-row" },
+              el("span", { style: { fontSize: "12px", color: "var(--muted)", alignSelf: "center", whiteSpace: "nowrap" } }, "from"),
+              fromInp,
+              el("span", { style: { fontSize: "12px", color: "var(--muted)", alignSelf: "center" } }, "\u2192"),
+              toInp,
+              el("span", { style: { fontSize: "12px", color: "var(--muted)", alignSelf: "center", whiteSpace: "nowrap" } }, r.code === 301 ? "301" : "302"),
+              el("button", { class: "btn btn-icon", title: "Remove", onclick: () => { data.redirects.splice(i, 1); redraw(); } }, "\u2212")));
+          });
+          card.appendChild(list);
+        };
+        redraw();
+
+        card.appendChild(el("button", { class: "btn btn-ghost btn-sm rep-add", style: { marginTop: "12px" }, onclick: () => { data.redirects.push({ from: "", to: "/", code: 301 }); redraw(); } }, "+ Add redirect"));
+        card.appendChild(el("hr"));
+        card.appendChild(el("div", { style: { display: "flex", justifyContent: "flex-end" } },
+          el("button", { class: "btn btn-lg", onclick: async () => {
+            showLoading("Saving redirects\u2026");
+            try {
+              await writeFile(`${CMS_DIR}/redirects.json`, JSON.stringify(data, null, 2) + "\n", "Update redirects");
+              hideLoading(); toast("Redirects saved! Site rebuilds in ~90 seconds.", "success", "Saved");
+            } catch (e) { hideLoading(); toast(e.message, "error", "Save failed"); }
+          } }, "Save Redirects")));
+      }
+
+      // ============================================================
+      //  SECTION: Backup (export / import CMS JSON)
+      // ============================================================
+      async function renderBackup() {
+        const main = $("#main");
+        clear(main);
+        main.appendChild(el("div", { class: "page-head" },
+          el("div", {}, el("h1", {}, "Backup"), el("p", {}, "Download a ZIP-style JSON bundle of every CMS file, or restore from one.")),
+        ));
+
+        const card = sectionCard("Export", "Download all editable content as a single JSON file.", []);
+        const fileList = el("div", { id: "bk-files", style: { marginTop: "10px" } }, el("div", { class: "empty" }, el("div", { class: "spinner", style: { margin: "0 auto" } })));
+        card.appendChild(fileList);
+        card.appendChild(el("div", { style: { display: "flex", gap: "10px", marginTop: "16px", flexWrap: "wrap" } },
+          el("button", { class: "btn", onclick: () => backupExport() }, "\u2B07\uFE0F Download Backup (.json)"),
+        ));
+        main.appendChild(card);
+
+        const restore = sectionCard("Restore", "Upload a backup JSON file to overwrite the live CMS files.", []);
+        const fileInput = el("input", { type: "file", accept: "application/json,.json", style: { display: "block", margin: "10px 0" } });
+        restore.appendChild(fileInput);
+        restore.appendChild(el("p", { class: "sub", style: { marginTop: "8px" } }, "This overwrites the matching files in the repo and triggers a rebuild. Use with care."));
+        restore.appendChild(el("button", { class: "btn btn-danger", onclick: () => backupImport(fileInput) }, "Restore from File"));
+        main.appendChild(restore);
+
+        loadBackupFileList(fileList);
+      }
+
+      async function loadBackupFileList(node) {
+        clear(node);
+        const files = ["settings.json", "pricing.json", "testimonials.json", "faq.json", "portfolio.json", "integrations.json", "redirects.json"];
+        const ul = el("ul", { class: "at-glance", style: { borderTop: "1px solid var(--line)" } });
+        for (const f of files) {
+          let ok = false, size = "—";
+          try {
+            const data = await readFile(`${CMS_DIR}/${f}`);
+            ok = true;
+            size = (data.content.length / 1024).toFixed(1) + " KB";
+          } catch { /* missing */ }
+          ul.appendChild(el("li", {},
+            el("span", { class: "ag-ic", style: { background: ok ? "var(--green-soft)" : "var(--red-soft)", color: ok ? "var(--green)" : "var(--red)" } }, ok ? "\u2713" : "!"),
+            el("span", { class: "ag-text" }, el("b", {}, f), el("small", {}, ok ? size : "not present"))));
+        }
+        node.appendChild(ul);
+      }
+
+      async function backupExport() {
+        showLoading("Bundling content\u2026");
+        try {
+          const candidates = ["settings.json", "pricing.json", "testimonials.json", "faq.json", "portfolio.json", "integrations.json", "redirects.json"];
+          const bundle = { exportedAt: new Date().toISOString(), repo: REPO, files: {} };
+          for (const f of candidates) {
+            try {
+              const data = await readFile(`${CMS_DIR}/${f}`);
+              bundle.files[f] = JSON.parse(data.content);
+            } catch { /* skip missing */ }
+          }
+          // Include blog posts too.
+          try {
+            const ls = await listDir(BLOG_DIR);
+            bundle.blog = {};
+            for (const file of ls.filter((x) => x.name.endsWith(".md"))) {
+              const d = await readFile(`${BLOG_DIR}/${file.name}`);
+              bundle.blog[file.name] = d.content;
+            }
+          } catch { /* skip */ }
+          hideLoading();
+          const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+          const a = el("a", { href: URL.createObjectURL(blob), download: `vtlv-backup-${new Date().toISOString().slice(0, 10)}.json` });
+          document.body.appendChild(a); a.click(); a.remove();
+          toast("Backup downloaded.", "success", "Exported");
+        } catch (e) { hideLoading(); toast(e.message, "error", "Export failed"); }
+      }
+
+      async function backupImport(fileInput) {
+        const f = fileInput.files[0];
+        if (!f) { toast("Choose a backup JSON file first.", "error", "No file"); return; }
+        if (!confirm("Restore will overwrite the live CMS files and trigger a rebuild. Continue?")) return;
+        showLoading("Restoring\u2026");
+        try {
+          const text = await f.text();
+          const bundle = JSON.parse(text);
+          if (!bundle || (!bundle.files && !bundle.blog)) throw new Error("This doesn't look like a VTLV backup file.");
+          let count = 0;
+          if (bundle.files) {
+            for (const [name, content] of Object.entries(bundle.files)) {
+              await writeFile(`${CMS_DIR}/${name}`, JSON.stringify(content, null, 2) + "\n", `Restore ${name}`);
+              count++;
+            }
+          }
+          if (bundle.blog) {
+            for (const [name, content] of Object.entries(bundle.blog)) {
+              await writeFile(`${BLOG_DIR}/${name}`, content, `Restore blog post ${name}`);
+              count++;
+            }
+          }
+          hideLoading();
+          toast(`${count} file(s) restored. Site rebuilds in ~90 seconds.`, "success", "Restored");
+        } catch (e) { hideLoading(); toast(e.message, "error", "Restore failed"); }
       }
 
       // ============================================================

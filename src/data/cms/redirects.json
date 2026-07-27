@@ -1,0 +1,7 @@
+{
+  "redirects": [
+    { "from": "/real-estate-photography/", "to": "/services/", "code": 301 },
+    { "from": "/virtual-tours/", "to": "/services/3d-tours/", "code": 301 },
+    { "from": "/contact-us/", "to": "/contact/", "code": 301 }
+  ]
+}
