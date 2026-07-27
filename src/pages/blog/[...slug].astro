@@ -1,0 +1,193 @@
+---
+import { getCollection, render } from "astro:content";
+import { asset, business } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import CTABand from "../../components/CTABand.astro";
+
+// Render every published (non-draft) blog post. Drafts are filtered so they
+// never produce a public URL until the owner flips draft:false.
+export async function getStaticPaths() {
+  const posts = (await getCollection("blog", ({ data }) => !data.draft)).sort(
+    (a, b) => b.data.publishDate.valueOf() - a.data.publishDate.valueOf()
+  );
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const d = post.data;
+const isoDate = d.publishDate.toISOString().slice(0, 10);
+const prettyDate = d.publishDate.toLocaleDateString("en-US", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+});
+
+// JSON-LD: BlogPosting schema for rich results.
+const blogPostingLd = {
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  headline: d.title,
+  description: d.description,
+  datePublished: d.publishDate.toISOString(),
+  dateModified: d.publishDate.toISOString(),
+  author: { "@type": "Person", name: d.author, jobTitle: "Real Estate Photographer" },
+  publisher: { "@type": "Organization", name: business.name },
+  image: new URL(asset(d.heroImage), Astro.site ?? "https://mylesthepro1.github.io").toString(),
+  mainEntityOfPage: new URL(Astro.url.pathname, Astro.site ?? "https://mylesthepro1.github.io").toString(),
+};
+---
+
+<Base title={`${d.title} | VTLV`} description={d.description} image={d.heroImage} heroVariant="light">
+  <script slot="head" type="application/ld+json" is:inline set:html={JSON.stringify(blogPostingLd)} />
+
+  <article class="post">
+    <header class="post-head">
+      <div class="container narrow">
+        <p class="eyebrow">{d.category.replace(/-/g, " ")}</p>
+        <h1 class="display post-title">{d.title}</h1>
+        <p class="post-meta">
+          <span>By {d.author}</span>
+          <span aria-hidden="true">·</span>
+          <time datetime={isoDate}>{prettyDate}</time>
+        </p>
+      </div>
+    </header>
+
+    <div class="post-hero">
+      <img
+        src={asset(d.heroImage)}
+        alt={d.heroAlt}
+        fetchpriority="high"
+        width="1600"
+        height="900"
+      />
+    </div>
+
+    <div class="container narrow">
+      <div class="post-body">
+        <Content />
+      </div>
+
+      <aside class="post-author">
+        <p class="eyebrow">About the author</p>
+        <p>
+          {d.author} is a Las Vegas real estate photographer and the owner of {business.name}.
+          A licensed agent since {business.realEstateSince}, FAA Part 107 drone pilot and Google
+          Trusted Photographer, he shoots every property himself. Reach him at
+          <a href={business.phoneHref}>{business.phone}</a> or browse the
+          <a href={asset("/services/")}>services</a>.
+        </p>
+      </aside>
+
+      <p class="post-back">
+        <a href={asset("/blog/")} class="text-link">← All posts</a>
+      </p>
+    </div>
+  </article>
+
+  <CTABand
+    title="Ready to get your listing shot?"
+    body={`HDR, 3D tours, drone, floor plans and more — delivered in 24–48 hours. Call or text ${business.phone}.`}
+  />
+</Base>
+
+<style>
+  .post-head {
+    padding-top: clamp(2.5rem, 5vw, 4rem);
+    padding-bottom: clamp(1.5rem, 3vw, 2.2rem);
+  }
+  .post-head .eyebrow {
+    color: var(--brass);
+    text-transform: capitalize;
+  }
+  .post-title {
+    font-size: var(--step-5);
+    margin-top: 0.5rem;
+    line-height: 1.08;
+  }
+  .post-meta {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    font-size: var(--step--1);
+    color: var(--stone);
+  }
+
+  .post-hero {
+    max-width: var(--container-narrow);
+    margin-inline: auto;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+    box-shadow: var(--shadow-card);
+    margin-bottom: clamp(2rem, 4vw, 3rem);
+  }
+  .post-hero img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* ---- Prose styling (scoped; no external typography dependency) ---- */
+  .post-body {
+    font-size: var(--step-1);
+    line-height: 1.7;
+    color: var(--ink-2);
+  }
+  .post-body :global(p) { margin-block: 1.1em; }
+  .post-body :global(p:first-of-type) { margin-top: 0; }
+  .post-body :global(h2) {
+    font-family: var(--font-display);
+    font-size: var(--step-3);
+    color: var(--ink);
+    margin-top: 2.2em;
+    margin-bottom: 0.6em;
+    line-height: 1.15;
+  }
+  .post-body :global(h3) {
+    font-family: var(--font-display);
+    font-size: var(--step-2);
+    color: var(--ink);
+    margin-top: 1.8em;
+    margin-bottom: 0.5em;
+  }
+  .post-body :global(strong) { color: var(--ink); font-weight: 600; }
+  .post-body :global(a) { color: var(--brass); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+  .post-body :global(a:hover) { color: var(--brass-btn); }
+  .post-body :global(ul),
+  .post-body :global(ol) { margin-block: 1.2em; padding-left: 1.4em; }
+  .post-body :global(li) { margin-block: 0.5em; }
+  .post-body :global(ul) { list-style: disc; }
+  .post-body :global(ol) { list-style: decimal; }
+  .post-body :global(blockquote) {
+    margin: 1.6em 0;
+    padding: 0.4em 1.2em;
+    border-left: 3px solid var(--brass);
+    font-family: var(--font-display);
+    font-size: var(--step-2);
+    color: var(--ink);
+    line-height: 1.4;
+  }
+
+  .post-author {
+    margin-top: clamp(2.5rem, 5vw, 3.5rem);
+    padding: clamp(1.4rem, 1rem + 1.5vw, 2rem);
+    background: var(--paper-2);
+    border-radius: var(--radius-lg);
+    font-size: var(--step--1);
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+  .post-author .eyebrow { color: var(--brass); }
+  .post-author p { margin-top: 0.6rem; }
+  .post-author a { color: var(--brass); font-weight: 600; }
+
+  .post-back { margin-top: 1.8rem; }
+
+  @media (max-width: 600px) {
+    .post-title { font-size: var(--step-4); }
+    .post-body { font-size: var(--step-0); }
+  }
+</style>

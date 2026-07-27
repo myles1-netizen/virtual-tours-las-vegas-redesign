@@ -1,0 +1,196 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import CTABand from "../../components/CTABand.astro";
+import { business } from "../../data/site";
+
+const title = "Availability, Hours & Turnaround — Las Vegas Photography | VTLV";
+const description = "Mike Madsen's availability, service hours and delivery times for Las Vegas real estate photography. Mon–Sat 8a–6p PT, 24–48 hour photo delivery, 48-hour floor plans. Book online or by phone.";
+
+const turnaround = [
+  { item: "HDR photos", time: "24–48 hours", note: "MLS-ready, via cloud delivery" },
+  { item: "3D virtual tours", time: "24–48 hours", note: "Email links + embed iframe" },
+  { item: "Floor plans", time: "48 hours", note: "PDF; ~24h when added to a shoot" },
+  { item: "Zillow walk-through video", time: "12–24 hours", note: "Fastest turnaround" },
+  { item: "Rush delivery", time: "Next morning", note: "+$40 add-on" },
+];
+
+const hours = [
+  { day: "Monday – Friday", time: "8:00a – 6:00p" },
+  { day: "Saturday", time: "8:00a – 6:00p" },
+  { day: "Sunday", time: "Closed" },
+];
+---
+<Base title={title} description={description} heroVariant="dark">
+  <PageHero
+    eyebrow="Availability"
+    title="When Mike can shoot — and when you'll get the files."
+    lead={`One photographer, the same standard every shoot. Most residential bookings land on the calendar within 48 hours, and your media follows on the published turnaround schedule below. Call or text ${business.phone} for the fastest confirmation.`}
+    image={asset("/images/portfolio/listing-01.jpg")}
+    imageAlt="Aerial drone photo of a two-story Las Vegas commercial office building"
+  />
+
+  <section class="section">
+    <div class="container">
+      <div class="avail-grid">
+        {/* Hours */}
+        <div class="avail-card" data-reveal>
+          <p class="eyebrow">Service hours</p>
+          <h2 class="avail-card-title">Monday through Saturday.</h2>
+          <ul class="hours-list" role="list">
+            {hours.map((h) => (
+              <li>
+                <span>{h.day}</span>
+                <strong>{h.time}</strong>
+              </li>
+            ))}
+          </ul>
+          <p class="avail-note">All times Pacific. Mike is centrally located about 3 miles east of the Strip, so travel time across the valley is short.</p>
+        </div>
+
+        {/* Turnaround */}
+        <div class="avail-card" data-reveal data-reveal-delay="1">
+          <p class="eyebrow">Turnaround</p>
+          <h2 class="avail-card-title">Published delivery times.</h2>
+          <ul class="turn-list" role="list">
+            {turnaround.map((t) => (
+              <li>
+                <div class="turn-head">
+                  <span class="turn-item">{t.item}</span>
+                  <span class="turn-time">{t.time}</span>
+                </div>
+                <span class="turn-note">{t.note}</span>
+              </li>
+            ))}
+          </ul>
+          <p class="avail-note">Shoots take roughly 30–40 minutes per 1,000 sq ft on-site, so plan for 1–3 hours depending on scope.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section paper-2">
+    <div class="container narrow text-center">
+      <SectionHeader
+        eyebrow="Booking"
+        title="Two ways to get on the calendar."
+        lead="The online booking form requests a date and time — Mike confirms the exact window himself. Or skip the form and call or text for same-day scheduling."
+        align="center"
+      />
+      <div class="btn-row" style="justify-content:center; margin-top:1.5rem">
+        <a href={asset("/booking/")} class="btn brass">Book online</a>
+        <a href={business.phoneHref} class="btn outline">Call {business.phone}</a>
+        <a href={business.smsHref} class="btn outline">Text Mike</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container narrow text-center">
+      <SectionHeader
+        eyebrow="Good to know"
+        title="A couple of things that keep the schedule honest."
+        lead="Mike shoots every property himself, so prep and punctuality protect everyone's time."
+        align="center"
+      />
+      <div class="know-grid">
+        <div class="know-item" data-reveal>
+          <h3>Prep like a 24/7 open house</h3>
+          <p>Have the property completely clean, staged and photo-ready. Mike doesn't move furniture or clean. Provide access details (lockbox code, occupant contact) at booking.</p>
+        </div>
+        <div class="know-item" data-reveal data-reveal-delay="1">
+          <h3>24-hour cancellation</h3>
+          <p>To avoid a $35 trip fee, cancel or reschedule at least 24 hours before your scheduled time. The same fee applies if the property isn't ready when the photographer arrives.</p>
+        </div>
+        <div class="know-item" data-reveal data-reveal-delay="2">
+          <h3>Vacate during the shoot</h3>
+          <p>Scanning takes 1–3 hours, so it's best for all people and pets to leave during the appointment. Indoor shoots are unaffected by weather; drone flights are weather-dependent.</p>
+        </div>
+      </div>
+      <p class="muted" style="margin-top:1.5rem">
+        Full details in the <a href={asset("/faq/")} class="text-link">FAQs</a>.
+      </p>
+    </div>
+  </section>
+
+  <CTABand
+    title="Ready to book your shoot?"
+    body={`Most residential shoots are on the calendar within 48 hours. Call or text ${business.phone}.`}
+  />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .avail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.6rem;
+  }
+  .avail-card {
+    padding: clamp(1.6rem, 1.2rem + 1.5vw, 2.4rem);
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-lg);
+  }
+  .avail-card .eyebrow { color: var(--brass); }
+  .avail-card-title { font-size: var(--step-3); margin-top: 0.4rem; margin-bottom: 1.4rem; }
+
+  .hours-list { display: flex; flex-direction: column; gap: 0.7rem; }
+  .hours-list li {
+    display: flex; justify-content: space-between; gap: 1rem;
+    font-size: var(--step--1);
+    padding-bottom: 0.55rem;
+    border-bottom: 1px dashed var(--line-light);
+  }
+  .hours-list li:last-child { border-bottom: none; padding-bottom: 0; }
+  .hours-list span { color: var(--stone); }
+  .hours-list strong { color: var(--ink); font-weight: 600; }
+
+  .turn-list { display: flex; flex-direction: column; gap: 0.85rem; }
+  .turn-list li {
+    padding-bottom: 0.65rem;
+    border-bottom: 1px dashed var(--line-light);
+  }
+  .turn-list li:last-child { border-bottom: none; padding-bottom: 0; }
+  .turn-head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+  .turn-item { font-size: var(--step--1); color: var(--ink-2); font-weight: 500; }
+  .turn-time {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    color: var(--brass);
+    white-space: nowrap;
+  }
+  .turn-note { display: block; font-size: 0.78rem; color: var(--stone-2); margin-top: 0.2rem; }
+
+  .avail-note {
+    margin-top: 1.3rem;
+    font-size: 0.82rem;
+    color: var(--stone);
+    line-height: 1.55;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--line-light);
+  }
+
+  .know-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+    text-align: left;
+  }
+  .know-item {
+    padding: clamp(1.3rem, 1rem + 1vw, 1.8rem);
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-lg);
+  }
+  .know-item h3 { font-size: var(--step-1); }
+  .know-item p { margin-top: 0.6rem; font-size: var(--step--1); color: var(--stone); line-height: 1.55; }
+
+  @media (max-width: 880px) {
+    .avail-grid { grid-template-columns: 1fr; }
+    .know-grid { grid-template-columns: 1fr; }
+  }
+</style>

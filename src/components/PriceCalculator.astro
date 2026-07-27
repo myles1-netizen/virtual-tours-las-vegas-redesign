@@ -5,10 +5,15 @@
 // serialized to the client as a JSON config. The client script reads that config
 // only — it never hardcodes a price. If site.ts changes, the calculator changes.
 //
-// Progressive enhancement: this whole block is wrapped in a <noscript> fallback
-// note + the static price tables elsewhere on the page remain visible without JS.
-// Nevada does not tax photography services (see handoff/07-LEGAL-ACCURACY-GUIDELINES.md),
-// so NO tax line is added — instead a small note explains that.
+// Scope: residential, commercial, vacation rental and land/lot. The property
+// type chosen first drives which services are offered, then the visitor picks
+// any combination. The running total + sticky "Book This" button sit beside the
+// controls (and stick to the viewport on desktop).
+//
+// Progressive enhancement: a <noscript> fallback note is shown and the static
+// price tables elsewhere on the page remain visible without JS. Nevada does not
+// tax photography services (see handoff/07-LEGAL-ACCURACY-GUIDELINES.md), so no
+// tax line is added — a small note explains that instead.
 
 import { asset } from "../data/site";
 import {
@@ -17,11 +22,17 @@ import {
   matterportTiers,
   floorPlanTiers,
   virtualStagingTiers,
+  videoTiers,
+  zillowTiers,
+  commercialHdr,
+  commercialPanoramas,
+  googlePackage,
   hdrAddOns,
   floorPlanAddOns,
 } from "../data/site";
 
 // ---- Build the client config from the real data ----
+// Every number below traces back to a row in src/data/site.ts.
 
 // HDR tier brackets, ordered by ascending photo count, expressed as numeric
 // upper bounds so the client can bracket a chosen quantity.
@@ -34,8 +45,16 @@ const hdrBrackets = [
   { max: 90, price: hdrTiers[4].price, label: hdrTiers[4].count },
 ];
 
+// Commercial HDR: same shape, brackets by photo count.
+const commercialHdrBrackets = [
+  { max: 5, price: commercialHdr[0].price, label: commercialHdr[0].count },
+  { max: 10, price: commercialHdr[1].price, label: commercialHdr[1].count },
+  { max: 15, price: commercialHdr[2].price, label: commercialHdr[2].count },
+  { max: 20, price: commercialHdr[3].price, label: commercialHdr[3].count },
+];
+
 // Matterport tier brackets: matterportTiers are size strings with numeric prices.
-// matterportTiers[0..3] are absolute sqft caps; [4] is the "+$55 / additional 1000 sqft".
+// matterportTiers[0..3] are absolute sqft caps; [4] is "+$55 / additional 1000 sqft".
 const matterportBrackets = [
   { maxSqft: 1500, price: matterportTiers[0].price, label: matterportTiers[0].size },
   { maxSqft: 2000, price: matterportTiers[1].price, label: matterportTiers[1].size },
@@ -45,21 +64,36 @@ const matterportBrackets = [
 const matterportOveragePer1000 = matterportTiers[4].price; // 55
 
 // Floor plan tiers: tier 4 ("Over 5,000 sq ft") is null price (custom quote).
-// Encode as numeric brackets where possible; the largest is custom.
 const floorPlanBrackets = [
   { stories: 1, minSqft: 0, maxSqft: 2500, price: floorPlanTiers[0].price, label: floorPlanTiers[0].size },
   { stories: 2, minSqft: 0, maxSqft: 2500, price: floorPlanTiers[1].price, label: floorPlanTiers[1].size },
   { stories: 1, minSqft: 3000, maxSqft: 5000, price: floorPlanTiers[2].price, label: floorPlanTiers[2].size },
   { stories: 2, minSqft: 3000, maxSqft: 5000, price: floorPlanTiers[3].price, label: floorPlanTiers[3].size },
 ];
-// Over 5,000 sq ft = custom quote.
 const floorPlanCustomNote = floorPlanTiers[4].note ?? "Custom quote";
 
 // Virtual staging: flat per-photo price.
 const virtualStagingPerPhoto = virtualStagingTiers[0].price; // 25
 
+// Walk-through video tiers (stand-alone items).
+const videoItems = videoTiers.map((v, i) => ({ id: `video-${i}`, label: v.item, price: v.price }));
+
+// Zillow add-ons.
+const zillowItems = zillowTiers.map((z, i) => ({ id: `zillow-${i}`, label: z.item, price: z.price }));
+
+// Commercial 360 panoramas — premium (8-shot DSLR) and express tiers.
+const premiumPanoramaBrackets = commercialPanoramas.premium.map((p, i) => ({
+  id: `pano-prem-${i}`,
+  label: p.count,
+  price: p.price,
+}));
+const expressPanoramaBrackets = commercialPanoramas.express.map((p, i) => ({
+  id: `pano-exp-${i}`,
+  label: p.count,
+  price: p.price,
+}));
+
 // Packages — slugs map to the contact form pre-fill (?package=glitz etc.)
-// Explicit slug map keeps URLs clean and matches the PricingCard links.
 const packageSlugs: Record<string, string> = {
   "Glitz & Glam": "glitz",
   "City Never Sleeps": "city",
@@ -78,34 +112,89 @@ const packages = vegasPackages.map((p) => {
   };
 });
 
+// Google "Get Me On Google" package — most-booked commercial bundle.
+const googlePkg = {
+  name: googlePackage.name,
+  price: googlePackage.price,
+  includes: googlePackage.includes,
+  note: googlePackage.note ?? "",
+};
+
 // Add-ons drawn from the real add-on strings. Parse the dollar amount out of
 // the published add-on line so the price always tracks the source string.
 type AddOn = { id: string; label: string; price: number };
 function parseAddOn(raw: string, id: string): AddOn {
   const m = raw.match(/\+\$(\d+)/);
   const price = m ? Number(m[1]) : 0;
-  // Strip the leading "Name — " for a cleaner toggle label, keep it short.
   const label = raw.replace(/\s*—\s*\+\$\d+.*$/, "");
   return { id, label, price };
 }
 const addOns: AddOn[] = [
-  parseAddOn(hdrAddOns[2], "rush"), // "Rush delivery (next morning) — +$40"
-  parseAddOn(hdrAddOns[3], "twilight"), // "Twilight shooting — +$100"
-  parseAddOn(hdrAddOns[4], "sky"), // "Sky replacement (3 images) — +$25"
-  parseAddOn(floorPlanAddOns[0], "colored"), // "Colored living spaces — +$25"
-  parseAddOn(floorPlanAddOns[2], "3d-floorplan"), // "3D floor plan — +$80"
+  parseAddOn(hdrAddOns[2], "rush"),
+  parseAddOn(hdrAddOns[3], "twilight"),
+  parseAddOn(hdrAddOns[4], "sky"),
+  parseAddOn(floorPlanAddOns[0], "colored"),
+  parseAddOn(floorPlanAddOns[2], "3d-floorplan"),
+];
+
+// ---- Property types ----
+// Each defines which services are offered and sensible default photo counts.
+const propertyTypes = [
+  {
+    id: "residential",
+    label: "Residential Home",
+    icon: "home",
+    blurb: "Listings, resale & new construction.",
+        services: ["package", "hdr", "matterport", "floorplan", "staging", "video", "zillow", "addon"],
+    defaultPhotos: 30,
+    sqftLabel: "Living area (sq ft)",
+  },
+  {
+    id: "commercial",
+    label: "Commercial Property",
+    icon: "building",
+    blurb: "Offices, retail, restaurants & venues.",
+    services: ["chdr", "matterport", "pano-prem", "pano-exp", "google", "floorplan"],
+    defaultPhotos: 10,
+    sqftLabel: "Property size (sq ft)",
+  },
+  {
+    id: "vacation",
+    label: "Vacation Rental",
+    icon: "bed",
+    blurb: "Airbnb, Vrbo & short-term stays.",
+    services: ["hdr", "matterport", "floorplan", "staging", "pano-exp"],
+    defaultPhotos: 20,
+    sqftLabel: "Rental size (sq ft)",
+  },
+  {
+    id: "land",
+    label: "Land / Lot",
+    icon: "map",
+    blurb: "Vacant land, lots & acreage.",
+    // Land primarily needs aerial + a Google tour; HDR interiors don't apply.
+    services: ["google", "pano-prem", "pano-exp", "matterport"],
+    defaultPhotos: 5,
+    sqftLabel: "Lot size (sq ft)",
+  },
 ];
 
 const config = {
+  propertyTypes,
   hdrBrackets,
+  commercialHdrBrackets,
   matterportBrackets,
   matterportOveragePer1000,
   floorPlanBrackets,
   floorPlanCustomNote,
   virtualStagingPerPhoto,
   packages,
+  googlePkg,
+  videoItems,
+  zillowItems,
+  premiumPanoramaBrackets,
+  expressPanoramaBrackets,
   addOns,
-  // Nevada does not tax photography services (verified per legal guidelines).
   taxApplies: false,
   contactHref: asset("/contact/"),
 };
@@ -118,189 +207,343 @@ const configJson = JSON.stringify(config);
     <p class="eyebrow">Build your quote</p>
     <h2 id="calc-title" class="display calc-title">Price it yourself. Instantly.</h2>
     <p class="calc-sub">
-      Start from a package or build à la carte. The total updates as you pick — no waiting on a quote.
+      Pick the property type, add the services you need, and watch the total update as you go — no waiting on a quote.
       Every number is the real published price.
     </p>
   </header>
 
-  {/* ===== Mode toggle (package vs à la carte) ===== */}
-  <div class="calc-mode" role="tablist" aria-label="Quote mode">
-    <button class="mode-btn is-active" role="tab" aria-selected="true" data-mode="package" id="mode-pkg" aria-controls="calc-body">
-      Start from a package
-    </button>
-    <button class="mode-btn" role="tab" aria-selected="false" data-mode="custom" id="mode-cust" aria-controls="calc-body">
-      Build à la carte
-    </button>
-  </div>
-
-  <div class="calc-body" id="calc-body">
-    {/* ===== LEFT: controls ===== */}
-    <div class="calc-controls">
-      {/* Shared sqft input — drives Matterport + floor plan tier selection */}
-      <div class="ctrl ctrl-sqft">
-        <label for="calc-sqft" class="ctrl-label">
-          Property size (sq ft)
-          <span class="ctrl-hint">Drives 3D tour &amp; floor plan pricing</span>
-        </label>
-        <div class="sqft-input">
+  {/* ===== STEP 1: Property type ===== */}
+  <fieldset class="calc-step">
+    <legend class="step-legend"><span class="step-n">1</span> What are you photographing?</legend>
+    <div class="ptypes" role="radiogroup" aria-label="Property type">
+      {propertyTypes.map((t, i) => (
+        <label class:list={["ptype", { "is-active": i === 0 }]}>
           <input
-            id="calc-sqft"
-            type="number"
-            inputmode="numeric"
-            min="0"
-            step="100"
-            value="2000"
-            data-sqft
-            aria-describedby="sqft-note"
+            type="radio"
+            name="calc-ptype"
+            value={t.id}
+            data-ptype-radio
+            checked={i === 0}
+            aria-label={t.label}
           />
+          <span class="ptype-inner">
+            <span class="ptype-icon" aria-hidden="true">
+              {t.icon === "home" && (
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+              )}
+              {t.icon === "building" && (
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M14 8h5a2 2 0 0 1 2 2v11"/><path d="M6 7h4M6 11h4M6 15h4"/></svg>
+              )}
+              {t.icon === "bed" && (
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18v-6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v6"/><path d="M2 14h20"/><path d="M6 10V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3"/></svg>
+              )}
+              {t.icon === "map" && (
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>
+              )}
+            </span>
+            <span class="ptype-text">
+              <span class="ptype-name">{t.label}</span>
+              <span class="ptype-blurb">{t.blurb}</span>
+            </span>
+          </span>
+        </label>
+      ))}
+    </div>
+  </fieldset>
+
+  {/* ===== STEP 2: Property details ===== */}
+  <fieldset class="calc-step">
+    <legend class="step-legend"><span class="step-n">2</span> Property details</legend>
+    <div class="details-grid">
+      <label class="detail-field">
+        <span class="detail-label">Address <span class="opt">optional</span></span>
+        <input type="text" data-address placeholder="e.g. 123 Main St, Las Vegas, NV" autocomplete="off" />
+      </label>
+      <label class="detail-field">
+        <span class="detail-label" data-sqft-label>Square footage</span>
+        <div class="sqft-input">
+          <input type="number" inputmode="numeric" min="0" step="100" value="2000" data-sqft aria-describedby="sqft-note" />
           <span class="sqft-unit">sq ft</span>
         </div>
-        <p id="sqft-note" class="ctrl-note">Enter the property's square footage and watch 3D/floor-plan tiers update automatically.</p>
-      </div>
-
-      {/* Stories selector — used by floor plan bracketing */}
-      <div class="ctrl ctrl-stories">
-        <span class="ctrl-label" id="stories-label">Stories</span>
-        <div class="seg" role="group" aria-labelledby="stories-label">
-          <button type="button" class="seg-btn is-active" data-stories="1" aria-pressed="true">Single story</button>
-          <button type="button" class="seg-btn" data-stories="2" aria-pressed="false">Two story</button>
+      </label>
+      <label class="detail-field">
+        <span class="detail-label">Stories</span>
+        <div class="seg" role="group" aria-label="Number of stories">
+          <button type="button" class="seg-btn is-active" data-stories="1" aria-pressed="true">Single</button>
+          <button type="button" class="seg-btn" data-stories="2" aria-pressed="false">Two</button>
         </div>
-      </div>
+      </label>
+    </div>
+    <p id="sqft-note" class="ctrl-note">Square footage drives 3D tour &amp; floor plan tier pricing.</p>
+  </fieldset>
 
-      {/* ===== PACKAGE PICKER (visible in package mode) ===== */}
-      <fieldset class="ctrl-fieldset pkg-picker" data-package-picker>
-        <legend class="ctrl-label">Choose a package</legend>
-        <div class="pkg-options">
-          {packages.map((p) => (
-            <label class:list={["pkg-opt", { featured: p.featured }]}>
-              <input
-                type="radio"
-                name="calc-package"
-                value={p.slug}
-                data-package-radio
-                checked={p.featured}
-              />
-              <span class="pkg-opt-inner">
-                <span class="pkg-opt-head">
-                  <span class="pkg-opt-name">{p.name}</span>
-                  <span class="pkg-opt-price">${p.price}</span>
+  {/* ===== STEP 3: Services ===== */}
+  <fieldset class="calc-step">
+    <legend class="step-legend"><span class="step-n">3</span> Add services</legend>
+    <p class="step-hint">Select any combination — the total updates live.</p>
+
+    {/* RESIDENTIAL PACKAGES */}
+    <div class="svc-group" data-svc-for="package">
+      <h3 class="svc-group-title">Residential packages</h3>
+      <div class="svc-cards">
+        {packages.map((p) => (
+          <label class:list={["svc-card", { featured: p.featured }]}>
+            <input type="checkbox" data-svc="package" data-slug={p.slug} />
+            <span class="svc-card-inner">
+              <span class="svc-card-head">
+                <span class="svc-card-check" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
                 </span>
-                <span class="pkg-opt-tag">{p.tag}</span>
-                <span class="pkg-opt-blurb">{p.blurb}</span>
+                <span class="svc-card-name">{p.name}</span>
+                {p.featured && <span class="svc-flag">Popular</span>}
               </span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
-
-      {/* ===== À LA CARTE SERVICES (visible in custom mode) ===== */}
-      <fieldset class="ctrl-fieldset ala-picker" data-ala-picker hidden>
-        <legend class="ctrl-label">Services</legend>
-
-        {/* HDR */}
-        <div class="ala-row">
-          <label class="ala-check">
-            <input type="checkbox" data-service="hdr" />
-            <span class="ala-name">HDR photography</span>
+              <span class="svc-card-price">${p.price}</span>
+              <span class="svc-card-blurb">{p.blurb}</span>
+              <span class="svc-card-size">{p.sizeNote}</span>
+            </span>
           </label>
-          <div class="ala-ctrl" data-hdr-ctrl hidden>
-            <label for="hdr-count" class="sr-only">Number of HDR photos</label>
-            <div class="num-spin">
-              <button type="button" class="spin-btn" data-dec-for="hdr-count" aria-label="Fewer photos">−</button>
-              <input id="hdr-count" type="number" min="1" max="90" value="10" data-hdr-count />
-              <button type="button" class="spin-btn" data-inc-for="hdr-count" aria-label="More photos">+</button>
-            </div>
-            <span class="ala-tier" data-hdr-tier></span>
-          </div>
-        </div>
-
-        {/* Matterport */}
-        <div class="ala-row">
-          <label class="ala-check">
-            <input type="checkbox" data-service="matterport" />
-            <span class="ala-name">Matterport 3D tour</span>
-          </label>
-          <div class="ala-ctrl" data-matterport-ctrl hidden>
-            <span class="ala-tier" data-matterport-tier></span>
-          </div>
-        </div>
-
-        {/* Floor plan */}
-        <div class="ala-row">
-          <label class="ala-check">
-            <input type="checkbox" data-service="floorplan" />
-            <span class="ala-name">Floor plan</span>
-          </label>
-          <div class="ala-ctrl" data-floorplan-ctrl hidden>
-            <span class="ala-tier" data-floorplan-tier></span>
-          </div>
-        </div>
-
-        {/* Virtual staging */}
-        <div class="ala-row">
-          <label class="ala-check">
-            <input type="checkbox" data-service="staging" />
-            <span class="ala-name">Virtual staging</span>
-          </label>
-          <div class="ala-ctrl" data-staging-ctrl hidden>
-            <label for="staging-count" class="sr-only">Number of photos to stage</label>
-            <div class="num-spin">
-              <button type="button" class="spin-btn" data-dec-for="staging-count" aria-label="Fewer photos">−</button>
-              <input id="staging-count" type="number" min="1" max="50" value="1" data-staging-count />
-              <button type="button" class="spin-btn" data-inc-for="staging-count" aria-label="More photos">+</button>
-            </div>
-            <span class="ala-tier" data-staging-tier></span>
-          </div>
-        </div>
-      </fieldset>
-
-      {/* ===== ADD-ONS (always available) ===== */}
-      <fieldset class="ctrl-fieldset addon-picker">
-        <legend class="ctrl-label">Add-ons</legend>
-        <div class="addon-grid">
-          {addOns.map((a) => (
-            <label class="addon-chip">
-              <input type="checkbox" data-addon={a.id} />
-              <span class="addon-chip-inner">
-                <span class="addon-name">{a.label}</span>
-                <span class="addon-price">+${a.price}</span>
-              </span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+        ))}
+      </div>
+      <p class="svc-note" data-package-note hidden>Resale packages can't combine with à la carte services — picking both keeps the higher-value option.</p>
     </div>
 
-    {/* ===== RIGHT: live summary ===== */}
-    <aside class="calc-summary" aria-live="polite" aria-atomic="true">
-      <div class="summary-card">
-        <p class="eyebrow">Your quote</p>
-
-        {/* Itemized breakdown — populated by JS. */}
-        <ul class="breakdown" role="list" data-breakdown>
-          {/* Fallback line shown before JS runs / if JS disabled. */}
-          <li class="bd-empty">Enable JavaScript or pick a package to see your itemized total.</li>
-        </ul>
-
-        <div class="summary-total">
-          <span class="total-label">Estimated total</span>
-          <span class="total-amount" data-total>$0</span>
+    {/* HDR PHOTOGRAPHY */}
+    <div class="svc-group" data-svc-for="hdr">
+      <h3 class="svc-group-title">HDR photography</h3>
+      <label class="svc-toggle">
+        <input type="checkbox" data-service="hdr" />
+        <span class="svc-toggle-text">
+          <span class="svc-toggle-name">Add HDR photos</span>
+          <span class="svc-toggle-tier" data-hdr-tier></span>
+        </span>
+      </label>
+      <div class="qty-row" data-hdr-ctrl hidden>
+        <span class="qty-label">Number of photos</span>
+        <div class="num-spin">
+          <button type="button" class="spin-btn" data-dec-for="hdr-count" aria-label="Fewer photos">−</button>
+          <input id="hdr-count" type="number" min="1" max="90" value={propertyTypes[0].defaultPhotos} data-hdr-count />
+          <button type="button" class="spin-btn" data-inc-for="hdr-count" aria-label="More photos">+</button>
         </div>
-
-        <p class="summary-note">
-          Nevada doesn't tax photography services, so this is the full amount — no surprise fees.
-          Final invoice may vary for unusual scopes (very large homes, custom work).
-        </p>
-
-        <a class="btn brass btn-block summary-cta" data-book href={asset("/contact/")}>
-          Book this
-        </a>
-        <p class="summary-alt">Or <a href={asset("/contact/")}>ask Mike to confirm the scope →</a></p>
       </div>
-    </aside>
-  </div>
+    </div>
 
-  {/* No-JS fallback: tell the visitor the tables above still work. */}
+    {/* COMMERCIAL HDR */}
+    <div class="svc-group" data-svc-for="chdr">
+      <h3 class="svc-group-title">Commercial HDR photography</h3>
+      <div class="svc-cards">
+        {commercialHdrBrackets.map((b, i) => (
+          <label class="svc-card">
+            <input type="checkbox" data-svc="chdr" data-chdr-max={b.max} />
+            <span class="svc-card-inner">
+              <span class="svc-card-head">
+                <span class="svc-card-check" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                </span>
+                <span class="svc-card-name">{b.label}</span>
+              </span>
+              <span class="svc-card-price">${b.price}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+
+    {/* MATTERPORT 3D */}
+    <div class="svc-group" data-svc-for="matterport">
+      <h3 class="svc-group-title">Matterport 3D tour</h3>
+      <label class="svc-toggle">
+        <input type="checkbox" data-service="matterport" />
+        <span class="svc-toggle-text">
+          <span class="svc-toggle-name">Add a Matterport 3D walkthrough</span>
+          <span class="svc-toggle-tier" data-matterport-tier></span>
+        </span>
+      </label>
+      <p class="svc-note" data-matterport-note>Includes 2 MLS links + 6 months of hosting. Dollhouse, floor plan &amp; measurement views.</p>
+    </div>
+
+    {/* FLOOR PLAN */}
+    <div class="svc-group" data-svc-for="floorplan">
+      <h3 class="svc-group-title">Floor plan</h3>
+      <label class="svc-toggle">
+        <input type="checkbox" data-service="floorplan" />
+        <span class="svc-toggle-text">
+          <span class="svc-toggle-name">Add a schematic floor plan</span>
+          <span class="svc-toggle-tier" data-floorplan-tier></span>
+        </span>
+      </label>
+    </div>
+
+    {/* VIRTUAL STAGING */}
+    <div class="svc-group" data-svc-for="staging">
+      <h3 class="svc-group-title">Virtual staging</h3>
+      <label class="svc-toggle">
+        <input type="checkbox" data-service="staging" />
+        <span class="svc-toggle-text">
+          <span class="svc-toggle-name">Add virtual staging</span>
+          <span class="svc-toggle-tier" data-staging-tier></span>
+        </span>
+      </label>
+      <div class="qty-row" data-staging-ctrl hidden>
+        <span class="qty-label">Photos to stage</span>
+        <div class="num-spin">
+          <button type="button" class="spin-btn" data-dec-for="staging-count" aria-label="Fewer photos">−</button>
+          <input id="staging-count" type="number" min="1" max="50" value="1" data-staging-count />
+          <button type="button" class="spin-btn" data-inc-for="staging-count" aria-label="More photos">+</button>
+        </div>
+      </div>
+    </div>
+
+    {/* WALK-THROUGH VIDEO */}
+    <div class="svc-group" data-svc-for="video">
+      <h3 class="svc-group-title">Walk-through video &amp; reels</h3>
+      <div class="svc-cards">
+        {videoItems.map((v) => (
+          <label class="svc-card">
+            <input type="checkbox" data-svc="video" data-vlabel={v.label} data-vprice={v.price} />
+            <span class="svc-card-inner">
+              <span class="svc-card-head">
+                <span class="svc-card-check" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                </span>
+                <span class="svc-card-name">{v.label}</span>
+              </span>
+              <span class="svc-card-price">${v.price}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+
+    {/* ZILLOW 3D */}
+    <div class="svc-group" data-svc-for="zillow">
+      <h3 class="svc-group-title">Zillow 3D Home</h3>
+      <div class="svc-cards">
+        {zillowItems.map((z) => (
+          <label class="svc-card">
+            <input type="checkbox" data-svc="zillow" data-zlabel={z.label} data-zprice={z.price} />
+            <span class="svc-card-inner">
+              <span class="svc-card-head">
+                <span class="svc-card-check" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                </span>
+                <span class="svc-card-name">{z.label}</span>
+              </span>
+              <span class="svc-card-price">${z.price}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+
+    {/* PREMIUM 360 PANORAMAS (commercial / land) */}
+    <div class="svc-group" data-svc-for="pano-prem">
+      <h3 class="svc-group-title">Premium 360 panoramas (8-shot DSLR/HDR)</h3>
+      <div class="svc-cards">
+        {premiumPanoramaBrackets.map((p) => (
+          <label class="svc-card">
+            <input type="checkbox" data-svc="pano-prem" data-plabel={p.label} data-pprice={p.price} />
+            <span class="svc-card-inner">
+              <span class="svc-card-head">
+                <span class="svc-card-check" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                </span>
+                <span class="svc-card-name">{p.label}</span>
+              </span>
+              <span class="svc-card-price">${p.price}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+
+    {/* EXPRESS 360 / VR */}
+    <div class="svc-group" data-svc-for="pano-exp">
+      <h3 class="svc-group-title">Express 360 / VR</h3>
+      <div class="svc-cards">
+        {expressPanoramaBrackets.map((p) => (
+          <label class="svc-card">
+            <input type="checkbox" data-svc="pano-exp" data-plabel={p.label} data-pprice={p.price} />
+            <span class="svc-card-inner">
+              <span class="svc-card-head">
+                <span class="svc-card-check" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                </span>
+                <span class="svc-card-name">{p.label}</span>
+              </span>
+              <span class="svc-card-price">${p.price}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+
+    {/* GOOGLE "GET ME ON GOOGLE" PACKAGE */}
+    <div class="svc-group" data-svc-for="google">
+      <h3 class="svc-group-title">Commercial packages</h3>
+      <div class="svc-cards">
+        <label class="svc-card featured">
+          <input type="checkbox" data-svc="google" />
+          <span class="svc-card-inner">
+            <span class="svc-card-head">
+              <span class="svc-card-check" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </span>
+              <span class="svc-card-name">{googlePkg.name}</span>
+              <span class="svc-flag">Most booked</span>
+            </span>
+            <span class="svc-card-price">${googlePkg.price}</span>
+            <span class="svc-card-blurb">{googlePkg.includes.join(" · ")}</span>
+            <span class="svc-card-size">{googlePkg.note}</span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    {/* ADD-ONS */}
+    <div class="svc-group" data-svc-for="addon">
+      <h3 class="svc-group-title">Add-ons</h3>
+      <div class="addon-grid">
+        {addOns.map((a) => (
+          <label class="addon-chip">
+            <input type="checkbox" data-addon={a.id} />
+            <span class="addon-chip-inner">
+              <span class="addon-name">{a.label}</span>
+              <span class="addon-price">+${a.price}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+  </fieldset>
+
+  {/* ===== LIVE SUMMARY (sticky) ===== */}
+  <aside class="calc-summary" aria-live="polite" aria-atomic="true">
+    <div class="summary-card">
+      <p class="eyebrow">Your quote</p>
+      <p class="summary-type" data-summary-type>Residential Home</p>
+
+      <ul class="breakdown" role="list" data-breakdown>
+        <li class="bd-empty">Pick a service to see your total.</li>
+      </ul>
+
+      <div class="summary-total">
+        <span class="total-label">Estimated total</span>
+        <span class="total-amount" data-total>$0</span>
+      </div>
+
+      <p class="summary-note">
+        Nevada doesn't tax photography services, so this is the full amount — no surprise fees.
+        Final invoice may vary for unusual scopes (very large properties, custom work).
+      </p>
+
+      <a class="btn brass btn-block summary-cta" data-book href={asset("/contact/")}>
+        Book this
+      </a>
+      <p class="summary-alt">Or <a href={asset("/contact/")}>ask Mike to confirm the scope →</a></p>
+    </div>
+  </aside>
+
+  {/* No-JS fallback */}
   <noscript>
     <p class="calc-noscript">
       The live calculator needs JavaScript, but every price is listed in the tables on this page —
@@ -316,180 +559,281 @@ const configJson = JSON.stringify(config);
     border-radius: var(--radius-lg);
     padding: clamp(1.4rem, 1rem + 2vw, 2.6rem);
     margin-top: 2.5rem;
-  }
-  .calc-head { max-width: 64ch; margin-bottom: 1.8rem; }
-  .calc-title { font-size: var(--step-3); margin-top: 0.3rem; }
-  .calc-sub { margin-top: 0.9rem; color: var(--stone); font-size: var(--step-0); line-height: 1.55; }
-
-  /* Mode toggle */
-  .calc-mode {
-    display: inline-flex;
-    gap: 0.3rem;
-    padding: 0.35rem;
-    background: var(--paper-2);
-    border: 1px solid var(--line-light);
-    border-radius: 999px;
-    margin-bottom: 1.8rem;
-  }
-  .mode-btn {
-    padding: 0.6em 1.2em;
-    font-size: var(--step--1);
-    font-weight: 600;
-    color: var(--stone);
-    border-radius: 999px;
-    border: 1px solid transparent;
-    transition: background 0.2s var(--ease), color 0.2s var(--ease), border-color 0.2s var(--ease);
-    cursor: pointer;
-  }
-  .mode-btn:hover { color: var(--ink); }
-  .mode-btn.is-active {
-    background: var(--dark);
-    color: var(--paper);
-    border-color: var(--dark);
-  }
-
-  .calc-body {
     display: grid;
-    grid-template-columns: 1.35fr 1fr;
+    grid-template-columns: 1.4fr 1fr;
     gap: clamp(1.5rem, 3vw, 2.5rem);
     align-items: start;
   }
+  .calc-head { grid-column: 1 / -1; max-width: 64ch; }
+  .calc-title { font-size: var(--step-3); margin-top: 0.3rem; }
+  .calc-sub { margin-top: 0.9rem; color: var(--stone); font-size: var(--step-0); line-height: 1.55; }
 
-  .calc-controls { display: flex; flex-direction: column; gap: 1.4rem; }
+  /* Left column = steps; right column = summary. */
+  .calc-step {
+    border: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .calc-step + .calc-step { margin-top: 1.8rem; padding-top: 1.8rem; border-top: 1px solid var(--line-light); }
+  .step-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0;
+    font-size: var(--step-0);
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .step-n {
+    display: inline-grid;
+    place-items: center;
+    width: 26px; height: 26px;
+    background: var(--brass);
+    color: #fff;
+    border-radius: 50%;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step-hint { font-size: var(--step--1); color: var(--stone); margin-top: -0.3rem; }
 
-  .ctrl { display: flex; flex-direction: column; gap: 0.5rem; }
-  .ctrl-label {
+  /* ===== Property type cards ===== */
+  .ptypes {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.7rem;
+  }
+  .ptype { cursor: pointer; display: block; }
+  .ptype input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .ptype-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem;
+    border: 1.5px solid var(--line-light);
+    border-radius: var(--radius);
+    background: var(--paper-2);
+    min-height: 76px;
+    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.2s var(--ease);
+  }
+  .ptype input:checked + .ptype-inner,
+  .ptype.is-active .ptype-inner {
+    border-color: var(--brass);
+    background: var(--paper);
+    box-shadow: 0 0 0 3px var(--brass-soft);
+  }
+  .ptype input:focus-visible + .ptype-inner { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .ptype-icon {
+    width: 44px; height: 44px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--brass-soft);
+    color: var(--brass);
+    flex-shrink: 0;
+  }
+  .ptype.is-active .ptype-icon { background: var(--brass); color: #fff; }
+  .ptype-text { display: flex; flex-direction: column; gap: 0.1rem; }
+  .ptype-name { font-family: var(--font-display); font-size: var(--step-1); color: var(--ink); line-height: 1.1; }
+  .ptype-blurb { font-size: var(--step--1); color: var(--stone); line-height: 1.3; }
+
+  /* ===== Property details ===== */
+  .details-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 0.9rem;
+    align-items: end;
+  }
+  .detail-field { display: flex; flex-direction: column; gap: 0.4rem; }
+  .detail-label {
     font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--ink-2);
     display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
+    align-items: baseline;
+    gap: 0.4rem;
   }
-  .ctrl-hint { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.02em; text-transform: none; color: var(--stone-2); }
+  .opt { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.02em; text-transform: none; color: var(--stone-2); }
+  .detail-field input {
+    width: 100%;
+    padding: 0.75em 0.85em;
+    background: var(--paper-2);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-sm);
+    font-size: var(--step-0);
+    color: var(--ink);
+    font-family: inherit;
+  }
+  .detail-field input:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 3px var(--brass-soft); }
   .ctrl-note { font-size: 0.75rem; color: var(--stone-2); line-height: 1.45; }
 
-  .sqft-input { display: flex; align-items: center; gap: 0; max-width: 260px; }
+  .sqft-input { display: flex; align-items: stretch; }
   .sqft-input input {
-    width: 100%;
-    padding: 0.8em 0.9em;
-    background: var(--paper);
-    border: 1px solid var(--line-light);
     border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-    font-size: var(--step-0);
     font-family: var(--font-display);
-    color: var(--ink);
-  }
-  .sqft-input input:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 3px var(--brass-soft); z-index: 1; }
-  .sqft-unit {
-    padding: 0.8em 0.9em;
     background: var(--paper-2);
+  }
+  .sqft-unit {
+    padding: 0.75em 0.85em;
+    background: var(--paper-3);
     border: 1px solid var(--line-light);
     border-left: none;
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     font-size: var(--step--1);
     color: var(--stone);
     white-space: nowrap;
+    display: grid;
+    place-items: center;
   }
 
-  /* Segmented control */
-  .seg { display: inline-flex; border: 1px solid var(--line-light); border-radius: var(--radius-sm); overflow: hidden; max-width: 100%; }
+  /* Segmented control (stories) */
+  .seg { display: inline-flex; border: 1px solid var(--line-light); border-radius: var(--radius-sm); overflow: hidden; }
   .seg-btn {
-    padding: 0.65em 1.1em;
+    padding: 0.65em 1.2em;
     font-size: var(--step--1);
     font-weight: 600;
     color: var(--stone);
-    background: var(--paper);
+    background: var(--paper-2);
     border: none;
     border-right: 1px solid var(--line-light);
     cursor: pointer;
+    min-height: 44px;
     transition: background 0.2s var(--ease), color 0.2s var(--ease);
   }
   .seg-btn:last-child { border-right: none; }
-  .seg-btn.is-active { background: var(--dark); color: var(--paper); }
+  .seg-btn.is-active { background: var(--ink); color: var(--on-dark); }
 
-  /* Fieldsets */
-  .ctrl-fieldset {
-    border: 1px solid var(--line-light);
-    border-radius: var(--radius);
-    padding: 1.1rem 1.1rem 1.2rem;
-    margin: 0;
-    background: var(--paper-2);
-  }
-  .ctrl-fieldset legend {
-    padding: 0 0.5rem;
-    font-size: 0.78rem;
+  /* ===== Service groups ===== */
+  .svc-group { display: flex; flex-direction: column; gap: 0.6rem; }
+  .svc-group + .svc-group { margin-top: 1.4rem; }
+  .svc-group[hidden] { display: none; }
+  .svc-group-title {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--ink-2);
+    color: var(--brass);
   }
+  .svc-note { font-size: 0.78rem; color: var(--stone-2); line-height: 1.45; }
 
-  /* Package picker */
-  .pkg-options { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.4rem; }
-  .pkg-opt { cursor: pointer; display: block; }
-  .pkg-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-  .pkg-opt-inner {
-    display: block;
+  /* Visual service cards (multi-select) */
+  .svc-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.65rem; }
+  .svc-card { cursor: pointer; display: block; }
+  .svc-card input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .svc-card-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
     padding: 0.9rem 1rem;
     border: 1.5px solid var(--line-light);
     border-radius: var(--radius);
-    background: var(--paper);
-    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+    background: var(--paper-2);
+    height: 100%;
+    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.2s var(--ease);
   }
-  .pkg-opt input:checked + .pkg-opt-inner {
+  .svc-card input:checked + .svc-card-inner {
     border-color: var(--brass);
+    background: var(--paper);
     box-shadow: 0 0 0 3px var(--brass-soft);
   }
-  .pkg-opt input:focus-visible + .pkg-opt-inner { outline: 2px solid var(--brass); outline-offset: 2px; }
-  .pkg-opt.featured .pkg-opt-inner { background: var(--dark); color: var(--paper); border-color: var(--dark); }
-  .pkg-opt.featured input:checked + .pkg-opt-inner { border-color: var(--brass-2); box-shadow: 0 0 0 3px var(--brass-soft); }
-  .pkg-opt-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem; }
-  .pkg-opt-name { font-family: var(--font-display); font-size: var(--step-1); }
-  .pkg-opt-price { font-family: var(--font-display); font-size: var(--step-2); color: var(--brass); }
-  .pkg-opt.featured .pkg-opt-price { color: var(--brass-2); }
-  .pkg-opt-tag { display: inline-block; margin-top: 0.2rem; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brass-2); }
-  .pkg-opt-blurb { display: block; margin-top: 0.4rem; font-size: var(--step--1); line-height: 1.45; color: var(--stone); }
-  .pkg-opt.featured .pkg-opt-blurb { color: rgba(247,244,239,0.72); }
+  .svc-card input:focus-visible + .svc-card-inner { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .svc-card.featured .svc-card-inner { background: var(--paper); border-color: var(--brass); }
+  .svc-card-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .svc-card-check {
+    width: 20px; height: 20px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    border: 1.5px solid var(--line-light);
+    color: transparent;
+    flex-shrink: 0;
+    transition: all 0.2s var(--ease);
+  }
+  .svc-card input:checked + .svc-card-inner .svc-card-check {
+    background: var(--brass);
+    border-color: var(--brass);
+    color: #fff;
+  }
+  .svc-card-name { font-family: var(--font-display); font-size: var(--step-0); color: var(--ink); line-height: 1.2; }
+  .svc-card-price { font-family: var(--font-display); font-size: var(--step-2); color: var(--brass); line-height: 1; }
+  .svc-card-blurb { font-size: var(--step--1); color: var(--stone); line-height: 1.4; }
+  .svc-card-size { font-size: 0.72rem; color: var(--stone-2); line-height: 1.35; }
+  .svc-flag {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #fff;
+    background: var(--brass);
+    padding: 0.2em 0.6em;
+    border-radius: 999px;
+    margin-left: auto;
+  }
 
-  /* À la carte rows */
-  .ala-picker { display: flex; flex-direction: column; gap: 0.4rem; }
-  .ala-row {
+  /* Toggle row (single service with quantity) */
+  .svc-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.85rem 1rem;
+    border: 1.5px solid var(--line-light);
+    border-radius: var(--radius);
+    background: var(--paper-2);
+    cursor: pointer;
+    min-height: 56px;
+    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.2s var(--ease);
+  }
+  .svc-toggle input { width: 22px; height: 22px; accent-color: var(--brass); flex-shrink: 0; }
+  .svc-toggle input:checked ~ .svc-toggle-text { color: var(--ink); }
+  .svc-toggle:has(input:checked) {
+    border-color: var(--brass);
+    background: var(--paper);
+    box-shadow: 0 0 0 3px var(--brass-soft);
+  }
+  .svc-toggle-text { display: flex; flex-direction: column; gap: 0.1rem; }
+  .svc-toggle-name { font-weight: 600; color: var(--ink); font-size: var(--step-0); }
+  .svc-toggle-tier { font-size: var(--step--1); color: var(--brass); font-weight: 600; }
+
+  /* Quantity row */
+  .qty-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 0.55rem 0;
-    border-bottom: 1px dashed var(--line-light);
+    padding: 0.5rem 1rem 0.2rem;
   }
-  .ala-row:last-child { border-bottom: none; }
-  .ala-check { display: flex; align-items: center; gap: 0.65rem; cursor: pointer; font-size: var(--step-0); }
-  .ala-check input { width: 18px; height: 18px; accent-color: var(--brass); flex-shrink: 0; }
-  .ala-name { font-weight: 500; color: var(--ink); }
-  .ala-ctrl { display: flex; align-items: center; gap: 0.8rem; }
-  .ala-tier { font-size: var(--step--1); color: var(--stone); font-weight: 600; white-space: nowrap; }
+  .qty-row[hidden] { display: none; }
+  .qty-label { font-size: var(--step--1); color: var(--stone); }
 
-  /* Number spinner */
   .num-spin { display: inline-flex; align-items: stretch; border: 1px solid var(--line-light); border-radius: var(--radius-sm); overflow: hidden; }
   .num-spin input {
-    width: 52px;
+    width: 56px;
     text-align: center;
     border: none;
     border-left: 1px solid var(--line-light);
     border-right: 1px solid var(--line-light);
-    padding: 0.45em 0.2em;
+    padding: 0.5em 0.2em;
     font-size: var(--step-0);
     font-family: var(--font-display);
     background: var(--paper);
+    color: var(--ink);
     -moz-appearance: textfield;
   }
   .num-spin input::-webkit-outer-spin-button,
   .num-spin input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .spin-btn {
-    width: 32px;
-    font-size: var(--step-1);
+    width: 40px;
+    font-size: var(--step-2);
     font-weight: 700;
     color: var(--ink);
     background: var(--paper-2);
@@ -500,7 +844,7 @@ const configJson = JSON.stringify(config);
   .spin-btn:hover { background: var(--paper-3); }
 
   /* Add-ons */
-  .addon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.55rem; margin-top: 0.4rem; }
+  .addon-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.55rem; }
   .addon-chip { cursor: pointer; display: block; }
   .addon-chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
   .addon-chip-inner {
@@ -508,12 +852,13 @@ const configJson = JSON.stringify(config);
     justify-content: space-between;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.6em 0.85em;
+    padding: 0.7em 0.9em;
     border: 1.5px solid var(--line-light);
     border-radius: var(--radius-sm);
-    background: var(--paper);
+    background: var(--paper-2);
     font-size: var(--step--1);
-    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+    min-height: 48px;
+    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.2s var(--ease);
   }
   .addon-chip input:checked + .addon-chip-inner {
     border-color: var(--brass);
@@ -524,16 +869,23 @@ const configJson = JSON.stringify(config);
   .addon-name { font-weight: 500; color: var(--ink-2); }
   .addon-price { font-family: var(--font-display); font-weight: 600; color: var(--brass); white-space: nowrap; }
 
-  /* Summary */
+  /* ===== Summary (sticky) ===== */
   .calc-summary { position: sticky; top: 100px; }
   .summary-card {
     background: var(--dark);
-    color: var(--paper);
+    color: var(--on-dark);
     border-radius: var(--radius-lg);
     padding: clamp(1.4rem, 1rem + 1.5vw, 2rem);
     box-shadow: var(--shadow-lift);
   }
   .summary-card .eyebrow { color: var(--brass-2); }
+  .summary-type {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    color: var(--on-dark);
+    margin-top: 0.4rem;
+    line-height: 1.2;
+  }
   .breakdown { display: flex; flex-direction: column; gap: 0.55rem; margin: 1rem 0 0; }
   .breakdown li {
     display: flex;
@@ -547,7 +899,7 @@ const configJson = JSON.stringify(config);
   }
   .breakdown li:last-child { border-bottom: none; }
   .breakdown .bd-name { line-height: 1.35; padding-right: 0.5rem; }
-  .breakdown .bd-price { font-family: var(--font-display); color: var(--paper); white-space: nowrap; }
+  .breakdown .bd-price { font-family: var(--font-display); color: var(--on-dark); white-space: nowrap; }
   .breakdown .bd-sub { color: rgba(247,244,239,0.55); font-size: 0.72rem; display: block; margin-top: 0.15rem; }
   .breakdown .bd-empty {
     color: rgba(247,244,239,0.6);
@@ -581,6 +933,7 @@ const configJson = JSON.stringify(config);
   .summary-alt a:hover { border-bottom-color: var(--brass-2); }
 
   .calc-noscript {
+    grid-column: 1 / -1;
     margin-top: 1.5rem;
     padding: 1rem 1.2rem;
     background: var(--paper-2);
@@ -592,12 +945,14 @@ const configJson = JSON.stringify(config);
   .calc-noscript a { color: var(--brass); font-weight: 600; }
 
   @media (max-width: 880px) {
-    .calc-body { grid-template-columns: 1fr; }
+    .calc { grid-template-columns: 1fr; }
     .calc-summary { position: static; }
+    .details-grid { grid-template-columns: 1fr; }
   }
   @media (max-width: 560px) {
+    .ptypes { grid-template-columns: 1fr; }
+    .svc-cards { grid-template-columns: 1fr; }
     .addon-grid { grid-template-columns: 1fr; }
-    .pkg-opt-head { flex-wrap: wrap; }
     .total-amount { font-size: var(--step-4); }
   }
 </style>
@@ -605,35 +960,32 @@ const configJson = JSON.stringify(config);
 <script is:inline define:vars={{ config: configJson }}>
   (() => {
     const CONFIG = JSON.parse(config);
-    const root = document.currentScript?.closest("[data-calculator]");
-    const calc = root || document.querySelector("[data-calculator]");
+    const calc = document.currentScript?.closest("[data-calculator]") || document.querySelector("[data-calculator]");
     if (!calc) return;
 
     // Elements
-    const $ = (sel) => calc.querySelector(sel);
-    const modeBtns = calc.querySelectorAll(".mode-btn");
-    const pkgPicker = calc.querySelector("[data-package-picker]");
-    const alaPicker = calc.querySelector("[data-ala-picker]");
-    const pkgRadios = calc.querySelectorAll("[data-package-radio]");
+    const ptypeRadios = calc.querySelectorAll("[data-ptype-radio]");
+    const ptypeLabels = calc.querySelectorAll(".ptype");
+    const svcGroups = calc.querySelectorAll("[data-svc-for]");
     const sqftInput = calc.querySelector("[data-sqft]");
+    const sqftLabel = calc.querySelector("[data-sqft-label]");
     const storiesBtns = calc.querySelectorAll("[data-stories]");
-    const hdrCheck = calc.querySelector('[data-service="hdr"]');
-    const matterportCheck = calc.querySelector('[data-service="matterport"]');
-    const floorplanCheck = calc.querySelector('[data-service="floorplan"]');
-    const stagingCheck = calc.querySelector('[data-service="staging"]');
-    const hdrCount = calc.querySelector("[data-hdr-count]");
-    const stagingCount = calc.querySelector("[data-staging-count]");
-    const hdrCtrl = calc.querySelector("[data-hdr-ctrl]");
-    const matterportCtrl = calc.querySelector("[data-matterport-ctrl]");
-    const floorplanCtrl = calc.querySelector("[data-floorplan-ctrl]");
-    const stagingCtrl = calc.querySelector("[data-staging-ctrl]");
-    const addonChecks = calc.querySelectorAll("[data-addon]");
+    const summaryType = calc.querySelector("[data-summary-type]");
     const breakdown = calc.querySelector("[data-breakdown]");
     const totalEl = calc.querySelector("[data-total]");
     const bookBtn = calc.querySelector("[data-book]");
 
-    let mode = "package";
+    let ptype = CONFIG.propertyTypes[0];
     let stories = 1;
+
+    // All selectable inputs that contribute to the quote.
+    const svcChecks = calc.querySelectorAll('[data-svc]');
+    const serviceChecks = calc.querySelectorAll('[data-service]');
+    const addonChecks = calc.querySelectorAll("[data-addon]");
+    const hdrCount = calc.querySelector("[data-hdr-count]");
+    const stagingCount = calc.querySelector("[data-staging-count]");
+    const hdrCtrl = calc.querySelector("[data-hdr-ctrl]");
+    const stagingCtrl = calc.querySelector("[data-staging-ctrl]");
 
     // ---- Pricing helpers (mirror the real bracket logic) ----
     function sqft() { return Math.max(0, parseInt(sqftInput.value, 10) || 0); }
@@ -644,6 +996,12 @@ const configJson = JSON.stringify(config);
       return { price: b.price, label: b.label };
     }
 
+    function commercialHdrPriceFor(count) {
+      const c = Math.max(0, count | 0);
+      const b = CONFIG.commercialHdrBrackets.find((x) => c <= x.max) || CONFIG.commercialHdrBrackets[CONFIG.commercialHdrBrackets.length - 1];
+      return { price: b.price, label: b.label };
+    }
+
     function matterportPriceFor(sqftVal) {
       if (sqftVal <= 0) {
         const b = CONFIG.matterportBrackets[0];
@@ -651,9 +1009,8 @@ const configJson = JSON.stringify(config);
       }
       const b = CONFIG.matterportBrackets.find((x) => sqftVal <= x.maxSqft);
       if (b) return { price: b.price, label: b.label, overage: 0 };
-      // Over the largest bracket → add overage per full/additional 1000 sqft.
-      const cap = CONFIG.matterportBrackets[CONFIG.matterportBrackets.length - 1].maxSqft; // 4000
-      const base = CONFIG.matterportBrackets[CONFIG.matterportBrackets.length - 1].price; // 350
+      const cap = CONFIG.matterportBrackets[CONFIG.matterportBrackets.length - 1].maxSqft;
+      const base = CONFIG.matterportBrackets[CONFIG.matterportBrackets.length - 1].price;
       const extra = sqftVal - cap;
       const additional1000s = Math.ceil(extra / 1000);
       const overage = additional1000s * CONFIG.matterportOveragePer1000;
@@ -666,49 +1023,60 @@ const configJson = JSON.stringify(config);
         (x) => x.stories === stor && sqftVal >= x.minSqft && sqftVal <= x.maxSqft
       );
       if (b) return { price: b.price, label: b.label };
-      // Fallback to the matching-story bracket under 2500.
       const fb = CONFIG.floorPlanBrackets.find((x) => x.stories === stor && x.maxSqft === 2500);
       return fb ? { price: fb.price, label: fb.label } : { price: null, label: CONFIG.floorPlanCustomNote, custom: true };
     }
 
     // ---- Compute the current quote ----
     function computeQuote() {
-      const lines = []; // {name, sub, price, custom?}
+      const lines = [];
       const sqftVal = sqft();
 
-      if (mode === "package") {
-        const sel = calc.querySelector("[data-package-radio]:checked");
-        if (sel) {
-          const pkg = CONFIG.packages.find((p) => p.slug === sel.value);
-          if (pkg) {
-            lines.push({ name: pkg.name + " package", sub: pkg.includes.slice(0, 2).join(" · "), price: pkg.price });
-          }
-        }
-      } else {
-        // HDR
-        if (hdrCheck.checked) {
+      // Service toggles (checkbox rows with a single price).
+      serviceChecks.forEach((chk) => {
+        if (!chk.checked) return;
+        const svc = chk.dataset.service;
+        if (svc === "hdr") {
           const count = Math.max(1, parseInt(hdrCount.value, 10) || 0);
           const { price, label } = hdrPriceFor(count);
           lines.push({ name: `HDR photography (${count} photo${count === 1 ? "" : "s"})`, sub: label, price });
-        }
-        // Matterport
-        if (matterportCheck.checked) {
+        } else if (svc === "matterport") {
           const { price, label } = matterportPriceFor(sqftVal);
           lines.push({ name: "Matterport 3D tour", sub: label, price });
-        }
-        // Floor plan
-        if (floorplanCheck.checked) {
+        } else if (svc === "floorplan") {
           const fp = floorPlanPriceFor(sqftVal, stories);
           lines.push({ name: "Floor plan", sub: fp.label, price: fp.price, custom: !!fp.custom });
-        }
-        // Virtual staging
-        if (stagingCheck.checked) {
+        } else if (svc === "staging") {
           const count = Math.max(1, parseInt(stagingCount.value, 10) || 1);
           lines.push({ name: `Virtual staging (${count} photo${count === 1 ? "" : "s"})`, sub: `$${CONFIG.virtualStagingPerPhoto} / photo`, price: count * CONFIG.virtualStagingPerPhoto });
         }
-      }
+      });
 
-      // Add-ons (apply in both modes)
+      // Card-based multi-select services (packages, commercial HDR, video, zillow, panoramas, google).
+      svcChecks.forEach((chk) => {
+        if (!chk.checked) return;
+        const svc = chk.dataset.svc;
+        if (svc === "package") {
+          const pkg = CONFIG.packages.find((p) => p.slug === chk.dataset.slug);
+          if (pkg) lines.push({ name: pkg.name + " package", sub: pkg.includes.slice(0, 2).join(" · "), price: pkg.price });
+        } else if (svc === "chdr") {
+          const max = parseInt(chk.dataset.chdrMax, 10);
+          const ch = commercialHdrPriceFor(max);
+          lines.push({ name: `Commercial HDR (${ch.label})`, price: ch.price });
+        } else if (svc === "video") {
+          lines.push({ name: chk.dataset.vlabel, price: parseInt(chk.dataset.vprice, 10) });
+        } else if (svc === "zillow") {
+          lines.push({ name: chk.dataset.zlabel, price: parseInt(chk.dataset.zprice, 10) });
+        } else if (svc === "pano-prem" || svc === "pano-exp") {
+          const kind = svc === "pano-prem" ? "Premium 360" : "Express 360";
+          lines.push({ name: `${kind} (${chk.dataset.plabel})`, price: parseInt(chk.dataset.pprice, 10) });
+        } else if (svc === "google") {
+          const g = CONFIG.googlePkg;
+          lines.push({ name: g.name, sub: g.includes.slice(0, 2).join(" · "), price: g.price });
+        }
+      });
+
+      // Add-ons
       addonChecks.forEach((chk) => {
         if (chk.checked) {
           const a = CONFIG.addOns.find((x) => x.id === chk.dataset.addon);
@@ -723,31 +1091,24 @@ const configJson = JSON.stringify(config);
     // ---- Render ----
     function render() {
       const { lines, total } = computeQuote();
-      // Breakdown
       if (lines.length === 0) {
-        breakdown.innerHTML = '<li class="bd-empty">Pick a service or package to see your total.</li>';
+        breakdown.innerHTML = '<li class="bd-empty">Pick a service to see your total.</li>';
       } else {
         breakdown.innerHTML = lines.map((l) => {
-          const priceTxt = l.custom
-            ? '<span class="bd-custom">Custom</span>'
-            : `$${l.price}`;
+          const priceTxt = l.custom ? '<span class="bd-custom">Custom</span>' : `$${l.price}`;
           const sub = l.sub ? `<span class="bd-sub">${l.sub}</span>` : "";
           return `<li><span class="bd-name">${l.name}${sub}</span><span class="bd-price">${priceTxt}</span></li>`;
         }).join("");
       }
-      // Total
       totalEl.textContent = "$" + total.toLocaleString();
 
-      // Book link — carry the package slug + total as context for the contact form.
+      // Build the booking link with full context for the contact form.
       const params = new URLSearchParams();
-      if (mode === "package") {
-        const sel = calc.querySelector("[data-package-radio]:checked");
-        if (sel) params.set("package", sel.value);
-      } else {
-        params.set("package", "custom");
-      }
+      params.set("type", ptype.label);
       params.set("total", String(total));
-      // Encode the line-item summary so the contact form has full context.
+      const addr = calc.querySelector("[data-address]")?.value.trim();
+      if (addr) params.set("address", addr);
+      if (sqft()) params.set("sqft", String(sqft()));
       if (lines.length) {
         params.set("items", lines.map((l) => `${l.name}${typeof l.price === "number" ? " $" + l.price : ""}`).join("; "));
       }
@@ -755,46 +1116,49 @@ const configJson = JSON.stringify(config);
       bookBtn.setAttribute("href", base + "/?" + params.toString());
     }
 
-    // ---- Tier labels for à-la-carte rows ----
+    // ---- Tier labels for the toggle rows ----
     function renderTierLabels() {
       const sqftVal = sqft();
-      // HDR tier for current count
       const hc = Math.max(1, parseInt(hdrCount.value, 10) || 0);
       const h = hdrPriceFor(hc);
       const ht = calc.querySelector("[data-hdr-tier]");
       if (ht) ht.textContent = `$${h.price} · ${h.label}`;
-      // Matterport tier for current sqft
       const m = matterportPriceFor(sqftVal);
       const mt = calc.querySelector("[data-matterport-tier]");
       if (mt) mt.textContent = `$${m.price} · ${m.label}`;
-      // Floor plan tier
       const f = floorPlanPriceFor(sqftVal, stories);
       const ft = calc.querySelector("[data-floorplan-tier]");
       if (ft) ft.textContent = (f.custom ? f.label : `$${f.price} · ${f.label}`);
-      // Staging
       const sc = Math.max(1, parseInt(stagingCount.value, 10) || 1);
       const stEl = calc.querySelector("[data-staging-tier]");
       if (stEl) stEl.textContent = `$${sc * CONFIG.virtualStagingPerPhoto}`;
     }
 
-    // ---- Mode switching ----
-    function setMode(next) {
-      mode = next;
-      modeBtns.forEach((b) => {
-        const active = b.dataset.mode === next;
-        b.classList.toggle("is-active", active);
-        b.setAttribute("aria-selected", active ? "true" : "false");
-      });
-      if (next === "package") {
-        pkgPicker.hidden = false;
-        alaPicker.hidden = true;
-      } else {
-        pkgPicker.hidden = true;
-        alaPicker.hidden = false;
+    // ---- Property type switching ----
+    function setPtype(next) {
+      ptype = next;
+      ptypeLabels.forEach((lbl) => lbl.classList.remove("is-active"));
+      const active = calc.querySelector(`[data-ptype-radio][value="${next.id}"]`);
+      if (active) {
+        active.checked = true;
+        active.closest(".ptype")?.classList.add("is-active");
       }
+      // Show only the service groups relevant to this property type.
+      svcGroups.forEach((g) => {
+        const key = g.getAttribute("data-svc-for");
+        g.hidden = !next.services.includes(key);
+      });
+      // Update sqft label wording (living area vs lot size etc.).
+      if (sqftLabel && next.sqftLabel) sqftLabel.textContent = next.sqftLabel;
+      // Update the summary header.
+      if (summaryType) summaryType.textContent = next.label;
+      renderTierLabels();
       render();
     }
-    modeBtns.forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
+    ptypeRadios.forEach((r) => r.addEventListener("change", () => {
+      const t = CONFIG.propertyTypes.find((p) => p.id === r.value);
+      if (t) setPtype(t);
+    }));
 
     // ---- Stories segmented control ----
     storiesBtns.forEach((b) => b.addEventListener("click", () => {
@@ -821,7 +1185,7 @@ const configJson = JSON.stringify(config);
       });
     });
 
-    // ---- Service checkbox reveal + recompute ----
+    // ---- Service toggle reveal + recompute ----
     function wireService(check, ctrl) {
       if (!check || !ctrl) return;
       const sync = () => { ctrl.hidden = !check.checked; };
@@ -829,19 +1193,19 @@ const configJson = JSON.stringify(config);
       check.addEventListener("change", () => { sync(); render(); });
     }
     wireService(hdrCheck, hdrCtrl);
-    wireService(matterportCheck, matterportCtrl);
-    wireService(floorplanCheck, floorplanCtrl);
     wireService(stagingCheck, stagingCtrl);
 
     // ---- All change events recompute ----
     [sqftInput, hdrCount, stagingCount].forEach((el) => {
       if (el) el.addEventListener("input", () => { renderTierLabels(); render(); });
     });
-    pkgRadios.forEach((r) => r.addEventListener("change", render));
+    svcChecks.forEach((c) => c.addEventListener("change", render));
+    serviceChecks.forEach((c) => c.addEventListener("change", render));
     addonChecks.forEach((c) => c.addEventListener("change", render));
+    const addrInput = calc.querySelector("[data-address]");
+    if (addrInput) addrInput.addEventListener("input", render);
 
-    // Initial paint
-    renderTierLabels();
-    render();
+    // Initial paint — start on the first property type.
+    setPtype(CONFIG.propertyTypes[0]);
   })();
 </script>

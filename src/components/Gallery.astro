@@ -139,7 +139,7 @@ const hasTours = resolved.some((s) => s.matterportId);
     transition: all 0.25s var(--ease);
   }
   .filter:hover { color: var(--ink); border-color: var(--ink); }
-  .filter.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .filter.active { background: var(--ink); color: var(--on-dark); border-color: var(--ink); }
 
   .gallery {
     display: grid;
@@ -164,7 +164,7 @@ const hasTours = resolved.some((s) => s.matterportId);
     cursor: pointer;
     transition: all 0.2s var(--ease);
   }
-  .car-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .car-btn:hover { background: var(--ink); color: var(--on-dark); border-color: var(--ink); }
   .car-btn:disabled { opacity: 0.35; cursor: default; }
 
   .gallery.carousel {
@@ -217,7 +217,7 @@ const hasTours = resolved.some((s) => s.matterportId);
     position: absolute;
     top: 0.7rem; left: 0.7rem;
     background: rgba(15,14,12,0.78);
-    color: var(--paper);
+    color: var(--on-dark);
     font-size: 0.62rem;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -322,7 +322,7 @@ const hasTours = resolved.some((s) => s.matterportId);
 
   .lb-close, .lb-nav {
     position: absolute;
-    color: var(--paper);
+    color: var(--on-dark);
     width: 52px; height: 52px;
     display: grid; place-items: center;
     border-radius: 50%;

@@ -1,0 +1,118 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import ServiceBlock from "../../components/ServiceBlock.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import CTABand from "../../components/CTABand.astro";
+import ServiceSchema from "../../components/ServiceSchema.astro";
+import { floorPlanTiers, floorPlanAddOns, business } from "../../data/site";
+
+const title = "Vacation Rental Floor Plans Las Vegas — Airbnb & Vrbo Exit Routes | VTLV";
+const description = "Vacation rental floor plans for Las Vegas Airbnb and Vrbo hosts: black-and-white and colored plans, 3D plans, and fire-exit route plans that short-term rental platforms require. Most delivered within 24 hours.";
+
+const exitRoutePoints = [
+  "Black & white plans — with or without dimensions",
+  "Colored living spaces for a warmer, more bookable look",
+  "3D isometric plans to show furnished layout",
+  "Fire exit arrows showing the safe egress routes",
+];
+---
+<Base title={title} description={description} heroVariant="dark">
+  <ServiceSchema
+    slot="head"
+    name="Vacation Rental Floor Plans"
+    description="Vacation rental floor plans for Las Vegas Airbnb and Vrbo hosts: black-and-white, colored, 3D and fire-exit route plans. Most completed within 24 hours."
+    serviceType="Floor Plan"
+    startingPrice={120}
+  />
+  <PageHero
+    eyebrow="Vacation rental floor plans"
+    title="The floor plan your rental platform asks for."
+    lead="Airbnb, Vrbo and most local short-term rental ordinances require a posted floor plan — and many specifically want one showing fire exits. Mike delivers clean, accurate plans for Las Vegas vacation rentals, most within 24 hours."
+    image={asset("/images/portfolio/floorplan-combined.jpg")}
+    imageAlt="Combined floor plan with measurements for a Las Vegas vacation rental"
+  />
+
+  <section class="section">
+    <div class="container narrow text-center">
+      <SectionHeader
+        eyebrow="Exit routes & layout"
+        title="A required deliverable, done right."
+        lead="Short-term rental platforms and Southern Nevada ordinances treat a posted floor plan as a safety document, not a marketing extra. The plan needs to be accurate and, in many cases, show the path to every exit. Mike shoots the property and drafts a clear, legible plan that satisfies the requirement and looks good in your listing gallery."
+        align="center"
+      />
+    </div>
+  </section>
+
+  <section class="section sm">
+    <div class="container">
+      <div class="blocks">
+        <ServiceBlock
+          image={asset("/images/portfolio/floorplan-bw.jpg")}
+          alt="Black and white schematic floor plan for a Las Vegas vacation rental"
+          title="Plan styles"
+          body="Every vacation rental plan starts as an accurate schematic of the existing layout. From there, choose the style that fits your listing and your platform's requirements."
+          bullets={exitRoutePoints}
+        />
+        <ServiceBlock
+          reverse
+          image={asset("/images/portfolio/floorplan-3d.jpg")}
+          alt="Stylized 3D floor plan showing furnished living spaces in a vacation rental"
+          title="From the same shoot as your photos"
+          body="If you've booked vacation rental photography or a Matterport 3D tour, the floor plan can be generated from the same site visit — no separate appointment, no extra trip fee. A 3D tour plus an exit-route plan covers most platform and permit requirements in one go."
+          bullets={["Generated from your photo or 3D shoot", "Most plans completed within 24 hours", "QR-code ready for in-unit posting"]}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="section paper-2">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Pricing"
+        title="Same floor-plan pricing, vacation-rental ready."
+        lead="Standalone plans deliver in 48 hours; most floor plans added to an existing shoot finish within 24 hours. Add fire-exit arrows, colored living spaces, a 3D rendering, or a CAD file to any plan."
+        align="center"
+      />
+      <div class="plan-note" data-reveal>
+        <p>
+          Vacation rental floor plans use the same real, published pricing as every other floor plan —
+          from <strong>$120</strong> for a single story under 2,500 sq ft, with add-ons for colored spaces,
+          3D, CAD and video. Fire-exit route drafting is included at no extra charge.
+        </p>
+        <p class="plan-sub">See the full tiered breakdown and add-on list on the <a href={asset("/services/floor-plans/")}>main floor plans page</a>.</p>
+        <div class="btn-row" style="justify-content:center; margin-top:1.5rem">
+          <a href={business.phoneHref} class="btn brass">Call {business.phone}</a>
+          <a href={asset("/contact/")} class="btn outline">Request a quote</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <CTABand
+    title="Get your rental's floor plan and exits documented."
+    body={`Required by most platforms, delivered fast. Call or text ${business.phone}.`}
+    image={asset("/images/portfolio/floorplan-combined.jpg")}
+  />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .blocks { display: flex; flex-direction: column; gap: clamp(3rem, 6vw, 5rem); }
+  .plan-note {
+    margin-top: 2.5rem;
+    max-width: 60ch;
+    margin-inline: auto;
+    padding: clamp(1.8rem, 1.4rem + 2vw, 2.6rem);
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    color: var(--ink-2);
+    line-height: 1.6;
+  }
+  .plan-note strong { color: var(--ink); }
+  .plan-note a { color: var(--brass); font-weight: 600; }
+  .plan-sub { font-size: var(--step--1); color: var(--stone); margin-top: 0.5rem; }
+</style>

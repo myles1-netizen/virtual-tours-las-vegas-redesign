@@ -1,0 +1,7 @@
+---
+// /services/matterport/ — Matterport is fully covered on /services/3d-tours/
+// (the brand's namesake page: Matterport Premier + Zillow 3D + 360 panoramas).
+// This slug is kept as an SEO-friendly alias so legacy and search links resolve.
+import { asset } from "../../data/site";
+return Astro.redirect(asset("/services/3d-tours/"), 301);
+---

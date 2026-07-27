@@ -42,7 +42,7 @@ const {
   .cta-band {
     position: relative;
     padding-block: clamp(4rem, 3rem + 5vw, 6.5rem);
-    color: var(--paper);
+    color: var(--on-dark);
     overflow: hidden;
   }
   .cta-bg {
@@ -71,7 +71,7 @@ const {
   .cta-text { max-width: 32rem; }
   .cta-title {
     font-size: var(--step-5);
-    color: var(--paper);
+    color: var(--on-dark);
     margin-top: 0.4rem;
   }
   .cta-body {
@@ -90,8 +90,8 @@ const {
   .cta-actions .btn { justify-content: center; }
   /* CTABand is always a dark background (photo overlay or solid dark) — the
      global .btn.outline defaults to dark ink text, invisible here. */
-  .cta-actions .btn.outline { --btn-fg: var(--paper); border-color: rgba(247,244,239,0.4); }
-  .cta-actions .btn.outline:hover { --btn-bg: var(--paper); --btn-fg: var(--ink); border-color: var(--paper); }
+  .cta-actions .btn.outline { --btn-fg: var(--on-dark); border-color: rgba(247,244,239,0.4); }
+  .cta-actions .btn.outline:hover { --btn-bg: var(--on-dark); --btn-fg: var(--dark); border-color: var(--on-dark); }
   .cta-actions .text-link { color: var(--brass-2); align-self: center; margin-top: 0.3rem; font-weight: 700; }
 
   @media (max-width: 760px) {

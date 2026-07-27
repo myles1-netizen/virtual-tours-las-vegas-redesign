@@ -182,7 +182,7 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
       <SectionHeader
         eyebrow="Transparent pricing"
         title="Three Las Vegas packages. Pick yours."
-        lead="No quote-and-wait. Real, published pricing sized to your property. The full full price list is on the pricing page."
+        lead="No quote-and-wait. Real, published pricing sized to your property. The full price list is on the pricing page."
         align="center"
       />
       <div class="pkg-grid">
@@ -267,7 +267,7 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
     min-height: clamp(640px, 88vh, 940px);
     display: flex;
     align-items: center;
-    color: var(--paper);
+    color: var(--on-dark);
     overflow: hidden;
   }
   .hero-bg { position: absolute; inset: 0; z-index: -2; }
@@ -281,8 +281,8 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
   /* Eyebrow sits at the very top of the hero, the thinnest-shaded part of the
      overlay above — brass gold has too little contrast there against bright sky
      photos, so use paper white (matches the proven-readable title) instead. */
-  .hero .eyebrow { color: var(--paper); opacity: 0.92; text-shadow: 0 1px 3px rgba(15,14,12,0.5); }
-  .hero .eyebrow::before { background: var(--paper); opacity: 0.7; }
+  .hero .eyebrow { color: var(--on-dark); opacity: 0.92; text-shadow: 0 1px 3px rgba(15,14,12,0.5); }
+  .hero .eyebrow::before { background: var(--on-dark); opacity: 0.7; }
   .hero-inner {
     display: grid;
     grid-template-columns: 1.55fr 1fr;
@@ -302,14 +302,14 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
   }
   .hero-title {
     font-size: var(--step-6);
-    color: var(--paper);
+    color: var(--on-dark);
     max-width: 16ch;
   }
   .hero-lead { color: rgba(247,244,239,0.9); margin-top: 1.4rem; max-width: 50ch; }
   .hero-lead strong { color: var(--brass-2); font-weight: 600; }
   .hero-cta { margin-top: 2rem; }
-  .hero .btn.outline { color: var(--paper); border-color: rgba(247,244,239,0.4); }
-  .hero .btn.outline:hover { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+  .hero .btn.outline { color: var(--on-dark); border-color: rgba(247,244,239,0.4); }
+  .hero .btn.outline:hover { background: var(--on-dark); color: var(--ink); border-color: var(--on-dark); }
 
   .hero-creds { display: flex; justify-content: flex-end; }
   .cred-card {
@@ -324,7 +324,7 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
   .cred-since {
     font-family: var(--font-display);
     font-size: var(--step-2);
-    color: var(--paper);
+    color: var(--on-dark);
     line-height: 1.1;
   }
   .cred-line { font-size: var(--step--1); color: rgba(247,244,239,0.62); margin-top: 0.3rem; }
@@ -392,7 +392,7 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
     color: var(--brass-2);
     margin-bottom: 0.4rem;
   }
-  .why-card h3 { font-size: var(--step-1); color: var(--paper); }
+  .why-card h3 { font-size: var(--step-1); color: var(--on-dark); }
   .why-card p { color: rgba(247,244,239,0.7); font-size: var(--step--1); line-height: 1.55; }
 
   /* ===== ROUTES ===== */
@@ -448,7 +448,7 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
     opacity: 0.5;
     line-height: 1;
   }
-  .proc-title { font-size: var(--step-2); color: var(--paper); }
+  .proc-title { font-size: var(--step-2); color: var(--on-dark); }
   .proc-body { color: rgba(247,244,239,0.7); font-size: var(--step--1); line-height: 1.55; }
 
   /* ===== TESTIMONIALS ===== */
