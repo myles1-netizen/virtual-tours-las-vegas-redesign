@@ -8,6 +8,17 @@ This `handoff/` folder is a briefing package for continuing this project. Read t
 4. **`04-DIVI-INVESTIGATION-SUMMARY.md`** — why WordPress/Divi was ruled out (don't re-litigate this)
 5. **`05-EDITING-SYSTEM-REQUIREMENTS.md`** — the main remaining work: a self-serve editing layer for the business owner
 6. **`06-SECURITY-CHECKLIST.md`** — hard requirements, not optional, for anything touching auth/input/secrets
+7. **`07-LEGAL-ACCURACY-GUIDELINES.md`** — read this before writing/rewriting ANY page copy. Third-party brand claims (Zillow, Lennar, Google) must never imply an endorsement/partnership that doesn't exist.
+8. **`08-PRICE-CALCULATOR-SPEC.md`** — interactive pricing calculator for the pricing page
+9. **`09-THEME-SYSTEM-SPEC.md`** — real light/dark mode toggle, full consistency across every page
+10. **`10-ADMIN-PANEL-SPEC.md`** — mapping Mike's current WordPress admin habits to the new editing system
+11. **`11-VOICE-AND-TONE.md`** — how to actually write as Mike (first person, direct, no corporate filler)
+12. **`content-audit/`** — real page-by-page content extracted from the live site (every service, pricing, location, and about page) — use this as source material for rewrites, not `content-audit/` files as final copy verbatim (except testimonials, which must stay verbatim)
+13. **`plugin-research/`** — for every WordPress plugin the current site runs, either why it's unnecessary on the new stack or what modern tool replaces it (booking system, image optimization, spam protection, Matterport embeds, etc.)
+
+## Read this before anything else
+
+`07-LEGAL-ACCURACY-GUIDELINES.md` now contains a **CRITICAL** section documenting real contradictions found on the live site during the content audit — including one that conflicts with the "Mike is a sole proprietor" framing used everywhere else in this handoff (one page states the business was co-founded with his wife). These need Mike's direct answer before finalizing any About-page copy, voice/tone decisions, or pricing. Do not guess or silently pick a side.
 
 ## The one-paragraph version
 
