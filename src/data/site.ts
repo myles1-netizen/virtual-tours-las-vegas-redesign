@@ -49,10 +49,10 @@ export const nav = [
 ];
 
 export const trust = [
-  "Sole photographer for the Zillow Offers listing program in Las Vegas",
-  "Sole Matterport provider for Lennar Homes, a top-3 US homebuilder",
+  "Was the photographer for the Zillow Offers program in Las Vegas (program ended 2021)",
+  "Provided Matterport services for builders like Lennar Homes",
   "Licensed real estate agent, working in the industry since 2006",
-  "FAA Part 107 Certified Drone Pilot & Google Trusted Photographer",
+  "FAA Part 107 drone pilot and Google Street View Trusted photographer",
 ];
 
 export type ServiceBuyer = {
