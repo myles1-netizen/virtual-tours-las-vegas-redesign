@@ -20,6 +20,19 @@ export interface Props {
 
 const { title, description, image = "/images/portfolio/sierra-skye-living.jpg", heroVariant = "light", noindex = false, cspOverride } = Astro.props;
 
+// ----- Google Analytics 4 (optional) -----
+// Enabled only when GA4_MEASUREMENT_ID (e.g. "G-XXXXXXXXXX") is set at build time.
+// Uses Google Consent Mode v2: consent is DENIED by default, so the gtag.js
+// script loads but writes NO cookies and sends NO identifying pings until a
+// visitor affirmatively grants consent (call gtag('consent','update',...) from
+// your own consent banner). This is the privacy-first, cookieless-by-default
+// approach recommended by Google for EEA/GDPR compliance and is the closest
+// static-site equivalent to Site Kit's privacy-friendly Analytics embed.
+// With no banner wired up, GA4 still runs in "cookieless pings" mode: it reports
+// only aggregated, modelled traffic without setting ID cookies.
+const GA4_ID = import.meta.env.GA4_MEASUREMENT_ID ?? "";
+const ga4Enabled = /^G-[A-Z0-9]{6,}$/.test(GA4_ID);
+
 const site = Astro.site?.toString().replace(/\/$/, "") ?? "https://mylesthepro1.github.io";
 const base = Astro.site?.toString().replace(/\/$/, "") ?? "";
 const canonical = new URL(Astro.url.pathname, base).toString();
