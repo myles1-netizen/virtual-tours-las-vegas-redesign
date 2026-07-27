@@ -22,6 +22,10 @@ This `handoff/` folder is a briefing package for continuing this project. Read t
     - `wordpress-plugin-equivalents.md` — original pass; superseded by the four docs above for the plugins they cover, still useful as background on what each plugin originally did
     - Total additional infrastructure cost across all of this: **$0/month** at Mike's expected traffic (Cloudflare's free tiers for Workers/D1/R2, Resend's free email tier, Turnstile is free)
 
+## Check `12-REQUIREMENTS-CHECKLIST.md` first
+
+Before reading anything else, look at `12-REQUIREMENTS-CHECKLIST.md` — it's a full audit of every request made across this entire project, marked as either done/live, decided-against-with-reasoning, specced-and-ready-to-build, or a genuine open GAP. It tells you exactly what's real vs. what's still just a plan, so nothing gets assumed-done that isn't.
+
 ## Read this before anything else
 
 `07-LEGAL-ACCURACY-GUIDELINES.md` now contains a **CRITICAL** section documenting real contradictions found on the live site during the content audit — including one that conflicts with the "Mike is a sole proprietor" framing used everywhere else in this handoff (one page states the business was co-founded with his wife). These need Mike's direct answer before finalizing any About-page copy, voice/tone decisions, or pricing. Do not guess or silently pick a side.

@@ -2,15 +2,27 @@
 
 This is the main missing piece. The static site itself is done; this is what needs building.
 
-## The actual requirement
+## The actual requirement — updated, this is now a hard requirement, not a "nice to have"
 
-Mike (non-technical, the business owner) needs to be able to log in and:
-- Edit text fields (page copy, headlines, descriptions)
-- Edit prices (the three Vegas packages + full à-la-carte pricing tables)
-- Swap/update images
-- Ideally: move things around a bit (reorder sections/items), and create/edit/delete pages — though it's fine if full freeform page-layout creation still needs a developer; that's normal even for tools like Divi once you're off pre-built modules. Be upfront about this limit rather than overpromising "anything, no dev needed."
+The client was explicit and firm on this: **Mike needs to be able to do pretty much whatever he wants on the site himself** — this is a REQUIRED capability set, not aspirational. Build all of it:
 
-He should NOT need to touch code, markdown syntax, or understand git.
+- **Edit any text field** on any page — copy, headlines, descriptions, FAQ answers, everything.
+- **Edit any price** — the three Vegas packages, full à-la-carte tables, every add-on.
+- **Swap/add/remove any image** anywhere on the site.
+- **Create new pages.** This must be real: Mike picks from a library of existing page *templates* (service page, blog post, generic content page, pricing-style page) and fills in his own content/images/prices to produce a genuinely new, live page — not just editing existing ones. See `10-ADMIN-PANEL-SPEC.md` section on Yoast Duplicate Post's replacement for exactly how this works (duplicate an existing page as a starting point, edit freely, publish as new).
+- **Delete pages.** A real, working delete action from the admin (with a confirmation step and — since everything's backed by version history — an easy undo/restore if he deletes the wrong thing; see the "Version History" panel in `10-ADMIN-PANEL-SPEC.md`).
+- **Move/reorder things.** Drag-and-drop reordering of: navigation menu items, portfolio/gallery images, FAQ entries, service list order, pricing table row order — anywhere a list of things appears, he should be able to reorder it himself. Already speced concretely in `10-ADMIN-PANEL-SPEC.md` (Simple Page Ordering replacement).
+- **Move content sections within a page**, not just reorder items in a list — e.g. drag the testimonials section above the pricing section on a given page. This is a real, distinct capability from field-editing and needs to be designed for explicitly (see the "what this actually requires" note below).
+
+**The one honest, genuine limit** (this is the only thing NOT being promised as "anything, no dev needed," and it's the same limit every real page-builder tool has once you're off its pre-built components, including Divi): inventing a **brand-new page layout structure from a truly blank canvas** — arbitrary custom column/grid arrangements never seen before on the site — still benefits from a developer building that as a new template once, which Mike can then duplicate/reuse freely forever after. This is not a cop-out; it's genuinely how every page-builder tool works in practice (Divi included — a truly novel layout still takes real page-builder skill even for someone with a Divi license). Everything else above is a real, required, buildable feature.
+
+## What "move content sections within a page" actually requires (be honest about this in the build)
+
+This is more than the git-based CMS's default form-field editing gives you out of the box — most git-CMS setups (Decap included) are good at "edit this field" and "reorder this list," but a page built from Astro components in `.astro` files has its section order fixed in code, not as reorderable data. To make this genuinely work:
+- Page content needs to be modeled as an **ordered list of typed content blocks** (e.g. `[{type: "hero", ...}, {type: "testimonials", ...}, {type: "pricing-table", ...}]`) stored in the CMS-editable content file, with the Astro page template looping over that list and rendering each block by type — rather than each section being hardcoded inline in the `.astro` file.
+- This is a real architectural decision to make early, not a small tweak — but it's what actually delivers on "move stuff around," and it's the same underlying pattern every real page-builder (Divi included) uses under the hood. Plan for it from the start of the CMS integration work rather than retrofitting it later.
+
+He should NOT need to touch code, markdown syntax, or understand git anywhere in any of this.
 
 ## Constraints from the client (explicit, already discussed)
 

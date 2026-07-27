@@ -24,7 +24,7 @@ Mike doesn't need to know or care that the new site has no WordPress underneath 
 
 ## What to be honest about NOT replicating
 
-- **A general-purpose visual page builder** (build any layout from scratch, freeform) — already flagged in `05-EDITING-SYSTEM-REQUIREMENTS.md` as a real limit. New pages should be able to reuse existing page *templates* (e.g. "new service page" using the same layout as existing service pages, just new content) rather than free-form layout building.
+- **Inventing a brand-new page layout structure from a blank canvas** (a genuinely novel column/grid arrangement never used anywhere on the site) — this one, specific thing benefits from a developer building it once as a new reusable template. This is the SAME limit every real page-builder has once you're off its pre-built components, Divi included. It does not limit page *creation* (see below — that's fully self-serve using existing templates) or content *reordering within* a page (also fully self-serve, see `05-EDITING-SYSTEM-REQUIREMENTS.md`'s content-block-list architecture).
 - **Arbitrary plugin installation** — the whole point of leaving WordPress is not maintaining a plugin ecosystem. If a genuinely new capability comes up later, it gets built deliberately by a developer, not self-installed by Mike from a marketplace. This is a feature, not a limitation, worth explaining to him that way (no more surprise plugin conflicts, no more "why is my site slow" from 49 scripts loading — see `01-PROJECT-BRIEF.md` for that exact finding on his current site).
 
 ## Success criteria for this piece specifically
@@ -33,6 +33,11 @@ Mike should be able to, without asking for help:
 1. Change a price on the pricing page and see it live within a few minutes
 2. Edit the text of any page
 3. Add/replace a photo anywhere on the site
-4. Add a new blog post or service page using an existing one as a template
-5. See his current SEO title/description per page and change it
-6. Understand (in plain terms, documented for him) that his site is backed up automatically via version history, with no separate backup step needed
+4. **Create a brand-new page** (service page, blog post, or generic page) from an existing template, fill in his own content/prices/images, and publish it live
+5. **Delete a page** he no longer wants, with a confirmation step and an easy undo via version history if he changes his mind
+6. **Reorder items** anywhere a list appears — nav menu, portfolio images, FAQ entries, service list, pricing rows
+7. **Move whole sections around within a page** — e.g. drag testimonials above pricing on a given page (requires the content-block-list architecture noted in `05-EDITING-SYSTEM-REQUIREMENTS.md` — not optional, build it in from the start)
+8. See his current SEO title/description per page and change it
+9. Understand (in plain terms, documented for him) that his site is backed up automatically via version history, with no separate backup step needed, and that he can view/restore any past version of any page himself
+
+If any of items 1-9 above requires "ask the developer" instead of Mike doing it himself, that's a gap against the client's explicit requirement — flag it rather than quietly shipping a smaller version.
