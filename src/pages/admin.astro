@@ -54,22 +54,74 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
     <meta name="robots" content="noindex,nofollow" />
     <title>Content Manager — Virtual Tours Las Vegas</title>
     <link rel="icon" href={BASE + "favicon.svg"} type="image/svg+xml" />
+    <script is:inline>
+      // Apply the saved CMS theme BEFORE first paint to prevent a flash of the
+      // wrong theme. Dark is the default; light mode opts in via .cms-light.
+      (function () {
+        try {
+          var t = localStorage.getItem("vtlv_cms_theme");
+          if (t === "light") document.documentElement.classList.add("cms-light");
+        } catch (e) { /* private mode etc. — keep dark default */ }
+      })();
+    </script>
     <style is:global>
       /* ============================================================
-         THEME TOKENS — dark sidebar, light canvas, brass accent.
+         THEME TOKENS — DARK is the default (black bg, white text).
+         A .cms-light class on <html> flips the whole admin to light.
+         Toggle lives in Appearance and is applied before first paint
+         by the inline head script below to avoid FOUC.
          ============================================================ */
       :root {
+        /* Dark (default) */
+        --bg: #0a0a0a;
+        --panel: #1a1a1a;
+        --panel-2: #161616;     /* alt row / input background */
+        --ink: #f0f0f0;
+        --ink-soft: #c4c4c4;
+        --muted: #8a8a8a;
+        --line: #2a2a2a;
+        --line-strong: #3a3a3a;
+        --hover: #2a2a2a;        /* card / list hover */
+        --input-bg: #222222;
+        --sidebar: #121212;
+        --sidebar-soft: #1f1f1f;
+        --sidebar-line: #2a2a2a;
+        --sidebar-ink: #f0f0f0;
+        --sidebar-muted: #9a9a9a;
+        --brass: #b08d57;
+        --brass-dark: #c9a572;   /* brass-light reads on dark bg */
+        --brass-soft: rgba(176, 141, 87, 0.18);
+        --green: #4caf64;
+        --green-soft: rgba(76, 175, 100, 0.16);
+        --red: #e0584a;
+        --red-soft: rgba(224, 88, 74, 0.16);
+        --amber: #e0a93b;
+        --amber-soft: rgba(224, 169, 59, 0.16);
+        --blue: #5b9fe0;
+        --radius: 10px;
+        --radius-sm: 6px;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+        --shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+        --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.65);
+        --topbar-h: 60px;
+        color-scheme: dark;
+      }
+      /* Light override — opt in via <html class="cms-light"> */
+      .cms-light {
         --bg: #f7f4ef;
         --panel: #ffffff;
+        --panel-2: #ffffff;
         --ink: #1a1814;
         --ink-soft: #524a40;
         --muted: #8a8074;
-        --line: #e4ded3;
+        --line: #e0e0e0;
         --line-strong: #c9c0b1;
+        --hover: #faf8f3;
+        --input-bg: #ffffff;
         --sidebar: #1a1814;
         --sidebar-soft: #2a2620;
         --sidebar-line: #3a342c;
-        --sidebar-ink: #e8e2d6;
+        --sidebar-ink: #f0ece4;
         --sidebar-muted: #9a9080;
         --brass: #b08d57;
         --brass-dark: #8f7042;
@@ -81,12 +133,10 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         --amber: #c98a14;
         --amber-soft: #fbeed1;
         --blue: #2c6fb3;
-        --radius: 10px;
-        --radius-sm: 6px;
         --shadow-sm: 0 1px 2px rgba(26, 24, 20, 0.06);
         --shadow: 0 6px 20px rgba(26, 24, 20, 0.12);
         --shadow-lg: 0 24px 60px rgba(26, 24, 20, 0.28);
-        --topbar-h: 60px;
+        color-scheme: light;
       }
 
       * { box-sizing: border-box; }
@@ -102,6 +152,8 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       button { font-family: inherit; cursor: pointer; }
       input, textarea, select { font-family: inherit; }
       a { color: var(--brass-dark); }
+      h1, h2, h3, h4 { color: #ffffff; }
+      .cms-light h1, .cms-light h2, .cms-light h3, .cms-light h4 { color: var(--ink); }
 
       /* ============================================================
          LOGIN SCREEN
@@ -127,12 +179,8 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         border-bottom: 1px solid var(--line);
       }
       .login-logo {
-        width: 56px; height: 56px; margin: 0 auto 16px;
-        border-radius: 14px;
-        background: linear-gradient(135deg, var(--brass), var(--brass-dark));
-        display: flex; align-items: center; justify-content: center;
-        color: #fff; font-weight: 800; font-size: 22px;
-        box-shadow: 0 8px 20px rgba(176, 141, 87, 0.4);
+        height: 56px; width: auto; max-width: 220px; margin: 0 auto 16px;
+        object-fit: contain;
       }
       .login-head h1 { margin: 0 0 4px; font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
       .login-head p { margin: 0; color: var(--muted); font-size: 14px; }
@@ -152,16 +200,27 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         font-size: 16px; /* 16px prevents iOS zoom */
         border: 1px solid var(--line-strong);
         border-radius: var(--radius-sm);
-        background: #fff;
+        background: var(--input-bg);
         color: var(--ink);
         transition: border-color .15s, box-shadow .15s;
       }
       .field input:focus, .field select:focus, .field textarea:focus {
         outline: none;
         border-color: var(--brass);
-        box-shadow: 0 0 0 3px rgba(176, 141, 87, 0.18);
+        box-shadow: 0 0 0 3px var(--brass-soft);
       }
       .field textarea { min-height: 110px; resize: vertical; line-height: 1.55; }
+      /* Read-only/disabled inputs share the same dimmed surface in both themes */
+      input[readonly], input[disabled], select[disabled] { background: var(--panel-2) !important; color: var(--muted) !important; }
+      /* Site-wide text-control floor: every text input/select gets at least 16px
+         font and 52px height; every textarea gets at least 120px / 4 rows. This
+         catches inputs built outside .field (table cells, repeaters, modals). */
+      input[type="text"], input[type="password"], input[type="url"],
+      input[type="email"], input[type="tel"], input[type="number"],
+      input[type="date"], input[type="search"], select {
+        min-height: 52px; font-size: 16px;
+      }
+      textarea { min-height: 120px; font-size: 16px; line-height: 1.5; resize: vertical; }
       .row-check {
         display: flex; align-items: center; gap: 10px;
         margin: 16px 0; font-size: 14px; color: var(--ink-soft);
@@ -181,15 +240,15 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       .btn-block { width: 100%; }
       .btn-lg { min-height: 50px; font-size: 15px; }
       .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line-strong); }
-      .btn-ghost:hover { background: #f0ebe1; }
+      .btn-ghost:hover { background: var(--hover); }
       .btn-danger { background: var(--red); }
       .btn-danger:hover { background: #a52f23; }
       .btn-sm { min-height: 34px; padding: 0 12px; font-size: 13px; }
       .btn-icon {
         min-height: 36px; min-width: 36px; padding: 0 8px;
-        background: #fff; color: var(--ink-soft); border: 1px solid var(--line-strong);
+        background: var(--panel); color: var(--ink-soft); border: 1px solid var(--line-strong);
       }
-      .btn-icon:hover { background: #f4efe6; color: var(--ink); }
+      .btn-icon:hover { background: var(--hover); color: var(--ink); }
       .login-error {
         background: var(--red-soft); color: var(--red);
         border: 1px solid #f0c8c2; border-radius: var(--radius-sm);
@@ -225,14 +284,10 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         background: transparent; border: 0; color: var(--sidebar-ink);
         font-size: 22px; padding: 6px; line-height: 1;
       }
-      .topbar .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -0.01em; }
-      .topbar .brand .dot {
-        width: 28px; height: 28px; border-radius: 8px;
-        background: linear-gradient(135deg, var(--brass), var(--brass-dark));
-        display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px;
-      }
-      .topbar .brand small { display: block; font-weight: 500; font-size: 11px; color: var(--sidebar-muted); letter-spacing: 0; }
-      .topbar .spacer { flex: 1; }
+      .topbar .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: -0.01em; }
+      .topbar .brand .brand-logo { height: 38px; width: auto; display: block; }
+      .topbar .brand .brand-text small { display: block; font-weight: 500; font-size: 11px; color: var(--sidebar-muted); letter-spacing: 0; margin-top: 2px; }
+      .topbar .spacer { flex: 0 0 16px; }
       .topbar .save-state { font-size: 12.5px; color: var(--sidebar-muted); display: flex; align-items: center; gap: 6px; }
       .topbar .save-state.dirty { color: var(--brass); }
 
@@ -304,29 +359,30 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       }
       .badge.green { background: var(--green-soft); color: var(--green); }
       .badge.red { background: var(--red-soft); color: var(--red); }
-      .badge.gray { background: #ece8e0; color: var(--ink-soft); }
+      .badge.gray { background: var(--panel-2); color: var(--ink-soft); border: 1px solid var(--line); }
 
       /* Tags / chip input */
-      .tags { display: flex; flex-wrap: wrap; gap: 8px; padding: 9px 10px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); min-height: 52px; background: #fff; align-items: center; }
-      .tags:focus-within { border-color: var(--brass); box-shadow: 0 0 0 3px rgba(176, 141, 87, 0.18); }
+      .tags { display: flex; flex-wrap: wrap; gap: 8px; padding: 9px 10px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); min-height: 52px; background: var(--input-bg); align-items: center; }
+      .tags:focus-within { border-color: var(--brass); box-shadow: 0 0 0 3px var(--brass-soft); }
       .tag { display: inline-flex; align-items: center; gap: 6px; background: var(--brass-soft); color: var(--brass-dark); padding: 5px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
       .tag button { background: transparent; border: 0; color: var(--brass-dark); font-size: 15px; line-height: 1; padding: 0; }
-      .tags input { flex: 1; min-width: 120px; border: 0; outline: none; font-size: 16px; padding: 4px; background: transparent; }
+      .tags input { flex: 1; min-width: 120px; border: 0; outline: none; font-size: 16px; padding: 4px; background: transparent; color: var(--ink); }
 
       /* Repeating rows (features, tiers, add-ons) */
       .repeater { display: flex; flex-direction: column; gap: 10px; }
       .rep-row { display: flex; gap: 10px; align-items: center; }
-      .rep-row input, .rep-row select { flex: 1; min-height: 52px; padding: 10px 12px; font-size: 16px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: #fff; }
-      .rep-row input:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 3px rgba(176,141,87,.18); }
+      .rep-row input, .rep-row select { flex: 1; min-height: 52px; padding: 10px 12px; font-size: 16px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--ink); }
+      .rep-row input:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 3px var(--brass-soft); }
       .rep-add { align-self: flex-start; }
 
       /* Tables */
       .tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
-      .tbl th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--line); }
-      .tbl td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+      .tbl th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
+      .tbl td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+      .tbl tbody tr:nth-child(odd) { background: var(--panel-2); }
       .tbl tr:last-child td { border-bottom: 0; }
-      .tbl input, .tbl select { min-height: 42px; padding: 8px 10px; font-size: 15px; border: 1px solid var(--line-strong); border-radius: 5px; width: 100%; }
-      .tbl input:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 2px rgba(176,141,87,.18); }
+      .tbl input, .tbl select { min-height: 42px; padding: 8px 10px; font-size: 15px; border: 1px solid var(--line-strong); border-radius: 5px; width: 100%; background: var(--input-bg); color: var(--ink); }
+      .tbl input:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 2px var(--brass-soft); }
       /* Editable table rows stay readable. */
       .tbl input[type="number"] { font-weight: 700; }
 
@@ -339,7 +395,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       .tile .meta img, .tile .meta .av { width: 36px; height: 36px; border-radius: 50%; background: var(--brass-soft); object-fit: cover; display: flex; align-items: center; justify-content: center; color: var(--brass-dark); font-weight: 700; }
       .tile .meta b { font-size: 14px; }
       .tile .meta small { display: block; color: var(--muted); font-size: 12px; }
-      .tile .foot { display: flex; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--line); background: #faf8f3; }
+      .tile .foot { display: flex; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--line); background: var(--panel-2); }
       .stars { color: var(--brass); font-size: 14px; letter-spacing: 1px; }
 
       .faq-item { border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 12px; background: var(--panel); overflow: hidden; }
@@ -353,7 +409,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       /* Portfolio grid */
       .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
       .ptile { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--panel); position: relative; }
-      .ptile img { width: 100%; height: 140px; object-fit: cover; display: block; background: #eee; }
+      .ptile img { width: 100%; height: 140px; object-fit: cover; display: block; background: var(--panel-2); }
       .ptile .meta { padding: 10px 12px; }
       .ptile .meta b { display: block; font-size: 12.5px; margin-bottom: 3px; }
       .ptile .meta small { color: var(--muted); font-size: 11.5px; }
@@ -369,15 +425,16 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       .add-tile .big { font-size: 30px; }
 
       /* SERP preview */
-      .serp { border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; background: #fff; max-width: 600px; }
+      .serp { border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; background: var(--panel); max-width: 600px; }
       .serp .u { font-size: 12px; color: var(--ink-soft); display: flex; align-items: center; gap: 6px; }
       .serp .u .dots { color: var(--muted); }
-      .serp .t { font-size: 19px; color: #1a0dab; margin: 3px 0 1px; line-height: 1.3; cursor: pointer; }
+      .serp .t { font-size: 19px; color: #8ab4f8; margin: 3px 0 1px; line-height: 1.3; cursor: pointer; }
+      .cms-light .serp .t { color: #1a0dab; }
       .serp .t.trunc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .serp .d { font-size: 14px; color: #4d5156; line-height: 1.4; }
+      .serp .d { font-size: 14px; color: var(--ink-soft); line-height: 1.4; }
 
       .meter { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; }
-      .meter .bar { width: 120px; height: 6px; background: #ece8e0; border-radius: 999px; overflow: hidden; }
+      .meter .bar { width: 120px; height: 6px; background: var(--line-strong); border-radius: 999px; overflow: hidden; }
       .meter .bar i { display: block; height: 100%; background: var(--green); transition: width .2s; }
 
       /* Commit list */
@@ -396,14 +453,14 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       .modal .mhead { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel); border-radius: 14px 14px 0 0; z-index: 1; }
       .modal .mhead h2 { margin: 0; font-size: 18px; }
       .modal .mbody { padding: 24px; max-height: 70vh; overflow-y: auto; }
-      .modal .mfoot { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--line); background: #faf8f3; border-radius: 0 0 14px 14px; }
+      .modal .mfoot { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px; border-top: 1px solid var(--line); background: var(--panel-2); border-radius: 0 0 14px 14px; }
       .x { background: transparent; border: 0; font-size: 24px; line-height: 1; color: var(--muted); padding: 4px 8px; border-radius: 6px; }
-      .x:hover { background: #f0ebe1; color: var(--ink); }
+      .x:hover { background: var(--hover); color: var(--ink); }
 
       /* Blog md editor */
       .md-split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
       .md-split textarea { min-height: 380px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13.5px; line-height: 1.6; }
-      .md-preview { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; min-height: 380px; overflow-y: auto; background: #fff; font-size: 14px; line-height: 1.6; }
+      .md-preview { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px; min-height: 380px; overflow-y: auto; background: var(--panel); font-size: 14px; line-height: 1.6; color: var(--ink); }
       .md-preview h1,.md-preview h2,.md-preview h3 { margin: 0 0 8px; }
       .md-preview p { margin: 0 0 12px; }
       .md-preview img { max-width: 100%; border-radius: 6px; }
@@ -419,7 +476,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       @keyframes slidein { from { transform: translateX(120%); opacity: 0; } to { transform: none; opacity: 1; } }
 
       /* Loading overlay */
-      #loading { position: fixed; inset: 0; background: rgba(247,244,239,.78); display: none; align-items: center; justify-content: center; z-index: 300; backdrop-filter: blur(2px); }
+      #loading { position: fixed; inset: 0; background: rgba(0,0,0,.72); display: none; align-items: center; justify-content: center; z-index: 300; backdrop-filter: blur(2px); }
       #loading.show { display: flex; }
       .spinner { width: 46px; height: 46px; border: 4px solid var(--brass-soft); border-top-color: var(--brass); border-radius: 50%; animation: spin 1s linear infinite; }
       .loading-label { margin-top: 16px; font-weight: 700; color: var(--ink); }
@@ -434,7 +491,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       /* Responsive */
       @media (max-width: 860px) {
         .topbar .menu-toggle { display: block; }
-        .topbar .brand small { display: none; }
+        .topbar .brand .brand-text { display: none; }
         .sidebar {
           position: fixed; top: var(--topbar-h); left: 0; bottom: 0;
           height: auto; z-index: 50;
@@ -458,11 +515,12 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         display: flex; align-items: center; gap: 6px;
         background: rgba(255,255,255,0.08);
         border: 1px solid var(--sidebar-line);
-        border-radius: 999px; padding: 4px 12px; min-width: 200px;
+        border-radius: 999px; padding: 4px 12px;
+        flex: 1 1 300px; min-width: 300px; max-width: 520px;
       }
       .topbar .topbar-search input {
         background: transparent; border: 0; outline: none; color: var(--sidebar-ink);
-        font-size: 13.5px; min-height: 30px; width: 100%;
+        font-size: 14px; min-height: 32px; width: 100%;
       }
       .topbar .topbar-search input::placeholder { color: var(--sidebar-muted); }
       .topbar .topbar-search .ic { color: var(--sidebar-muted); font-size: 14px; }
@@ -509,7 +567,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
          DASHBOARD WIDGETS — WordPress "dashboard" look
          ============================================================ */
       .welcome-banner {
-        background: linear-gradient(135deg, #fff 0%, var(--brass-soft) 100%);
+        background: linear-gradient(135deg, var(--panel) 0%, var(--brass-soft) 100%);
         border: 1px solid var(--line);
         border-left: 4px solid var(--brass);
         border-radius: var(--radius);
@@ -534,7 +592,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       }
       .widget .w-head {
         display: flex; align-items: center; gap: 10px; padding: 14px 20px;
-        border-bottom: 1px solid var(--line); background: #faf8f3;
+        border-bottom: 1px solid var(--line); background: var(--panel-2);
       }
       .widget .w-head h3 { margin: 0; font-size: 14px; font-weight: 700; flex: 1; }
       .widget .w-head .w-ic { font-size: 16px; }
@@ -550,7 +608,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         transition: background .12s;
       }
       .at-glance li:last-child { border-bottom: 0; }
-      .at-glance li:hover { background: #faf8f3; }
+      .at-glance li:hover { background: var(--hover); }
       .at-glance .ag-ic {
         width: 34px; height: 34px; border-radius: 8px; flex: 0 0 34px;
         display: flex; align-items: center; justify-content: center; font-size: 16px;
@@ -592,7 +650,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       .activity-list .al-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brass); margin-top: 7px; flex: 0 0 8px; }
       .activity-list b { font-size: 13.5px; }
       .activity-list small { color: var(--muted); font-size: 12px; }
-      .quick-draft textarea { min-height: 90px; }
+      .quick-draft textarea { min-height: 120px; }
 
       /* WordPress-style list table (filter/search/bulk bar) */
       .list-toolbar {
@@ -601,7 +659,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       .list-toolbar .lt-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
       .list-toolbar select {
         min-height: 38px; padding: 6px 28px 6px 10px; font-size: 13.5px;
-        border: 1px solid var(--line-strong); border-radius: 5px; background: #fff; color: var(--ink);
+        border: 1px solid var(--line-strong); border-radius: 5px; background: var(--input-bg); color: var(--ink);
       }
       .list-toolbar .lt-search {
         display: flex; align-items: center; gap: 6px; margin-left: auto;
@@ -620,9 +678,9 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       }
       .pagination button, .pagination span {
         min-width: 34px; min-height: 34px; padding: 0 10px; border: 1px solid var(--line-strong);
-        background: #fff; color: var(--ink); border-radius: 5px; font-size: 13px; font-weight: 600;
+        background: var(--panel); color: var(--ink); border-radius: 5px; font-size: 13px; font-weight: 600;
       }
-      .pagination button:hover { background: #f4efe6; }
+      .pagination button:hover { background: var(--hover); }
       .pagination .current { background: var(--brass); color: #fff; border-color: var(--brass-dark); }
       .pagination .dots { border: 0; background: transparent; }
 
@@ -638,13 +696,13 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         transition: background .12s; position: relative;
       }
       .pb-block:last-child { border-bottom: 0; }
-      .pb-block:hover { background: #faf8f3; }
+      .pb-block:hover { background: var(--hover); }
       .pb-block.dragging { opacity: .4; }
       .pb-block.drag-over { box-shadow: inset 0 3px 0 var(--brass); }
       .pb-block.disabled { opacity: .5; }
       .pb-handle {
         width: 44px; flex: 0 0 44px; display: flex; align-items: center; justify-content: center;
-        cursor: grab; color: var(--muted); font-size: 18px; background: #faf8f3; border-right: 1px solid var(--line);
+        cursor: grab; color: var(--muted); font-size: 18px; background: var(--panel-2); border-right: 1px solid var(--line);
         user-select: none;
       }
       .pb-handle:active { cursor: grabbing; }
@@ -671,6 +729,65 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
 
       .pb-empty { text-align: center; padding: 48px 20px; color: var(--muted); }
 
+      /* ============================================================
+         INLINE VISUAL EDITOR (Divi/WordPress-style)
+         Each block renders as a "preview" card that mimics the live
+         site. Text fields are contenteditable so Mike can click and
+         type directly. Hover = dashed outline; editing = blue outline.
+         ============================================================ */
+      .ie-stage { display: flex; flex-direction: column; gap: 16px; }
+      .ie-block {
+        position: relative; background: var(--panel); border: 1px solid var(--line);
+        border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden;
+        transition: border-color .15s, box-shadow .15s;
+      }
+      .ie-block:hover { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass-soft); }
+      .ie-block.dragging { opacity: .4; }
+      .ie-block.drag-over { box-shadow: inset 0 3px 0 var(--brass); }
+      .ie-block.disabled { opacity: .45; }
+      .ie-bar {
+        display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+        background: var(--panel-2); border-bottom: 1px solid var(--line);
+        font-size: 12px; color: var(--muted);
+      }
+      .ie-bar .ie-handle { cursor: grab; padding: 2px 6px; font-size: 16px; line-height: 1; user-select: none; color: var(--muted); }
+      .ie-bar .ie-handle:active { cursor: grabbing; }
+      .ie-bar .ie-tag { font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .05em; font-size: 10.5px; }
+      .ie-bar .ie-spacer { flex: 1; }
+      .ie-bar .ie-btn { background: transparent; border: 0; color: var(--muted); cursor: pointer; padding: 4px 6px; border-radius: 4px; font-size: 14px; line-height: 1; }
+      .ie-bar .ie-btn:hover { background: var(--hover); color: var(--ink); }
+      .ie-bar .ie-btn.danger:hover { background: var(--red-soft); color: var(--red); }
+      .ie-preview { padding: 24px; }
+      .ie-preview.lg { padding: 32px 28px; }
+      /* contenteditable elements */
+      [contenteditable] { outline: none; border-radius: 4px; transition: box-shadow .12s, background .12s; padding: 2px 4px; }
+      [contenteditable]:hover { box-shadow: 0 0 0 1px var(--brass); }
+      [contenteditable]:focus { box-shadow: 0 0 0 2px var(--blue); background: rgba(91,159,224,.08); }
+      .cms-light [contenteditable]:focus { background: rgba(44,111,179,.08); }
+      [contenteditable][data-empty="1"]::before { content: attr(data-placeholder); color: var(--muted); font-style: italic; pointer-events: none; }
+      .ie-h1 { font-family: var(--font-display, Georgia, serif); font-size: 30px; font-weight: 700; line-height: 1.15; color: #fff; letter-spacing: -0.01em; }
+      .cms-light .ie-h1 { color: var(--ink); }
+      .ie-h2 { font-family: var(--font-display, Georgia, serif); font-size: 22px; font-weight: 700; line-height: 1.2; color: #fff; }
+      .cms-light .ie-h2 { color: var(--ink); }
+      .ie-p { font-size: 15px; line-height: 1.6; color: var(--ink-soft); }
+      .ie-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--brass-dark); margin-bottom: 8px; }
+      .ie-btn-preview { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 20px; background: var(--brass); color: #fff; border-radius: 6px; font-weight: 700; font-size: 14px; }
+      .ie-img { width: 100%; max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); }
+      .ie-img-ph { display: flex; align-items: center; justify-content: center; height: 160px; background: var(--panel-2); border: 1px dashed var(--line-strong); border-radius: 8px; color: var(--muted); font-size: 13px; }
+      .ie-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+      .ie-gallery .ie-gitem { position: relative; aspect-ratio: 4/3; border-radius: 6px; overflow: hidden; background: var(--panel-2); border: 1px solid var(--line); }
+      .ie-gallery .ie-gitem img { width: 100%; height: 100%; object-fit: cover; }
+      .ie-gallery .ie-gadd { display: flex; align-items: center; justify-content: center; border: 1px dashed var(--line-strong); color: var(--muted); cursor: pointer; font-size: 22px; }
+      .ie-gallery .ie-gadd:hover { border-color: var(--brass); color: var(--brass-dark); }
+      .ie-video-frame { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); }
+      .ie-video-frame iframe, .ie-video-frame .ie-video-ph { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+      .ie-video-ph { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; }
+      .ie-spacer { background: repeating-linear-gradient(45deg, var(--panel-2), var(--panel-2) 8px, transparent 8px, transparent 16px); border: 1px dashed var(--line); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 12px; }
+      .ie-divider { height: 1px; background: var(--line-strong); margin: 8px 0; }
+      .ie-mode-tabs { display: inline-flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 3px; gap: 2px; }
+      .ie-mode-tabs button { background: transparent; border: 0; color: var(--muted); font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 6px; cursor: pointer; }
+      .ie-mode-tabs button.active { background: var(--brass); color: #fff; }
+
       @media (max-width: 860px) {
         .widget-grid { grid-template-columns: 1fr; }
         .pb-page-select select { min-width: 0; flex: 1; }
@@ -685,7 +802,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
     <div id="login">
       <div class="login-card">
         <div class="login-head">
-          <div class="login-logo">VT</div>
+          <img class="login-logo" src={BASE + "images/logo-white.png"} alt="Virtual Tours Las Vegas" />
           <h1>Content Manager</h1>
           <p>Virtual Tours Las Vegas</p>
         </div>
@@ -711,8 +828,8 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
               1. Open
               <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">github.com → Settings → Developer settings → Fine-grained tokens</a>.
             </p>
-            <p style="margin: 0 0 8px;">2. Click <b>Generate new token</b>. Resource owner: <code>MylesThePro1</code>.</p>
-            <p style="margin: 0 0 8px;">3. Under <b>Repository access</b> choose <i>Only select repositories</i> → pick <code>virtual-tours-las-vegas-redesign</code>.</p>
+            <p style="margin: 0 0 8px;">2. Click <b>Generate new token</b>. Use your own GitHub account as the resource owner.</p>
+            <p style="margin: 0 0 8px;">3. Under <b>Repository access</b> choose <i>Only select repositories</i> → pick this site's repository.</p>
             <p style="margin: 0 0 8px;">4. Under <b>Permissions → Repository permissions → Contents</b> set <b>Read and write</b>.</p>
             <p style="margin: 0;">5. Generate, copy the <code>github_pat_...</code> value, paste it above.</p>
           </details>
@@ -725,9 +842,8 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       <div class="topbar">
         <button class="menu-toggle" id="menu-toggle" aria-label="Menu">&#9776;</button>
         <div class="brand">
-          <span class="dot">VT</span>
-          <span>
-            Virtual Tours Las Vegas
+          <img src={BASE + "images/logo-white.png"} alt="Virtual Tours Las Vegas" class="brand-logo" />
+          <span class="brand-text">
             <small>Content Manager</small>
           </span>
         </div>
@@ -2581,17 +2697,22 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         main.appendChild(el("div", { class: "page-head" },
           el("div", {}, el("h1", {}, "Appearance"), el("p", {}, "Theme, colors, header, logo and fonts. CMS theme applies here; site theme is set in code.")),
         ));
-        const card = sectionCard("Theme", "Switch this Content Manager between light and dark.", []);
-        const theme = localStorage[LS.theme] || "light";
-        const stateSpan = el("b", { id: "theme-state" }, theme === "dark" ? "Dark" : "Light");
-        const tg = el("button", { class: "btn btn-ghost", onclick: () => {
-          const next = (localStorage[LS.theme] || "light") === "light" ? "dark" : "light";
+        const card = sectionCard("Theme", "Dark mode is the default. Switch to light if you prefer a bright canvas.", []);
+        const theme = localStorage[LS.theme] || "dark";
+        const stateSpan = el("b", { id: "theme-state" }, theme === "light" ? "Light" : "Dark");
+        const setTheme = (next) => {
           localStorage[LS.theme] = next;
           applyCmsTheme(next);
-          stateSpan.textContent = next === "dark" ? "Dark" : "Light";
-        } }, "\u{1F313} Toggle CMS Theme");
+          stateSpan.textContent = next === "light" ? "Light" : "Dark";
+        };
+        const tg = el("button", { class: "btn btn-ghost", onclick: () => {
+          const next = (localStorage[LS.theme] || "dark") === "light" ? "dark" : "light";
+          setTheme(next);
+        } }, "\u{1F313} Toggle Light / Dark");
+        const darkBtn = el("button", { class: "btn btn-sm", style: "margin-left:8px", onclick: () => setTheme("dark") }, "\u{1F311} Dark");
+        const lightBtn = el("button", { class: "btn btn-sm btn-ghost", onclick: () => setTheme("light") }, "\u{2600}\uFE0F Light");
         card.appendChild(el("div", { class: "form-grid" },
-          wrapField("Manager Theme", el("div", {}, tg, el("div", { style: { marginTop: "8px", color: "var(--muted)", fontSize: "13px" } }, "Current: ", stateSpan)), null, "Switches this admin panel between light and dark."),
+          wrapField("Manager Theme", el("div", { style: { display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" } }, tg, darkBtn, lightBtn, el("div", { style: { width: "100%", color: "var(--muted)", fontSize: "13px" } }, "Current: ", stateSpan)), null, "Default is dark (black background, white text). Your choice is remembered on this device."),
         ));
 
         // Color scheme preview
@@ -2599,8 +2720,8 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         card.appendChild(el("h2", {}, "Color Scheme"));
         card.appendChild(el("p", { class: "sub" }, "The live site uses a fixed brass-on-cream theme. Colors are managed in code; ask your developer to change them."));
         card.appendChild(el("div", { style: { display: "flex", gap: "8px", alignItems: "center", padding: "12px", border: "1px solid var(--line)", borderRadius: "8px", flexWrap: "wrap" } },
-          swatch("#1a1814", "Sidebar"), swatch("#f7f4ef", "Canvas"), swatch("#b08d57", "Brass"),
-          swatch("#3f8a52", "Green"), swatch("#c0392b", "Red"), swatch("#c98a14", "Amber"),
+          swatch("#0a0a0a", "Canvas (dark)"), swatch("#1a1a1a", "Panel"), swatch("#121212", "Sidebar"),
+          swatch("#f0f0f0", "Text"), swatch("#b08d57", "Brass"), swatch("#222222", "Input"),
         ));
 
         // Header style
@@ -2659,15 +2780,9 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       }
 
       function applyCmsTheme(theme) {
-        let style = document.getElementById("cms-dark");
-        if (theme === "dark") {
-          if (!style) {
-            style = document.createElement("style");
-            style.id = "cms-dark";
-            style.textContent = "body{background:#15130f;color:#e8e2d6}.card,.tile,.stat,.modal,.faq-item,.serp,.ptile{background:#211e18;border-color:#3a342c;color:#e8e2d6}.card .sub,.tile .meta small,.muted,.ptile .meta small{color:#9a9080}.field input,.field select,.field textarea,.tags,.rep-row input,.tbl input{background:#15130f;border-color:#3a342c;color:#e8e2d6}.btn-ghost{background:transparent;color:#e8e2d6;border-color:#3a342c}.tile .foot,.modal .mfoot{background:#1a1814}.serp .t{color:#8ab4f8}.serp .d{color:#bdc1c6}.serp .u{color:#aab}.tbl th{color:#9a9080}.md-preview{background:#15130f;border-color:#3a342c}.btn-icon{background:#211e18;color:#e8e2d6;border-color:#3a342c}.btn-icon:hover{background:#2a2620}";
-            document.head.appendChild(style);
-          }
-        } else if (style) { style.remove(); }
+        // Dark is the default (no class). Light opts in via .cms-light on <html>.
+        if (theme === "light") document.documentElement.classList.add("cms-light");
+        else document.documentElement.classList.remove("cms-light");
       }
 
       // ============================================================
@@ -2719,6 +2834,41 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
           sg.appendChild(wrapField(label, i));
         }
         card.appendChild(sg);
+
+        card.appendChild(el("hr"));
+        card.appendChild(el("h2", {}, "Connect Google Services"));
+        card.appendChild(el("p", { class: "sub" }, "Handy links to each Google product plus the steps to connect them. These open in a new tab \u2014 a real OAuth connection needs a server, so you'll paste IDs back into the fields above."));
+        const googleStep = (title, href, steps, idHint) => el("div", { style: { border: "1px solid var(--line)", borderRadius: "8px", padding: "14px 16px", marginBottom: "12px", background: "var(--panel-2)" } },
+          el("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "8px" } },
+            el("b", {}, title),
+            el("a", { class: "btn btn-sm", href, target: "_blank", rel: "noopener noreferrer" }, "Open \u2197")),
+          el("ol", { style: { margin: "0", paddingLeft: "20px", color: "var(--ink-soft)", fontSize: "13px", lineHeight: "1.6" } },
+            steps.map((s) => el("li", { style: { marginBottom: "2px" } }, s))),
+          idHint ? el("div", { style: { marginTop: "8px", fontSize: "12.5px", color: "var(--muted)" } }, idHint) : null);
+        card.appendChild(googleStep(
+          "Google Analytics (GA4)",
+          "https://analytics.google.com",
+          ["Sign in at analytics.google.com and click Start measuring.", "Enter your site URL and create a GA4 property.", "Create a Web data stream and copy the Measurement ID (looks like G-XXXXXXXXXX).", "Paste that ID into the Google Analytics ID field above and Save."],
+          "Used by: footer analytics script + the Site Kit dashboard."
+        ));
+        card.appendChild(googleStep(
+          "Google Business Profile",
+          "https://business.google.com",
+          ["Go to business.google.com and sign in.", "Add or claim your business and verify by postcard/phone.", "Open your profile and copy the public URL.", "Paste it into the Google Business Profile field above."],
+          "Powers the local SEO / map listing links."
+        ));
+        card.appendChild(googleStep(
+          "Google Search Console",
+          "https://search.google.com/search-console",
+          ["Open search.google.com/search-console and add your property (URL prefix).", "Verify ownership (HTML tag, DNS, or Google Analytics).", "Submit your sitemap: " + BASE + "sitemap-index.xml.", "Copy the verification ID if you want it added to the site <head>."],
+          "Shows impressions, clicks and indexing status \u2014 mirrored in Site Kit."
+        ));
+        card.appendChild(googleStep(
+          "Google Calendar",
+          "https://calendar.google.com",
+          ["Open calendar.google.com and create a booking calendar.", "Click the calendar's settings \u2192 Integrate calendar.", "Copy the public embed URL (the src of the iframe).", "Paste it into the Google Calendar Embed URL field above."],
+          "Used by the booking/contact sections to show availability."
+        ));
 
         card.appendChild(el("hr"));
         card.appendChild(el("div", { style: { display: "flex", justifyContent: "flex-end" } },
@@ -2793,29 +2943,74 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
           { key: "heading", label: "Heading", type: "text" },
           { key: "query", label: "Map search query", type: "text" },
         ] },
+        // ---- Inline-editor block types (Divi-style building blocks) ----
+        { type: "heading", icon: "T", name: "Heading", desc: "Large editable heading text (h2)", fields: [
+          { key: "text", label: "Heading text", type: "text" },
+          { key: "eyebrow", label: "Eyebrow (small label above)", type: "text" },
+        ] },
+        { type: "paragraph", icon: "\u00B6", name: "Paragraph", desc: "A block of body copy you can type into", fields: [
+          { key: "text", label: "Paragraph text", type: "textarea" },
+        ] },
+        { type: "image", icon: "\u{1F5BC}\uFE0F", name: "Image", desc: "Single image with optional caption", fields: [
+          { key: "src", label: "Image path (e.g. /images/portfolio/x.jpg)", type: "text" },
+          { key: "alt", label: "Alt text", type: "text" },
+          { key: "caption", label: "Caption", type: "text" },
+        ] },
+        { type: "button", icon: "\u{1F518}", name: "Button", desc: "Editable button with label + link", fields: [
+          { key: "label", label: "Button label", type: "text" },
+          { key: "href", label: "Button link", type: "text" },
+        ] },
+        { type: "gallery-grid", icon: "\u{1F5BC}\uFE0F", name: "Gallery", desc: "Grid of image thumbnails, add/remove", fields: [
+          { key: "images", label: "Image paths (one per line)", type: "gallery" },
+        ] },
+        { type: "video-embed", icon: "\u{1F3AC}", name: "Video Embed", desc: "YouTube or Matterport embed", fields: [
+          { key: "url", label: "Embed URL (YouTube/Vimeo/Matterport)", type: "text" },
+          { key: "heading", label: "Heading", type: "text" },
+        ] },
+        { type: "spacer", icon: "\u21D5", name: "Spacer", desc: "Adjustable vertical whitespace", fields: [
+          { key: "height", label: "Height in px", type: "text" },
+        ] },
+        { type: "divider", icon: "\u2014", name: "Divider", desc: "Horizontal line separator", fields: [] },
       ];
+      // Inline-editor block types are rendered with contenteditable previews.
+      const IE_BLOCKS = ["hero", "text", "heading", "paragraph", "image", "button", "gallery-grid", "video-embed", "cta", "spacer", "divider", "gallery", "video"];
+
+      // Current editor mode: "outline" (drag/toggle list) or "inline" (visual).
+      let pbMode = "outline";
 
       async function renderPageBuilder() {
         const main = $("#main");
         clear(main);
         main.appendChild(el("div", { class: "page-head" },
-          el("div", {}, el("h1", {}, "Page Builder"), el("p", {}, "Reorder, show/hide and edit the sections of any page. Saved to src/data/cms/page-layouts/.")),
+          el("div", {}, el("h1", {}, "Page Builder"), el("p", {}, "Reorder, edit and preview the sections of any page. Saved to src/data/cms/page-layouts/.")),
           el("div", { class: "actions" },
+            el("a", { class: "btn btn-ghost", id: "pb-preview", href: "#", target: "_blank", rel: "noopener noreferrer", title: "Open the live page in a new tab" }, "\u{1F441}\uFE0F Preview"),
             el("button", { class: "btn btn-ghost", onclick: () => pbResetPrompt() }, "Reset Page"),
           ),
         ));
 
-        const pageSel = el("select", { "aria-label": "Select a page", style: { minWidth: "300px", minHeight: "52px", padding: "10px 12px", fontSize: "16px", border: "1px solid var(--line-strong)", borderRadius: "var(--radius-sm)", background: "#fff" } });
+        const pageSel = el("select", { "aria-label": "Select a page", style: { minWidth: "300px", minHeight: "52px", padding: "10px 12px", fontSize: "16px", border: "1px solid var(--line-strong)", borderRadius: "var(--radius-sm)", background: "var(--input-bg)", color: "var(--ink)" } });
         for (const p of pages) {
           pageSel.appendChild(el("option", { value: p.path }, `${p.path === "/" ? "Home" : p.path} \u2014 ${p.title.slice(0, 50)}`));
         }
+        // Keep the Preview link pointed at the selected page.
+        const updatePreviewLink = () => { $("#pb-preview").setAttribute("href", BASE.replace(/\/$/, "") + (pageSel.value === "/" ? "/" : pageSel.value)); };
+        updatePreviewLink();
+
         const canvas = el("div", { id: "pb-canvas" }, el("div", { class: "empty" }, el("div", { class: "spinner", style: { margin: "0 auto" } })));
-        pageSel.addEventListener("change", () => loadPageLayout(pageSel.value, canvas));
+
+        // Mode tabs: Outline | Inline Editor
+        const tabOutline = el("button", { class: pbMode === "outline" ? "active" : "", onclick: () => { pbMode = "outline"; tabOutline.classList.add("active"); tabInline.classList.remove("active"); loadPageLayout(pageSel.value, canvas); } }, "\u2630 Outline");
+        const tabInline = el("button", { class: pbMode === "inline" ? "active" : "", onclick: () => { pbMode = "inline"; tabInline.classList.add("active"); tabOutline.classList.remove("active"); loadPageLayout(pageSel.value, canvas); } }, "\u270F\uFE0F Inline Editor");
+        const tabs = el("div", { class: "ie-mode-tabs" }, tabOutline, tabInline);
+
+        pageSel.addEventListener("change", () => { updatePreviewLink(); loadPageLayout(pageSel.value, canvas); });
         main.appendChild(el("div", { class: "pb-toolbar" },
           el("div", { class: "pb-page-select" }, el("label", { style: { fontWeight: "700", fontSize: "13px" } }, "Editing page:"), pageSel),
+          tabs,
           el("div", { style: { marginLeft: "auto", display: "flex", gap: "8px" } },
-            el("button", { class: "btn btn-ghost", onclick: () => pbAddBlockModal(pageSel.value, () => loadPageLayout(pageSel.value, canvas)) }, "+ Add Section"),
-            el("button", { class: "btn", onclick: () => pbSave(pageSel.value, canvas) }, "Save Layout"),
+            el("button", { class: "btn btn-ghost", onclick: () => pbAddBlockModal(pageSel.value, () => loadPageLayout(pageSel.value, canvas)) }, "+ Add Block"),
+            el("button", { class: "btn", onclick: () => pbSave(pageSel.value, canvas) }, "Save Page"),
           )));
         main.appendChild(canvas);
         loadPageLayout(pageSel.value, canvas);
@@ -2863,6 +3058,8 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
           canvas.appendChild(el("div", { class: "pb-empty" }, el("div", { class: "spinner", style: { margin: "0 auto 12px" } })));
           return;
         }
+        // Inline visual editor mode: render contenteditable preview cards.
+        if (pbMode === "inline") { pbDrawInline(sections, slug, canvas); return; }
         const wrap = el("div", { class: "pb-canvas" });
         sections.forEach((sec, i) => {
           const def = PB_LIBRARY.find((b) => b.type === sec.type) || { icon: "\u{1F536}", name: sec.type, desc: "", fields: [] };
@@ -2926,6 +3123,209 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         ));
       }
 
+      // ============================================================
+      //  INLINE VISUAL EDITOR
+      //  Renders each section as a "looks like the site" card whose text
+      //  fields are contenteditable. Edits flow straight into the in-memory
+      //  section model (sec.fields), so the Save button persists them.
+      // ============================================================
+      function pbDrawInline(sections, slug, canvas) {
+        const stage = el("div", { class: "ie-stage" });
+        // Helper: a contenteditable element bound to sec.fields[key].
+        const editable = (sec, key, opts) => {
+          opts = opts || {};
+          const node = el(opts.tag || "div", { class: opts.cls || "ie-p", contenteditable: "true", "data-field": key, spellcheck: "false" });
+          node.textContent = sec.fields[key] == null ? (opts.ph || "") : sec.fields[key];
+          if (opts.ph && !node.textContent) node.setAttribute("data-empty", "1");
+          node.addEventListener("focus", () => { if (node.getAttribute("data-empty") === "1") { node.textContent = ""; } });
+          node.addEventListener("blur", () => {
+            const v = node.textContent.trim();
+            sec.fields[key] = v;
+            if (!v && opts.ph) { node.textContent = opts.ph; node.setAttribute("data-empty", "1"); }
+            else { node.removeAttribute("data-empty"); }
+            node.scrollTop = 0;
+          });
+          if (opts.ph) { node.setAttribute("data-placeholder", opts.ph); }
+          return node;
+        };
+
+        sections.forEach((sec, i) => {
+          const def = PB_LIBRARY.find((b) => b.type === sec.type) || { icon: "\u{1F536}", name: sec.type, desc: "" };
+          const block = el("div", { class: "ie-block" + (sec.enabled ? "" : " disabled"), draggable: "true", "data-id": sec.id });
+
+          // Drag reorder (same as outline mode).
+          block.addEventListener("dragstart", (e) => { block.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", sec.id); });
+          block.addEventListener("dragend", () => block.classList.remove("dragging"));
+          block.addEventListener("dragover", (e) => { e.preventDefault(); block.classList.add("drag-over"); });
+          block.addEventListener("dragleave", () => block.classList.remove("drag-over"));
+          block.addEventListener("drop", (e) => {
+            e.preventDefault(); block.classList.remove("drag-over");
+            const draggedId = e.dataTransfer.getData("text/plain");
+            const from = sections.findIndex((s) => s.id === draggedId);
+            const to = sections.findIndex((s) => s.id === sec.id);
+            if (from === -1 || to === -1 || from === to) return;
+            const [moved] = sections.splice(from, 1); sections.splice(to, 0, moved);
+            pbDrawInline(sections, slug, canvas);
+          });
+
+          // Block toolbar: drag handle, tag, settings, enable toggle, delete.
+          const bar = el("div", { class: "ie-bar" },
+            el("span", { class: "ie-handle", title: "Drag to reorder" }, "\u2261\u2261"),
+            el("span", { class: "ie-tag" }, def.icon + " " + sec.name),
+            el("span", { class: "ie-spacer" }),
+            el("button", { class: "ie-btn", title: "Advanced settings", onclick: () => pbEditFieldsModal(sec, () => pbDrawInline(sections, slug, canvas)) }, "\u2699\uFE0F"),
+            (() => { const cb = el("input", { type: "checkbox", title: "Show / hide", id: "ie-on-" + sec.id }); if (sec.enabled) cb.setAttribute("checked", "checked"); cb.addEventListener("change", () => { sec.enabled = cb.checked; block.classList.toggle("disabled", !sec.enabled); }); const lbl = el("label", { class: "ie-btn", title: "Show / hide", onclick: (e) => { e.preventDefault(); cb.click(); } }, "\u{1F441}\uFE0F"); return el("span", {}, cb, lbl); })(),
+            el("button", { class: "ie-btn", title: "Move up", onclick: () => { pbMove(sections, i, -1); pbDrawInline(sections, slug, canvas); } }, "\u2191"),
+            el("button", { class: "ie-btn", title: "Move down", onclick: () => { pbMove(sections, i, 1); pbDrawInline(sections, slug, canvas); } }, "\u2193"),
+            el("button", { class: "ie-btn danger", title: "Delete block", onclick: () => { if (confirm(`Remove the "${sec.name}" block?`)) { sections.splice(i, 1); pbDrawInline(sections, slug, canvas); } } }, "\u{1F5D1}")
+          );
+
+          // Preview body — branch on block type so it resembles the live site.
+          const preview = el("div", { class: "ie-preview" + (sec.type === "hero" || sec.type === "cta" ? " lg" : "") });
+          preview.appendChild(pbBlockPreview(sec, editable));
+          block.appendChild(bar);
+          block.appendChild(preview);
+          stage.appendChild(block);
+        });
+
+        canvas.appendChild(stage);
+
+        // "+ Add block" affordance at the bottom.
+        canvas.appendChild(el("div", { class: "card", style: { marginTop: "4px", padding: "18px 20px" } },
+          el("h3", { style: { margin: "0 0 4px", fontSize: "15px" } }, "Add a block"),
+          el("p", { class: "sub", style: { margin: "0 0 14px" } }, "Click a block to append it, then drag it where you want."),
+          (() => { const lib = el("div", { class: "pb-library" }); for (const b of PB_LIBRARY) {
+            lib.appendChild(el("div", { class: "pb-block-tile", onclick: () => { sections.push(pbBlock(b.type, b.name, pbDefaults(b.type), true)); pbDrawInline(sections, slug, canvas); toast(`Added ${b.name} block. Click any text to edit it.`, "info", "Block added"); } },
+              el("div", { class: "pb-bic" }, b.icon), el("b", {}, b.name), el("small", {}, b.desc)));
+          } return lib; })(),
+        ));
+      }
+
+      // Sensible starter field values when a new block is added in inline mode.
+      function pbDefaults(type) {
+        switch (type) {
+          case "heading": return { eyebrow: "", text: "New heading" };
+          case "paragraph": return { text: "Click here to start writing your paragraph..." };
+          case "image": return { src: "", alt: "", caption: "" };
+          case "button": return { label: "Click here", href: "/contact/" };
+          case "gallery-grid": return { images: "" };
+          case "video-embed": return { url: "", heading: "" };
+          case "spacer": return { height: "48" };
+          case "divider": return {};
+          case "cta": return { headline: "Book your shoot today", buttonLabel: "Get started", buttonHref: "/contact/" };
+          default: return {};
+        }
+      }
+
+      // Render the visual preview for one block, using `editable()` for text.
+      function pbBlockPreview(sec, editable) {
+        const f = sec.fields = sec.fields || {};
+        const wrap = el("div", {});
+        const imgUrl = (path) => { if (!path) return ""; const p = String(path).trim(); if (/^https?:\/\//i.test(p)) return p; return BASE.replace(/\/$/, "") + (p.startsWith("/") ? p : "/" + p); };
+        switch (sec.type) {
+          case "hero":
+            wrap.appendChild(editable(sec, "headline", { tag: "div", cls: "ie-h1", ph: "Your headline..." }));
+            if (f.subhead != null || true) wrap.appendChild(el("div", { style: { marginTop: "10px" } }, editable(sec, "subhead", { cls: "ie-p", ph: "Supporting subhead..." })));
+            if (f.image != null) wrap.appendChild(el("div", { style: { marginTop: "12px" } }, editable(sec, "image", { cls: "ie-p", ph: "/images/hero.jpg (background image path)" })));
+            break;
+          case "heading":
+            if (f.eyebrow != null || true) wrap.appendChild(editable(sec, "eyebrow", { tag: "div", cls: "ie-eyebrow", ph: "EYEBROW (optional)" }));
+            wrap.appendChild(editable(sec, "text", { tag: "h2", cls: "ie-h2", ph: "Heading text..." }));
+            break;
+          case "paragraph":
+          case "text":
+            if (f.heading != null || sec.type === "text") wrap.appendChild(editable(sec, "heading", { tag: "h2", cls: "ie-h2", ph: "Heading..." }));
+            wrap.appendChild(editable(sec, sec.type === "text" ? "body" : "text", { tag: "div", cls: "ie-p", ph: "Click to write..." }));
+            break;
+          case "image": {
+            const imgBox = el("div", {});
+            const drawImg = () => {
+              imgBox.innerHTML = "";
+              if (f.src) imgBox.appendChild(el("img", { class: "ie-img", src: imgUrl(f.src), alt: f.alt || "", onerror: "this.style.display='none'" }));
+              else imgBox.appendChild(el("div", { class: "ie-img-ph" }, "No image \u2014 click \u2699\uFE0F to set the image path"));
+            };
+            drawImg();
+            wrap.appendChild(imgBox);
+            if (f.caption != null) wrap.appendChild(el("div", { style: { marginTop: "8px" } }, editable(sec, "caption", { cls: "ie-p", ph: "Caption (optional)" })));
+            wrap.appendChild(el("div", { style: { marginTop: "8px" } }, editable(sec, "src", { cls: "ie-p", ph: "/images/...  (set the image path here)", })));
+            // Redraw the image when the src field loses focus.
+            const srcNode = wrap.querySelector('[data-field="src"]'); if (srcNode) srcNode.addEventListener("blur", drawImg);
+            break;
+          }
+          case "button": {
+            const row = el("div", { style: { display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" } });
+            row.appendChild(el("div", { class: "ie-btn-preview" }, editable(sec, "label", { tag: "span", ph: "Button" })));
+            row.appendChild(editable(sec, "href", { cls: "ie-p", ph: "/contact/" }));
+            wrap.appendChild(row);
+            break;
+          }
+          case "gallery-grid": {
+            const grid = el("div", { class: "ie-gallery" });
+            const imgs = String(f.images || "").split("\n").map((s) => s.trim()).filter(Boolean);
+            const draw = () => {
+              grid.innerHTML = "";
+              imgs.forEach((src) => grid.appendChild(el("div", { class: "ie-gitem" }, el("img", { src: imgUrl(src), alt: "", onerror: "this.parentNode.classList.add('ie-img-ph');this.remove()" }))));
+              grid.appendChild(el("div", { class: "ie-gitem ie-gadd", title: "Add image \u2014 edit paths in settings", onclick: () => pbEditFieldsModal(sec, () => pbDrawInline(pbCurrent.sections, pbCurrent.slug, $("#pb-canvas"))) }, "+"));
+            };
+            draw();
+            wrap.appendChild(grid);
+            wrap.appendChild(el("div", { style: { marginTop: "10px" } }, el("small", { style: { color: "var(--muted)" } }, imgs.length + " image(s) \u2014 click \u2699\uFE0F to edit the list (one path per line).")));
+            break;
+          }
+          case "video-embed":
+          case "video": {
+            const key = sec.type === "video" ? "url" : "url";
+            if (f.heading != null || sec.type === "video-embed") wrap.appendChild(editable(sec, "heading", { tag: "h2", cls: "ie-h2", ph: "Heading..." }));
+            const frame = el("div", {});
+            const drawVid = () => {
+              frame.innerHTML = "";
+              const url = String(f[key] || "").trim();
+              const embed = pbEmbedUrl(url);
+              if (embed) frame.appendChild(el("div", { class: "ie-video-frame" }, el("iframe", { src: embed, allowfullscreen: "true", loading: "lazy" })));
+              else frame.appendChild(el("div", { class: "ie-video-frame" }, el("div", { class: "ie-video-ph" }, "No video \u2014 paste a YouTube / Vimeo / Matterport URL below")));
+            };
+            drawVid();
+            wrap.appendChild(frame);
+            wrap.appendChild(el("div", { style: { marginTop: "10px" } }, editable(sec, key, { cls: "ie-p", ph: "https://youtube.com/watch?v=...  or  https://my.matterport.com/show/?m=..." })));
+            const urlNode = wrap.querySelector('[data-field="' + key + '"]'); if (urlNode) urlNode.addEventListener("blur", drawVid);
+            break;
+          }
+          case "cta":
+            wrap.appendChild(editable(sec, "headline", { tag: "h2", cls: "ie-h2", ph: "Headline..." }));
+            wrap.appendChild(el("div", { style: { marginTop: "14px" } }, el("span", { class: "ie-btn-preview" }, editable(sec, "buttonLabel", { tag: "span", ph: "Button" }))));
+            if (f.buttonHref != null) wrap.appendChild(el("div", { style: { marginTop: "8px" } }, editable(sec, "buttonHref", { cls: "ie-p", ph: "/contact/" })));
+            break;
+          case "spacer": {
+            const h = parseInt(f.height, 10) || 48;
+            wrap.appendChild(el("div", { class: "ie-spacer", style: { height: h + "px" } }, "Spacer \u2014 " + h + "px"));
+            wrap.appendChild(el("div", { style: { marginTop: "8px" } }, editable(sec, "height", { cls: "ie-p", ph: "48" })));
+            break;
+          }
+          case "divider":
+            wrap.appendChild(el("div", { class: "ie-divider" }));
+            break;
+          default:
+            // Generic section (testimonials, pricing, faq, contact, map…):
+            // show its heading editable + a note that content is auto-pulled.
+            if (f.heading != null) wrap.appendChild(editable(sec, "heading", { tag: "h2", cls: "ie-h2", ph: "Section heading..." }));
+            else wrap.appendChild(editable(sec, "heading", { tag: "h2", cls: "ie-h2", ph: "Section heading..." }));
+            wrap.appendChild(el("p", { class: "ie-p", style: { marginTop: "8px" } }, "This section pulls its content from the site data. Edit the heading above, or use \u2699\uFE0F for more fields."));
+        }
+        return wrap;
+      }
+
+      // Convert a YouTube/Vimeo/Matterport watch URL into an embeddable src.
+      function pbEmbedUrl(url) {
+        if (!url) return "";
+        url = String(url).trim();
+        let m;
+        if ((m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{6,})/))) return "https://www.youtube.com/embed/" + m[1];
+        if ((m = url.match(/vimeo\.com\/(\d+)/))) return "https://player.vimeo.com/video/" + m[1];
+        if (/my\.matterport\.com\/show\?/.test(url)) return url;
+        if (/^https?:\/\//i.test(url) && /embed|player|matterport/.test(url)) return url;
+        return "";
+      }
+
       function pbMove(arr, i, dir) {
         const j = i + dir;
         if (j < 0 || j >= arr.length) return;
@@ -2956,6 +3356,11 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
               const ta = el("textarea", {}); ta.value = cur;
               ta.addEventListener("input", () => { sec.fields[f.key] = ta.value; });
               body.appendChild(field(f.label, ta));
+            } else if (f.type === "gallery") {
+              const ta = el("textarea", {}); ta.value = Array.isArray(cur) ? cur.join("\n") : cur;
+              ta.setAttribute("placeholder", "/images/portfolio/01.jpg\n/images/portfolio/02.jpg");
+              ta.addEventListener("input", () => { sec.fields[f.key] = ta.value; });
+              body.appendChild(field(f.label + " (one path per line)", ta, "Paste one image path per line. These populate the gallery grid."));
             } else {
               body.appendChild(field(f.label, textInput(cur, { oninput: (v) => { sec.fields[f.key] = v; } })));
             }
@@ -3347,7 +3752,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
 
         const u = JSON.parse(sessionStorage[LS.user] || localStorage[LS.user] || "{}");
         const name = u.name || "Mike Madsen";
-        const login = u.login || "myles";
+        const login = u.login || "admin";
         const card = sectionCard("Your Profile", "Single-user site. You are the administrator.", []);
         const initials = (name || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
         card.appendChild(el("div", { style: { display: "flex", gap: "16px", alignItems: "center", marginBottom: "18px" } },
@@ -4137,7 +4542,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         clear(main);
         main.appendChild(el("div", { class: "page-head" },
           el("div", {}, el("h1", {}, "Site Kit by Google"), el("p", {}, "Analytics, search and ad performance \u2014 once Google Analytics is connected.")),
-          el("div", { class: "actions" }, el("button", { class: "btn", onclick: () => navigate("integrations") }, "Connect Google Analytics")),
+          el("div", { class: "actions" }, el("a", { class: "btn", href: "https://analytics.google.com", target: "_blank", rel: "noopener noreferrer" }, "Connect Google Analytics \u2197")),
         ));
 
         // Stat cards (placeholder numbers as requested)
@@ -4166,11 +4571,22 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
             )),
         ]));
 
-        main.appendChild(sectionCard("Connect Google Analytics", "Live data replaces these sample numbers once you add a GA4 Measurement ID.", [
-          el("p", { class: "sub", style: { marginTop: "0" } }, "Data updates when Google Analytics is connected. Enter your GA4 Measurement ID in Integrations."),
-          el("div", { style: { display: "flex", gap: "10px", flexWrap: "wrap" } },
-            el("button", { class: "btn", onclick: () => navigate("integrations") }, "Open Integrations \u2192"),
-            el("a", { class: "btn btn-ghost", href: "https://analytics.google.com/", target: "_blank", rel: "noopener noreferrer" }, "GA4 Setup Guide \u2197"),
+        main.appendChild(sectionCard("Connect Google Services", "Live data replaces these sample numbers once you connect. Open each product, follow the steps, then paste IDs into Integrations.", [
+          el("p", { class: "sub", style: { marginTop: "0" } }, "These links open the real Google products in a new tab. A full server-side OAuth sync needs a backend \u2014 here you copy the IDs back into Integrations."),
+          (() => {
+            const linkRow = el("div", { style: { display: "flex", gap: "10px", flexWrap: "wrap" } });
+            linkRow.appendChild(el("a", { class: "btn", href: "https://analytics.google.com", target: "_blank", rel: "noopener noreferrer" }, "\u{1F4CA} Google Analytics \u2197"));
+            linkRow.appendChild(el("a", { class: "btn btn-ghost", href: "https://search.google.com/search-console", target: "_blank", rel: "noopener noreferrer" }, "\u{1F50D} Search Console \u2197"));
+            linkRow.appendChild(el("a", { class: "btn btn-ghost", href: "https://business.google.com", target: "_blank", rel: "noopener noreferrer" }, "\u{1F4CD} Business Profile \u2197"));
+            linkRow.appendChild(el("a", { class: "btn btn-ghost", href: "https://calendar.google.com", target: "_blank", rel: "noopener noreferrer" }, "\u{1F4C5} Calendar \u2197"));
+            linkRow.appendChild(el("button", { class: "btn btn-ghost", onclick: () => navigate("integrations") }, "Paste IDs \u2192 Integrations"));
+            return linkRow;
+          })(),
+          el("ol", { style: { margin: "16px 0 0", paddingLeft: "20px", color: "var(--ink-soft)", fontSize: "13.5px", lineHeight: "1.7" } },
+            el("li", {}, "Open Google Analytics, create a GA4 property + web stream, and copy the Measurement ID (G-XXXXXXXXXX)."),
+            el("li", {}, "Add your site to Search Console, verify ownership, and submit the sitemap (", el("code", { style: { fontSize: "12px" } }, BASE + "sitemap-index.xml"), ")."),
+            el("li", {}, "Claim or create your Business Profile and copy its public URL."),
+            el("li", {}, "Go to Integrations and paste each ID into its field, then Save Changes."),
           ),
         ]));
       }
@@ -4297,8 +4713,8 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         }
       })();
 
-      // Apply saved CMS theme + custom CSS.
-      applyCmsTheme(localStorage[LS.theme] || "light");
+      // Apply saved CMS theme + custom CSS. Dark is the default.
+      applyCmsTheme(localStorage[LS.theme] || "dark");
       applyCustomCss(localStorage.getItem("vtlv_custom_css") || "");
 
       // Auto-login if session/localStorage still holds a token.
