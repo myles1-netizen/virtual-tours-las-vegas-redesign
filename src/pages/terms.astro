@@ -1,38 +1,259 @@
 ---
 import Base from "../layouts/Base.astro";
 import { business } from "../data/site";
-const title = "Terms — Virtual Tours Las Vegas";
-const description = "Terms information for the Virtual Tours Las Vegas redesign concept.";
+
+const title = "Terms of Service — Virtual Tours Las Vegas | Mike Madsen";
+const description =
+  "Terms of service for Virtual Tours Las Vegas real estate photography: booking, 24-hour cancellation policy, $35 trip fee, payment terms, delivery timelines, refund policy, copyright and usage rights, FAA drone compliance, and Nevada sales-tax status.";
+
+const lastUpdated = "July 24, 2026";
+
+// FAQPage + Service schema so AI answer engines can cite these terms directly.
+const termsJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "What is the cancellation policy for a Las Vegas photo shoot?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Cancel at least 24 hours before your scheduled time to avoid a $35 trip fee. The same fee applies if the property is not photo-ready when the photographer arrives and the shoot needs to be rescheduled.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "When is payment due for real estate photography?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Payment is due on delivery. HDR photos, 3D tours, floor plans and other deliverables are sent once the invoice is settled.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How long does delivery take?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Still photography and 3D virtual tours deliver in 24–48 hours. Floor plans deliver within 48 hours as PDF. Zillow walk-through videos deliver in 12–24 hours. Rush next-morning delivery is available for an additional $40.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What usage rights do I get with my photos?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "The client receives rights to use the photographs for real estate marketing of the photographed property until it sells. Extended licensing is available for long-term advertising campaigns and commercial use.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Is Las Vegas photography subject to Nevada sales tax?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "No. Photography services in Nevada are not subject to sales tax under NRS 372.050, which exempts professional services from the sales/use tax.",
+      },
+    },
+  ],
+};
 ---
 <Base title={title} description={description} heroVariant="light">
+  <script type="application/ld+json" is:inline slot="head" set:html={JSON.stringify(termsJsonLd)} />
   <section class="section">
     <div class="container narrow legal">
       <p class="eyebrow">Legal</p>
-      <h1 class="display legal-title">Terms</h1>
-      <p class="legal-note">This page covers the redesign concept site. Mike's production site has its own terms.</p>
+      <h1 class="display legal-title">Terms of Service</h1>
+      <p class="legal-meta">Last updated {lastUpdated} · {business.name}</p>
 
-      <h2>Concept site</h2>
-      <p>This is a non-commercial <strong>redesign concept</strong> built to demonstrate what {business.name}'s online presence could look like. It is not the production website, does not represent a binding offer to provide services, and does not process transactions.</p>
+      <p class="legal-intro">
+        These terms govern photography, 3D tour, drone, floor plan and related services provided by
+        <strong>{business.name}</strong> ("VTLV", "we", "us") operated by {business.owner} ("Mike",
+        "the photographer"). Booking a shoot confirms you accept these terms. Questions? Contact
+        {business.email} or {business.phone}.
+      </p>
 
-      <h2>Pricing &amp; services</h2>
-      <p>Any pricing, packages or service descriptions shown reflect what was published on the existing {business.name} website at the time this concept was built (audited July 2026). Pricing and availability are subject to change; confirm current rates directly with {business.owner} at {business.phone} before booking.</p>
+      <h2 id="service-area">Service area</h2>
+      <p>
+        VTLV provides real estate photography and related media services across the <strong>Las Vegas
+        Valley and surrounding areas</strong>, including Las Vegas, Henderson, Summerlin, North Las
+        Vegas, Boulder City, and all of Clark County, Nevada. Properties in nearby areas — including
+        Mesquite NV, Pahrump NV, Moapa Valley, Overton, Logandale, Searchlight; St. George, Utah; and
+        Kingman and Bullhead City, Arizona — are served by arrangement. Travel within the Las Vegas
+        Valley is included at no charge; outlying and rural properties are quoted on a case-by-case basis.
+      </p>
 
-      <h2>Imagery</h2>
-      <p>All photographs are the work of {business.owner}, sourced from the existing {business.name} website for this demonstration. They are shown to illustrate the design only and are not licensed for re-use from this concept site.</p>
+      <h2 id="booking">Booking &amp; scheduling</h2>
+      <p>
+        Shoots are confirmed directly with Mike by phone, text, or the booking/contact forms. A request
+        submitted through the website is a <strong>request</strong>, not a confirmed reservation — the
+        appointment is confirmed once Mike acknowledges it. We reserve the right to decline or reschedule
+        a booking for any reason, including unsafe conditions, weather, or airspace restrictions.
+      </p>
 
-      <h2>Booking &amp; cancellations</h2>
-      <p>The cancellation policy reflected in the FAQ — a $35 trip fee for cancellations inside 24 hours or unprepared properties — is based on the existing site's published terms and is shown here for demonstration. Confirm the current policy with Mike at booking.</p>
+      <h2 id="cancellation">Cancellation policy</h2>
+      <p>
+        To avoid a <strong>$35 trip fee</strong>, cancel or reschedule at least
+        <strong>24 hours before</strong> your scheduled appointment time. Cancellations made less than 24
+        hours in advance, or no-shows, are subject to the $35 trip fee. The same fee applies if the
+        photographer arrives on site and the property is not ready to be photographed (see
+        <a href="#preparation">Property preparation</a>), in which case the shoot will be rescheduled.
+      </p>
 
-      <h2>Contact</h2>
-      <p>Questions can be directed to {business.email} or {business.phone}.</p>
+      <h2 id="preparation">Property preparation</h2>
+      <p>
+        The property must be <strong>clean, staged and photo-ready</strong> at the scheduled time — treat
+        it like a 24/7 open house. The photographer does not move furniture, declutter, clean, or remove
+        personal items. Please provide access details (lockbox code, occupant contact) at booking. A
+        property that is not ready when the photographer arrives incurs the $35 trip fee and must be
+        rescheduled. For 3D scans that take 1–3 hours, all people and pets should vacate the property
+        during the appointment.
+      </p>
+
+      <h2 id="payment">Payment terms</h2>
+      <p>
+        <strong>Payment is due on delivery</strong> of the finished media (photos, tour links, floor
+        plans, etc.). Invoices are issued by Mike and payable by the methods listed on the invoice
+        (typically card, PayPal, or ACH). Unless otherwise agreed in writing, deliverables are released
+        once the invoice is settled. Quotes are valid for 30 days.
+      </p>
+
+      <h2 id="delivery">Delivery timeline</h2>
+      <ul class="legal-list">
+        <li><strong>Still (HDR) photography:</strong> 24–48 hours, delivered via cloud storage in MLS-ready format.</li>
+        <li><strong>3D virtual tours (Matterport / Zillow 3D Home):</strong> 24–48 hours with email links and an embeddable iframe.</li>
+        <li><strong>Floor plans:</strong> 48 hours, delivered as PDF (PNG/SVG/CAD where purchased).</li>
+        <li><strong>Zillow walk-through videos:</strong> 12–24 hours.</li>
+        <li><strong>Rush delivery</strong> (next morning): available for an additional $40, schedule permitting.</li>
+      </ul>
+      <p>
+        Timelines are business targets, not guarantees, and may be affected by property size, scope, weather
+        (for exterior and drone work), and the volume of post-production required.
+      </p>
+
+      <h2 id="pricing">Pricing &amp; quotes</h2>
+      <p>
+        Pricing is published at <a href="/pricing/">/pricing/</a> and reflects current rates. Quoted
+        pricing is valid for 30 days. Square-footage-based pricing (e.g. Matterport, floor plans) is
+        assessed on the photographed property's size; if the actual size differs from what was booked, the
+        price is adjusted accordingly and communicated before delivery.
+      </p>
+
+      <h2 id="refunds">Refund policy</h2>
+      <p>
+        Because photography is a custom service performed on location, refunds are handled as follows:
+      </p>
+      <ul class="legal-list">
+        <li>If we cancel a confirmed shoot, any deposit or prepayment is refunded in full.</li>
+        <li>If deliverables are materially defective due to photographer error, the affected work will be re-shot or re-edited at no charge, or a proportional credit/refund issued at our discretion.</li>
+        <li>Subjective preferences (editing style, composition taste) are addressed with revisions where offered, but are not grounds for a full refund once the shoot has been performed.</li>
+        <li>The $35 trip fee, once incurred, is non-refundable.</li>
+        <li>Rush fees are non-refundable once the rush work has begun.</li>
+      </ul>
+      <p>
+        Refund or re-shoot requests must be made within <strong>7 days</strong> of delivery. Contact
+        {business.email} with the shoot date and the issue.
+      </p>
+
+      <h2 id="copyright">Copyright &amp; usage rights</h2>
+      <p>
+        Mike Madsen / {business.name} retains <strong>copyright</strong> in all photographs, 3D models,
+        floor plans, videos and derivative works. Upon payment, the <strong>client receives a license</strong>
+        to use the delivered media for <strong>real estate marketing of the photographed property</strong>
+        — including MLS, Zillow, Realtor.com, brokerage and agent sites, print flyers, and social media —
+        until the property sells.
+      </p>
+      <ul class="legal-list">
+        <li><strong>Residential resale:</strong> license ends when the property sells.</li>
+        <li><strong>Extended / commercial licensing</strong> is available for long-term advertising, brand campaigns, hospitality, and resale of the imagery. Contact Mike to arrange.</li>
+        <li>Media may be used by the client and their authorized agents; it may <strong>not</strong> be resold, sublicensed, or transferred to unaffiliated third parties.</li>
+        <li>VTLV may display the work in its portfolio and marketing unless the client requests otherwise in writing at booking.</li>
+      </ul>
+
+      <h2 id="drone">FAA drone compliance</h2>
+      <p>
+        All aerial / drone photography and video is performed by an <strong>FAA Part 107 certified remote
+        pilot</strong> ({business.owner}), operating under the U.S. Federal Aviation Administration's Part
+        107 small Unmanned Aircraft Systems rule. Flights comply with all applicable FAA regulations,
+        including airspace authorizations near <strong>Harry Reid International Airport</strong> and other
+        controlled airspace in the Las Vegas Valley. Drone work is weather-dependent and subject to
+        airspace approval; flights that cannot be conducted legally or safely will be rescheduled.
+      </p>
+
+      <h2 id="nevada-tax">Nevada sales tax</h2>
+      <p>
+        Photography services performed in Nevada are <strong>not subject to Nevada sales or use tax</strong>.
+        Nevada's sales/use tax (NRS Chapter 372) applies to the sale of tangible personal property and
+        specifically enumerated services; professional personal services such as photography are not among
+        the enumerated taxable services. See <strong>NRS 372.050</strong> and the Nevada Department of
+        Taxation's guidance. Digital file delivery does not convert the service into a taxable sale of
+        tangible personal property.
+      </p>
+
+      <h2 id="matterport">Matterport &amp; third-party hosting</h2>
+      <p>
+        Matterport 3D tours include <strong>6 months of free hosting</strong>. Continued hosting after six
+        months is available for $72 per additional 6 months (1–99 scan points) and may be cancelled at any
+        time. Zillow 3D Home tours are hosted by Zillow at no charge under Zillow's terms. Google Business
+        View 360 tours are published to and hosted by Google. Each third party's terms govern the
+        corresponding hosted content.
+      </p>
+
+      <h2 id="liability">Limitation of liability</h2>
+      <p>
+        VTLV and Mike Madsen are not liable for indirect, incidental or consequential damages arising from
+        the use of delivered media. Total liability for any claim is limited to the amount paid for the
+        specific shoot giving rise to the claim. We are not responsible for access issues, on-site hazards,
+        or circumstances beyond our control.
+      </p>
+
+      <h2 id="changes">Changes to these terms</h2>
+      <p>
+        We may update these terms from time to time; the "Last updated" date above reflects the most recent
+        revision. Bookings are subject to the terms in effect at the time of the shoot.
+      </p>
+
+      <h2 id="contact">Contact</h2>
+      <p>
+        Questions about these terms? Contact {business.owner}, {business.name} — {business.email} or
+        {business.phone}.
+      </p>
     </div>
   </section>
 </Base>
 
 <style>
-  .legal-title { font-size: var(--step-5); margin-block: 0.5rem 0.4rem; }
-  .legal-note { color: var(--stone-2); font-size: var(--step--1); margin-bottom: 2.5rem; font-style: italic; }
-  .legal h2 { font-family: var(--font-body); font-size: 0.78rem; font-weight: 700; letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--brass); margin-top: 2rem; margin-bottom: 0.6rem; }
-  .legal p { color: var(--stone); line-height: 1.65; margin-bottom: 0.5rem; }
+  .legal-title { font-size: var(--step-5); margin-block: 0.5rem 0.2rem; }
+  .legal-meta { color: var(--stone-2); font-size: var(--step--1); margin-bottom: 2rem; }
+  .legal-intro { color: var(--stone); line-height: 1.65; margin-bottom: 1.5rem; padding: 1rem 1.2rem; background: var(--paper-2); border-left: 3px solid var(--brass); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+  .legal h2 {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--brass);
+    margin-top: 2.2rem;
+    margin-bottom: 0.6rem;
+    scroll-margin-top: 6rem;
+  }
+  .legal p { color: var(--stone); line-height: 1.65; margin-bottom: 0.7rem; }
   .legal strong { color: var(--ink); }
+  .legal a { color: var(--brass); font-weight: 600; }
+  .legal-list { list-style: none; padding: 0; margin: 0.5rem 0 1rem; }
+  .legal-list li {
+    position: relative;
+    padding-left: 1.3rem;
+    color: var(--stone);
+    line-height: 1.6;
+    margin-bottom: 0.45rem;
+  }
+  .legal-list li::before {
+    content: "·";
+    position: absolute;
+    left: 0.3rem;
+    color: var(--brass);
+    font-weight: 700;
+    font-size: 1.2em;
+    line-height: 1;
+  }
+  .legal-list li strong { color: var(--ink); }
 </style>

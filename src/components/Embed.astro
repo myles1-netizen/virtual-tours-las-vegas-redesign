@@ -1,0 +1,241 @@
+---
+// General-purpose lazy-loaded iframe embed for any third-party service
+// (Calendly, Typeform, Jotform, Google Forms, Vimeo, Loom, etc.).
+//
+// Same facade pattern as YouTubeEmbed / MapEmbed / MatterportEmbed: the iframe
+// ships with no src until the visitor clicks the placeholder, so heavy embeds
+// never hit the network or set cookies without explicit opt-in.
+//
+// NOTE on CSP: the public site's Content-Security-Policy (src/layouts/Base.astro)
+// restricts frame-src to a known allowlist. To embed a NEW host you must add it
+// to the `frame-src` directive in Base.astro, otherwise the iframe will be
+// blocked by the browser. Matterport + Google Maps are already allowed.
+import { asset } from "../data/site";
+
+export interface Props {
+  /** Full embeddable iframe URL (the `src` the iframe would normally load). */
+  src: string;
+  /** Accessible title / on-screen label for the embed. Required. */
+  title: string;
+  /** Optional placeholder image (absolute path from public/). */
+  placeholder?: string;
+  /** Aspect ratio of the embed frame. */
+  aspect?: "16/9" | "4/3" | "1/1";
+  /** Hostname shown on the placeholder (e.g. "Calendly"). Inferred from src if omitted. */
+  source?: string;
+  /** Mark this embed as safe to autoload when scrolled into view (default false). */
+  autoload?: boolean;
+}
+
+const {
+  src,
+  title,
+  placeholder,
+  aspect = "16/9",
+  source,
+  autoload = false,
+} = Astro.props;
+
+let sourceLabel = source ?? "";
+if (!sourceLabel) {
+  try {
+    sourceLabel = new URL(src).hostname.replace(/^www\./, "");
+  } catch {
+    sourceLabel = "External";
+  }
+}
+
+const thumb = placeholder ? asset(placeholder) : "";
+const frameId = `embed-${Math.abs(
+  src.split("").reduce((a, c) => (a << 5) - a + c.charCodeAt(0), 0)
+)
+  .toString(36)
+  .slice(0, 8)}`;
+---
+
+<div
+  class:list={["embed-wrap", { "embed--no-img": !thumb }]}
+  data-embed
+  data-src={src}
+  data-autoload={autoload ? "true" : undefined}
+  style={`aspect-ratio:${aspect};`}
+>
+  <button
+    type="button"
+    class="embed-placeholder"
+    data-embed-load
+    aria-label={`Load embedded content from ${sourceLabel}: ${title}`}
+  >
+    {thumb ? (
+      <img class="embed-ph-img" src={thumb} alt={title} loading="lazy" decoding="async" />
+    ) : (
+      <span class="embed-ph-fallback" aria-hidden="true"></span>
+    )}
+    <span class="embed-ph-veil" aria-hidden="true"></span>
+    <span class="embed-ph-cta">
+      <span class="embed-ph-play" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+      </span>
+      <span class="embed-ph-source">{sourceLabel}</span>
+      <span class="embed-ph-title">{title}</span>
+    </span>
+  </button>
+
+  <iframe
+    class="embed-frame"
+    id={frameId}
+    data-embed-frame
+    title={title}
+    src=""
+    loading="lazy"
+    referrerpolicy="no-referrer-when-downgrade"
+    allow="autoplay; fullscreen; picture-in-picture"
+  ></iframe>
+</div>
+
+<style>
+  .embed-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    background: var(--paper-2, #efeae1);
+    border-radius: var(--radius, 8px);
+    overflow: hidden;
+    box-shadow: var(--shadow-card, 0 4px 24px rgba(0,0,0,0.08));
+  }
+  .embed-frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    background: #fff;
+  }
+  .embed-frame:not([src]),
+  .embed-frame[src=""] { opacity: 0; pointer-events: none; }
+  .embed-frame:not([src=""]) { opacity: 1; }
+
+  .embed-placeholder {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    z-index: 2;
+    transition: opacity 0.4s var(--ease, ease);
+  }
+  .embed-wrap[data-loaded="true"] .embed-placeholder { opacity: 0; pointer-events: none; }
+
+  .embed-ph-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  /* Gradient fallback when no placeholder image is supplied. */
+  .embed-ph-fallback {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(120% 120% at 30% 20%, #2a2620 0%, #1a1814 60%, #0f0e0c 100%);
+  }
+  .embed-ph-veil {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(15,14,12,0.55) 0%, rgba(15,14,12,0.1) 60%);
+    transition: background 0.3s var(--ease, ease);
+  }
+  .embed-placeholder:hover .embed-ph-veil,
+  .embed-placeholder:focus-visible .embed-ph-veil {
+    background: linear-gradient(0deg, rgba(15,14,12,0.65) 0%, rgba(15,14,12,0.25) 60%);
+  }
+  .embed-placeholder:focus-visible {
+    outline: 3px solid var(--brass, #b08d57);
+    outline-offset: -3px;
+  }
+
+  .embed-ph-cta {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--paper, #f7f4ef);
+    text-align: center;
+    padding: 0 1.5rem;
+  }
+  .embed-ph-play {
+    width: 60px;
+    height: 60px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--brass, #b08d57);
+    color: #fff;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    transition: transform 0.3s var(--ease, ease), background 0.3s var(--ease, ease);
+  }
+  .embed-placeholder:hover .embed-ph-play,
+  .embed-placeholder:focus-visible .embed-ph-play {
+    transform: scale(1.08);
+    background: var(--brass-btn, #8a6a3c);
+  }
+  .embed-ph-source {
+    font-family: var(--font-body, system-ui);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brass, #c9a572);
+  }
+  .embed-ph-title {
+    font-family: var(--font-display, Georgia, serif);
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: rgba(247,244,239,0.9);
+    max-width: 44ch;
+    line-height: 1.3;
+  }
+
+  @media (max-width: 540px) {
+    .embed-ph-play { width: 52px; height: 52px; }
+    .embed-ph-title { font-size: 0.95rem; }
+  }
+</style>
+
+<script>
+  function initEmbed(root: HTMLElement) {
+    const btn = root.querySelector<HTMLButtonElement>("[data-embed-load]");
+    const frame = root.querySelector<HTMLIFrameElement>("[data-embed-frame]");
+    if (!btn || !frame) return;
+
+    const load = () => {
+      if (root.dataset.loaded === "true") return;
+      frame.src = root.dataset.src || "";
+      root.dataset.loaded = "true";
+      window.setTimeout(() => { try { frame.focus({ preventScroll: true }); } catch {} }, 200);
+    };
+
+    btn.addEventListener("click", load);
+    if ("IntersectionObserver" in window && root.dataset.autoload === "true") {
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) { load(); io.disconnect(); }
+          }
+        },
+        { rootMargin: "200px" }
+      );
+      io.observe(root);
+    }
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-embed]").forEach(initEmbed);
+</script>

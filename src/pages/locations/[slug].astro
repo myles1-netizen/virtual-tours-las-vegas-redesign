@@ -1,0 +1,317 @@
+---
+import { asset, business, testimonials } from "../../data/site";
+import { locations, getLocation, type LocationPage } from "../../data/locations";
+import { keywordsForLocation } from "../../data/seo-keywords";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import CTABand from "../../components/CTABand.astro";
+
+// Pre-render one real page per city in src/data/locations.ts.
+export function getStaticPaths() {
+  return locations.map((l) => ({
+    params: { slug: l.slug },
+    props: { loc: l },
+  }));
+}
+
+interface Props { loc: LocationPage }
+const { loc } = Astro.props;
+
+// Pull any testimonials whose context mentions this area, falling back to all.
+// (Testimonials don't currently carry a city tag, so we show the general set;
+// this is honest — we're not fabricating area-specific quotes.)
+const areaTestimonials = testimonials.slice(0, 2);
+
+// FAQ items specific enough to be worth surfacing as structured data + visible Q&A.
+const areaFaqs = [
+  {
+    q: `Do you charge a travel fee for ${loc.name}?`,
+    a:
+      loc.driveTime.startsWith("80") || loc.driveTime.startsWith("60")
+        ? `${loc.name} is outside the Las Vegas Valley (about ${loc.driveTime} from Mike's central base), so it's quoted individually rather than on the standard valley rate. Mike often bundles ${loc.name} shoots with nearby work to keep the trip efficient. Call ${business.phone} for a quote.`
+        : `No. ${loc.name} is part of the Las Vegas Valley (about ${loc.driveTime} from Mike's central base, ${loc.distance}), so standard shoots there carry no travel surcharge. Outlying areas beyond the valley are quoted case by case.`,
+  },
+  {
+    q: `What's the turnaround time for ${loc.name} photography?`,
+    a: `Standard delivery is the same as everywhere Mike shoots: HDR photos and Matterport 3D tours in 24–48 hours, and floor plans within 48 hours. Rush next-morning delivery is available.`,
+  },
+  {
+    q: `Can you fly a drone in ${loc.name}?`,
+    a: `Yes. Mike is an FAA Part 107 certified drone pilot and handles the airspace authorizations required ${loc.state === "NV" ? "in the Las Vegas area" : "across state lines"}. ${loc.practicalNote}`,
+  },
+];
+
+const areaFaqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: areaFaqs.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+
+// Service schema with the area's neighborhoods as areaServed detail.
+const serviceJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  name: `Real Estate Photography in ${loc.name}, ${loc.state}`,
+  description: loc.description,
+  serviceType: "Real Estate Photography",
+  provider: { "@id": `${Astro.site?.toString().replace(/\/$/, "")}/#business` },
+  areaServed: [
+    { "@type": "City", name: loc.name },
+    ...loc.neighborhoods.map((n) => ({ "@type": "Place", name: `${n}, ${loc.state}` })),
+  ],
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  hasOfferCatalog: {
+    "@type": "OfferCatalog",
+    name: "Photography services",
+    itemListElement: loc.inDemand.map((d) => ({
+      "@type": "Offer",
+      item: { "@type": "Service", name: d.service, description: d.note },
+    })),
+  },
+};
+
+const base = Astro.site?.toString().replace(/\/$/, "") ?? "https://virtualtourslasvegas.com";
+const targetTerms = keywordsForLocation(loc.slug.replace(/-/g, " ")).slice(0, 8);
+---
+
+<Base title={loc.title} description={loc.description} heroVariant="dark">
+  <script type="application/ld+json" is:inline slot="head" set:html={JSON.stringify(areaFaqJsonLd)} />
+  <script type="application/ld+json" is:inline slot="head" set:html={JSON.stringify(serviceJsonLd)} />
+
+  <PageHero
+    eyebrow={loc.eyebrow}
+    title={loc.headline}
+    lead={loc.lead}
+    image={asset("/images/portfolio/sierra-skye-living.jpg")}
+    imageAlt={`${loc.name} real estate photography by Virtual Tours Las Vegas`}
+  />
+
+  {/* ===== WHY MIKE SERVES THIS AREA ===== */}
+  <section class="section">
+    <div class="container">
+      <div class="loc-intro" data-reveal>
+        <SectionHeader
+          eyebrow="Why this area"
+          title={`${loc.possessive} market, shot by someone who knows it.`}
+          lead={loc.whyServe}
+        />
+        <dl class="loc-facts">
+          <div>
+            <dt>Drive time from central LV</dt>
+            <dd>{loc.driveTime}</dd>
+          </div>
+          <div>
+            <dt>Distance</dt>
+            <dd>{loc.distance}</dd>
+          </div>
+          <div>
+            <dt>Standard turnaround</dt>
+            <dd>{business.turnaround}</dd>
+          </div>
+          <div>
+            <dt>Travel fee</dt>
+            <dd>{loc.driveTime.startsWith("80") || loc.driveTime.startsWith("60") ? "Quoted" : "None"}</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== NEIGHBORHOODS ===== */}
+  <section class="section paper-2">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Neighborhoods"
+        title={`Where Mike shoots in ${loc.name}.`}
+        lead={`Communities and sub-areas ${loc.possessive} agents and sellers book photography for most often. If yours isn't listed, it's still covered — call ${business.phone}.`}
+      />
+      <ul class="area-list" role="list" data-reveal>
+        {loc.neighborhoods.map((n) => <li>{n}</li>)}
+      </ul>
+    </div>
+  </section>
+
+  {/* ===== SERVICES IN DEMAND ===== */}
+  <section class="section">
+    <div class="container">
+      <SectionHeader
+        eyebrow="In demand here"
+        title={`What ${loc.name} listings need most.`}
+        lead="The services this market books most often, and why they matter for properties in this area."
+      />
+      <div class="demand-grid">
+        {loc.inDemand.map((d, i) => (
+          <article data-reveal data-reveal-delay={(i % 3) + 1}>
+            <h3>{d.service}</h3>
+            <p>{d.note}</p>
+          </article>
+        ))}
+      </div>
+      <div class="text-center" style="margin-top:2.5rem">
+        <a href={asset("/services/")} class="btn outline">Browse all services</a>
+        <a href={asset("/pricing/")} class="btn brass" style="margin-left:0.6rem">See pricing</a>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== TESTIMONIALS ===== */}
+  <section class="section paper-2">
+    <div class="container narrow">
+      <SectionHeader
+        eyebrow="Clients say"
+        title={`Trusted by ${loc.name} agents and hosts.`}
+        align="center"
+      />
+      <div class="quotes">
+        {areaTestimonials.map((t) => (
+          <blockquote class="quote-card" data-reveal>
+            <p>"{t.quote}"</p>
+            <footer>— <strong>{t.name}</strong>, {t.context}</footer>
+          </blockquote>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ===== AREA FAQ ===== */}
+  <section class="section">
+    <div class="container narrow">
+      <SectionHeader
+        eyebrow={`${loc.name} FAQ`}
+        title="Questions about shooting here."
+        align="center"
+      />
+      <div class="area-faq">
+        {areaFaqs.map((f) => (
+          <details class="faq-item">
+            <summary>{f.q}</summary>
+            <p>{f.a}</p>
+          </details>
+        ))}
+      </div>
+      <p class="more-q">
+        More questions? See the <a href={asset("/faq/")}>full FAQ</a> or
+        <a href={business.phoneHref}> call {business.phone}</a>.
+      </p>
+    </div>
+  </section>
+
+  <CTABand
+    title={`Book a shoot in ${loc.name}.`}
+    body={`Call or text ${business.phone}. Most ${loc.name} shoots are on the calendar within 48 hours.`}
+  />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .loc-intro { max-width: 70ch; }
+
+  .loc-facts {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-top: 2rem;
+    padding: 1.4rem;
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-lg);
+  }
+  .loc-facts > div { display: flex; flex-direction: column; gap: 0.25rem; }
+  .loc-facts dt {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brass);
+  }
+  .loc-facts dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    color: var(--ink);
+  }
+
+  .area-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 2.5rem;
+    justify-content: center;
+  }
+  .area-list li {
+    font-size: var(--step--1);
+    font-weight: 500;
+    color: var(--ink-2);
+    padding: 0.5em 1.1em;
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: 999px;
+  }
+
+  .demand-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+  }
+  .demand-grid article {
+    padding: clamp(1.4rem, 1rem + 1.5vw, 2rem);
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-lg);
+  }
+  .demand-grid h3 { font-size: var(--step-1); }
+  .demand-grid p { margin-top: 0.5rem; color: var(--stone); font-size: var(--step--1); line-height: 1.55; }
+
+  .quotes { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 2.5rem; }
+  .quote-card {
+    margin: 0;
+    padding: 1.6rem;
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-left: 3px solid var(--brass);
+    border-radius: var(--radius-lg);
+  }
+  .quote-card p { font-style: italic; color: var(--ink-2); line-height: 1.6; }
+  .quote-card footer { margin-top: 1rem; font-size: var(--step--1); color: var(--stone); }
+  .quote-card footer strong { color: var(--ink); }
+
+  .area-faq { display: flex; flex-direction: column; gap: 0.8rem; margin-top: 2.5rem; }
+  .faq-item {
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius);
+    padding: 1rem 1.2rem;
+  }
+  .faq-item summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--ink);
+    font-size: var(--step-0);
+    list-style: none;
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary::before {
+    content: "+";
+    display: inline-block;
+    margin-right: 0.6rem;
+    color: var(--brass);
+    font-weight: 700;
+    transition: transform 0.2s var(--ease);
+  }
+  .faq-item[open] summary::before { content: "−"; }
+  .faq-item p { margin: 0.8rem 0 0; color: var(--stone); line-height: 1.6; }
+
+  .more-q { text-align: center; margin-top: 2rem; color: var(--stone); font-size: var(--step--1); }
+  .more-q a { color: var(--brass); font-weight: 600; }
+
+  @media (max-width: 880px) {
+    .demand-grid { grid-template-columns: 1fr; }
+    .loc-facts { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>

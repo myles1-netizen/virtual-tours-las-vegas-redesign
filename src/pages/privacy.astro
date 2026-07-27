@@ -1,38 +1,210 @@
 ---
 import Base from "../layouts/Base.astro";
 import { business } from "../data/site";
-const title = "Privacy — Virtual Tours Las Vegas";
-const description = "Privacy information for the Virtual Tours Las Vegas redesign concept.";
+
+const title = "Privacy Policy — Virtual Tours Las Vegas | Mike Madsen";
+const description =
+  "Privacy policy for Virtual Tours Las Vegas: what data the contact and booking forms collect, how it is used, Google Analytics data collection, cookie usage, CCPA/CPRA and Nevada (NRS 603A) compliance, data retention, and how to request access or deletion.";
+
+const lastUpdated = "July 24, 2026";
+const ga4Enabled = /^G-[A-Z0-9]{6,}$/.test(import.meta.env.GA4_MEASUREMENT_ID ?? "");
 ---
 <Base title={title} description={description} heroVariant="light">
   <section class="section">
     <div class="container narrow legal">
       <p class="eyebrow">Legal</p>
-      <h1 class="display legal-title">Privacy</h1>
-      <p class="legal-note">This page covers the redesign concept site. Mike's production site has its own privacy policy.</p>
+      <h1 class="display legal-title">Privacy Policy</h1>
+      <p class="legal-meta">Last updated {lastUpdated} · {business.name}</p>
 
-      <h2>What this is</h2>
-      <p>This is a non-commercial redesign concept for <strong>{business.name}</strong>, built as a demonstration. It is not the production website and does not process payments or live transactions.</p>
+      <p class="legal-intro">
+        This policy explains what information <strong>{business.name}</strong> ("VTLV", "we", "us"),
+        operated by {business.owner}, collects through this website, how we use it, and the choices you
+        have. We collect the minimum needed to take booking requests and deliver photography services.
+        We do not sell your personal information.
+      </p>
 
-      <h2>Information you submit</h2>
-      <p>The contact and booking forms submit your details to {business.email} via Formsubmit (a free email-forwarding service) and open your email client as a fallback. The details you enter are sent only to Mike — they are not stored on this site's servers. Formsubmit's privacy policy applies to the submission relay; everything else stays between you and Mike.</p>
+      <h2 id="what-we-collect">Information we collect</h2>
+      <p><strong>Information you submit:</strong> when you use the contact or booking forms, we collect the
+      details you enter, which typically include:</p>
+      <ul class="legal-list">
+        <li>Name</li>
+        <li>Phone number</li>
+        <li>Email address</li>
+        <li>Property address / area and preferred date</li>
+        <li>Property type, square footage, and the message / access details you provide</li>
+      </ul>
+      <p>
+        Form submissions are relayed to Mike's inbox via <strong>Formsubmit</strong> (a third-party
+        email-forwarding service) or, where the request fails, by opening your own email client
+        (a <code>mailto:</code> fallback). Formsubmit's privacy practices apply to the relay; the
+        submitted details are otherwise kept between you and Mike.
+      </p>
+      <p><strong>Automatic data:</strong> when you visit the site, standard server/hosting logs and (if
+      enabled) analytics tools may record anonymized or pseudonymous information such as the pages
+      visited, referring URL, browser type, device type, and approximate region. See
+      <a href="#analytics">Analytics</a> below.</p>
 
-      <h2>Analytics</h2>
-      <p>This concept site does not run analytics, advertising trackers, or third-party cookies.</p>
+      <h2 id="how-we-use">How we use information</h2>
+      <ul class="legal-list">
+        <li>To respond to booking and contact requests and to schedule and deliver photography services.</li>
+        <li>To send follow-up communications about a specific shoot (delivery, invoices, questions).</li>
+        <li>To maintain records of past projects and accounting.</li>
+        <li>To improve the website (aggregate traffic analysis).</li>
+        <li>As otherwise described at the point of collection or required by law.</li>
+      </ul>
+      <p>
+        We do <strong>not</strong> sell or rent your personal information, and we do not use it for
+        cross-context behavioral advertising.
+      </p>
 
-      <h2>Photography &amp; imagery</h2>
-      <p>All photographs shown are the work of {business.owner} and were sourced from the existing {business.name} website for the purpose of this redesign demonstration. Imagery is shown to illustrate the design and is not licensed for re-use from this concept site.</p>
+      <h2 id="analytics">Google Analytics</h2>
+      {ga4Enabled ? (
+        <p>
+          This site uses <strong>Google Analytics 4</strong> to understand aggregate traffic and content
+          performance. It runs in Google's privacy-friendly <strong>cookieless pings / Consent Mode v2</strong>
+          configuration by default: consent is denied until granted, no advertising identifiers are
+          written, and only modelled, aggregated data is reported. Information collected may include
+          approximate region, pages viewed, session duration, and device category. See
+          <a href="https://policies.google.com/technologies/partner-sites" rel="noopener" target="_blank">Google's privacy practices</a>.
+        </p>
+      ) : (
+        <p>
+          Analytics is not currently enabled on this site. If a Google Analytics 4 measurement ID is added
+          in the future, it will run in Google's privacy-friendly Consent Mode v2 configuration (denied by
+          default), and this section will be updated to reflect that.
+        </p>
+      )}
 
-      <h2>Contact</h2>
-      <p>Questions about this concept can be directed to {business.email} or {business.phone}.</p>
+      <h2 id="cookies">Cookies &amp; local storage</h2>
+      <p>
+        This site uses cookies and browser local storage sparingly:
+      </p>
+      <ul class="legal-list">
+        <li><strong>Theme preference</strong> — stored in <code>localStorage</code> so your light/dark choice persists. Not personal data.</li>
+        <li><strong>Admin unlock</strong> — a <code>localStorage</code> flag indicating you entered the admin password on this browser. No password is ever stored.</li>
+        <li><strong>Analytics cookies</strong> (only if GA4 is enabled and you have granted consent) — set by Google under its own policies.</li>
+      </ul>
+      <p>
+        Most browsers let you refuse or delete cookies; doing so will not prevent you from using the
+        contact or booking forms. Embedded third-party content (YouTube, Google Maps, Matterport) may set
+        cookies from those providers only after you click to load the embed.
+      </p>
+
+      <h2 id="ccpa">California privacy (CCPA / CPRA)</h2>
+      <p>
+        If you are a California resident, the California Consumer Privacy Act (CCPA), as amended by the
+        California Privacy Rights Act (CPRA), gives you rights regarding your personal information:
+      </p>
+      <ul class="legal-list">
+        <li><strong>Know / access</strong> — request the categories and specific pieces of personal information we have collected about you.</li>
+        <li><strong>Delete</strong> — request deletion of your personal information, subject to legal exceptions.</li>
+        <li><strong>Correct</strong> — request correction of inaccurate personal information.</li>
+        <li><strong>Opt out of sale or share</strong> — we do not sell or share your personal information for cross-context behavioral advertising, so no opt-out is needed. For reference, the <em>Global Privacy Control</em> (GPC) browser signal is honored.</li>
+        <li><strong>No discrimination</strong> — we will not discriminate against you for exercising these rights.</li>
+      </ul>
+      <p>
+        Las Vegas receives many California clients; these rights apply to all California residents who
+        contact us. To exercise a right, email {business.email} with "California Privacy Request" in the
+        subject line. We may verify your identity before responding.
+      </p>
+
+      <h2 id="nevada">Nevada privacy law (NRS 603A)</h2>
+      <p>
+        Under Nevada Revised Statutes Chapter 603A, Nevada residents have the right to opt out of the sale
+        of certain personal information by website operators. Because we <strong>do not sell your personal
+        information</strong>, there is nothing to opt out of. Nevada residents may nonetheless direct
+        privacy questions to {business.email}.
+      </p>
+
+      <h2 id="retention">Data retention</h2>
+      <ul class="legal-list">
+        <li><strong>Booking/contact submissions:</strong> retained for as long as needed to deliver the service and for reasonable record-keeping (typically the duration of the client relationship plus up to 7 years for tax/records purposes), then deleted or anonymized.</li>
+        <li><strong>Analytics:</strong> aggregate data may be retained according to the analytics provider's defaults.</li>
+        <li><strong>Delivered media:</strong> photographs and 3D models are retained as Mike's professional archive unless you request deletion of your specific project.</li>
+      </ul>
+
+      <h2 id="security">Data security</h2>
+      <p>
+        Form submissions are transmitted over HTTPS. We rely on reputable third parties (Formsubmit, the
+        hosting provider) for secure relay and storage. No method of transmission or storage is fully
+        secure, but we use reasonable measures consistent with industry practice.
+      </p>
+
+      <h2 id="children">Children's privacy</h2>
+      <p>
+        This site and our services are intended for real estate professionals, property owners, and
+        businesses. We <strong>do not knowingly collect</strong> personal information from children under
+        13 (under 16 for California residents, consistent with the CPRA). If you believe a child has
+        provided us with personal information, contact {business.email} and we will delete it.
+      </p>
+
+      <h2 id="third-party">Third-party services</h2>
+      <p>This site may integrate with the following third parties, each governed by its own policy:</p>
+      <ul class="legal-list">
+        <li><strong>Formsubmit</strong> — relays form submissions to Mike's email.</li>
+        <li><strong>Google Analytics 4</strong> — aggregate traffic analytics (only if enabled).</li>
+        <li><strong>Google Maps, YouTube, Matterport</strong> — embedded media, loaded only when you click to view them.</li>
+        <li><strong>GitHub Pages</strong> — static site hosting.</li>
+      </ul>
+
+      <h2 id="rights">Your rights &amp; requests</h2>
+      <p>
+        To request access to, correction of, or deletion of your personal information, or to ask any
+        privacy question, contact {business.owner}, {business.name}:
+      </p>
+      <ul class="legal-list">
+        <li>Email: <a href={business.emailHref}>{business.email}</a></li>
+        <li>Phone / text: <a href={business.phoneHref}>{business.phone}</a></li>
+      </ul>
+      <p>
+        We aim to respond to verified requests within 30 days. You also have the right to lodge a complaint
+        with your local data-protection authority.
+      </p>
+
+      <h2 id="changes">Changes to this policy</h2>
+      <p>
+        We may update this policy from time to time; the "Last updated" date above reflects the most recent
+        revision.
+      </p>
     </div>
   </section>
 </Base>
 
 <style>
-  .legal-title { font-size: var(--step-5); margin-block: 0.5rem 0.4rem; }
-  .legal-note { color: var(--stone-2); font-size: var(--step--1); margin-bottom: 2.5rem; font-style: italic; }
-  .legal h2 { font-family: var(--font-body); font-size: 0.78rem; font-weight: 700; letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--brass); margin-top: 2rem; margin-bottom: 0.6rem; }
-  .legal p { color: var(--stone); line-height: 1.65; margin-bottom: 0.5rem; }
+  .legal-title { font-size: var(--step-5); margin-block: 0.5rem 0.2rem; }
+  .legal-meta { color: var(--stone-2); font-size: var(--step--1); margin-bottom: 2rem; }
+  .legal-intro { color: var(--stone); line-height: 1.65; margin-bottom: 1.5rem; padding: 1rem 1.2rem; background: var(--paper-2); border-left: 3px solid var(--brass); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+  .legal h2 {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--brass);
+    margin-top: 2.2rem;
+    margin-bottom: 0.6rem;
+    scroll-margin-top: 6rem;
+  }
+  .legal p { color: var(--stone); line-height: 1.65; margin-bottom: 0.7rem; }
   .legal strong { color: var(--ink); }
+  .legal a { color: var(--brass); font-weight: 600; }
+  .legal code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; color: var(--ink-2); background: var(--paper-2); padding: 0.1em 0.35em; border-radius: 3px; }
+  .legal-list { list-style: none; padding: 0; margin: 0.5rem 0 1rem; }
+  .legal-list li {
+    position: relative;
+    padding-left: 1.3rem;
+    color: var(--stone);
+    line-height: 1.6;
+    margin-bottom: 0.45rem;
+  }
+  .legal-list li::before {
+    content: "·";
+    position: absolute;
+    left: 0.3rem;
+    color: var(--brass);
+    font-weight: 700;
+    font-size: 1.2em;
+    line-height: 1;
+  }
+  .legal-list li strong { color: var(--ink); }
 </style>

@@ -1,91 +1,167 @@
 ---
-// ===== Lightweight, dependency-free content dashboard =====
-// Replaces the Sveltia/Decap CMS editor. Works on static hosting (GitHub Pages)
-// with NO backend, NO OAuth, and NO CDN script.
+// ===== Full CMS admin panel (download-based workflow) =====
+// Replaces the read-only dashboard. Mike can now actually EDIT every piece of
+// site content through the browser, then download the updated JSON file(s) and
+// email them to his son (or drag them into the GitHub web UI). The site
+// rebuilds automatically via GitHub Actions. This is the static-site
+// equivalent of WordPress's export — simpler, no backend, no OAuth.
 //
-// How it works:
-//   - Password gate: a SHA-256 hash of the ADMIN_PASSWORD env var is baked in
-//     at build time. At runtime the visitor types the password; we hash it in
-//     the browser (Web Crypto) and compare. If it matches (or they already
-//     unlocked this browser via localStorage), the dashboard shows.
-//   - The dashboard reads all site content from site.ts at build time and
-//     renders it as an editable-looking summary.
-//   - "Request Changes" opens a prefilled mailto: to the site maintainer with
-//     whatever Mike typed into the notes box. No data leaves the browser except
-//     via his own email client.
+// PASSWORD: defaults to "VTLV-admin-2026" when ADMIN_PASSWORD env var is not
+// set, so the panel works out of the box. The default is shown on first login
+// with a clear "change this" note. To set a real password, define
+// ADMIN_PASSWORD in the GitHub Pages deploy environment (or .env for local).
 //
-// This is intentionally simple. Mike sees his content and asks for changes by
-// email; his son commits them. No developer tools required.
+// SECURITY: only the SHA-256 hash of the password is shipped to the browser,
+// never the plaintext. Verification happens client-side via Web Crypto. This
+// is a soft gate (the content is already public) — it stops casual edits, not
+// a determined attacker. Sensitive operations happen via downloadable files.
 
-import { crypto } from "node:crypto";
+import nodeCrypto from "node:crypto";
 import {
   business, vegasPackages, hdrTiers, hdrAddOns, matterportTiers,
   floorPlanTiers, floorPlanAddOns, virtualStagingTiers, videoTiers,
-  zillowTiers, commercialHdr, googlePackage, testimonials, faqs,
-  serviceBuyers, clients,
+  zillowTiers, commercialHdr, commercialPanoramas, googlePackage,
+  testimonials, faqs, portfolio, serviceBuyers, clients,
 } from "../data/site";
 import { seoCatalog } from "../data/seo-catalog";
 import { redirects } from "../data/redirects";
+import { seoKeywords, allKeywords } from "../data/seo-keywords";
+import { locations } from "../data/locations";
 
-// Build the SHA-256 hash of the admin password (if set). The hash — never the
-// plaintext password — is what gets shipped to the browser. If no password is
-// configured, the gate is open (handy for local dev / preview).
-const ADMIN_PASSWORD = import.meta.env.ADMIN_PASSWORD ?? "";
-const PASSWORD_HASH = ADMIN_PASSWORD
-  ? crypto.createHash("sha256").update(ADMIN_PASSWORD).digest("hex")
-  : "";
+// Pull the raw JSON the CMS actually edits, so downloads match the file shape
+// the maintainer drops back into src/data/cms/.
+import settings from "../data/cms/settings.json";
+import pricing from "../data/cms/pricing.json";
+import testimonialsJson from "../data/cms/testimonials.json";
+import faqJson from "../data/cms/faq.json";
+import portfolioJson from "../data/cms/portfolio.json";
+import services3dTours from "../data/cms/services/3d-tours.json";
+import servicesAsBuilt from "../data/cms/services/as-built.json";
+import servicesCommercial from "../data/cms/services/commercial.json";
+import servicesDrone from "../data/cms/services/drone-photography.json";
+import servicesFloorPlans from "../data/cms/services/floor-plans.json";
+import servicesGoogleBusinessView from "../data/cms/services/google-business-view.json";
+import servicesHdr from "../data/cms/services/hdr-photography.json";
+import servicesPhotoPackages from "../data/cms/services/photo-packages.json";
+import servicesResidential from "../data/cms/services/residential.json";
+import servicesTwilight from "../data/cms/services/twilight-photography.json";
+import servicesVacationRentals from "../data/cms/services/vacation-rentals.json";
+import servicesVirtualStaging from "../data/cms/services/virtual-staging.json";
 
-// Where "Request Changes" emails go. Defaults to Mike's own inbox so nothing is
-// lost even before the maintainer address is configured.
+// ===== Password =====
+// Default password if no env var set — Mike can change later via env.
+const ADMIN_PASSWORD = import.meta.env.ADMIN_PASSWORD ?? "VTLV-admin-2026";
+const PASSWORD_HASH = nodeCrypto.createHash("sha256").update(ADMIN_PASSWORD).digest("hex");
+// Whether we're running on the default password (so we can show the warning).
+const USING_DEFAULT_PASSWORD = !import.meta.env.ADMIN_PASSWORD;
+
 const CHANGES_EMAIL = import.meta.env.CHANGES_EMAIL ?? business.email;
 
-// A compact, human-readable snapshot of every editable category. This is what
-// Mike sees on screen and what gets quoted in the change-request email.
-const snapshot = {
-  business: {
-    name: business.name,
-    owner: business.owner,
-    phone: business.phone,
-    email: business.email,
-    serviceArea: business.serviceArea,
-    turnaround: business.turnaround,
-    url: business.url,
-  },
-  packages: vegasPackages.map((p) => ({ name: p.name, price: p.price, tag: p.tag, blurb: p.blurb })),
-  hdrTiers,
-  hdrAddOns,
-  matterportTiers,
-  floorPlanTiers,
-  floorPlanAddOns,
-  virtualStagingTiers,
-  videoTiers,
-  zillowTiers,
-  commercialHdr,
-  googlePackage,
-  testimonials: testimonials.map((t) => ({ name: t.name, context: t.context, quote: t.quote })),
-  faqs: faqs.map((f) => ({ q: f.q, a: f.a })),
-  services: serviceBuyers.map((s) => ({ label: s.label, audience: s.audience })),
-  clients: clients.map((c) => c.name),
-  // SEO overview (replaces Yoast's per-page meta view). Title lengths are
-  // validated against the same 60/160-char thresholds Base.astro enforces so
-  // Mike can spot an overlong title here before it gets clamped in the SERP.
+// Map of service slug → editable JSON (title/description/eyebrow/headline/lead).
+const servicesMap: Record<string, object> = {
+  "3d-tours": services3dTours,
+  "as-built": servicesAsBuilt,
+  commercial: servicesCommercial,
+  "drone-photography": servicesDrone,
+  "floor-plans": servicesFloorPlans,
+  "google-business-view": servicesGoogleBusinessView,
+  "hdr-photography": servicesHdr,
+  "photo-packages": servicesPhotoPackages,
+  residential: servicesResidential,
+  "twilight-photography": servicesTwilight,
+  "vacation-rentals": servicesVacationRentals,
+  "virtual-staging": servicesVirtualStaging,
+};
+
+// Blog posts (frontmatter + body) for the Blog Manager. Imported via the
+// content collection so the list stays in sync with what's actually published.
+let blogPosts: { slug: string; title: string; description: string; publishDate: string; author: string; category: string; draft: boolean; heroImage: string; heroAlt: string; body: string }[] = [];
+try {
+  const { getCollection } = await import("astro:content");
+  const posts = await getCollection("blog");
+  blogPosts = posts.map((p) => ({
+    slug: p.id,
+    title: p.data.title,
+    description: p.data.description,
+    publishDate: p.data.publishDate.toISOString().slice(0, 10),
+    author: p.data.author,
+    category: p.data.category,
+    draft: p.data.draft,
+    heroImage: p.data.heroImage,
+    heroAlt: p.data.heroAlt,
+    body: p.body ?? "",
+  }));
+} catch (e) {
+  // If the content layer isn't available at build time, the blog manager
+  // still works for creating NEW posts.
+}
+
+// Default integrations config (a virtual, downloadable file). Mirrors the
+// values currently hardcoded around the codebase so Mike sees what's live.
+const integrationsDefault = {
+  formsubmitEmail: "virtualtourslasvegas@gmail.com",
+  ga4MeasurementId: (import.meta.env.GA4_MEASUREMENT_ID as string) ?? "",
+  paypalLink: "",
+  googleCalendarEmbedUrl: "",
+  defaultMatterportId: "SxL3C8ha5hb",
+  youtubeChannelUrl: settings.social?.youtube ?? "",
+  youtubeEmbedCode: "",
+  googleBusinessProfileUrl: "https://www.google.com/search?q=Virtual+Tours+Las+Vegas",
+};
+
+// The complete editable content snapshot. Each key maps to a downloadable file.
+const files: Record<string, unknown> = {
+  "settings.json": settings,
+  "pricing.json": pricing,
+  "testimonials.json": testimonialsJson,
+  "faq.json": faqJson,
+  "portfolio.json": portfolioJson,
+  ...Object.fromEntries(
+    Object.entries(servicesMap).map(([slug, data]) => [`services/${slug}.json`, data])
+  ),
+  "integrations.json": integrationsDefault,
+};
+
+// Read-only reference data the panels display (SEO catalog, redirects,
+// keywords, locations, clients) — not all editable, but shown for context.
+const reference = {
   seo: seoCatalog.map((p) => ({
     path: p.path,
     title: p.title,
-    titleLen: p.title.length,
     description: p.description,
+    titleLen: p.title.length,
     descLen: p.description.length,
     schema: (p.schema ?? []).join(", ") || "—",
     noindex: !!p.noindex,
   })),
-  // Redirect map (replaces the Redirection plugin's redirect list). Shows every
-  // old WordPress URL that now bounces to a new Astro page.
   redirects: redirects.map((r) => ({
     from: "/" + r.from.replace(/\/index$/, "") + "/",
     to: r.to,
   })),
+  keywordGroups: seoKeywords.map((g) => ({ slug: g.slug, label: g.label, note: g.note, terms: g.terms })),
+  locations: locations.map((l) => ({ slug: l.slug, name: l.name })),
+  clients: clients.map((c) => c.name),
+  serviceBuyers: serviceBuyers.map((s) => ({ slug: s.slug, label: s.label, audience: s.audience })),
 };
-const snapshotJson = JSON.stringify(snapshot);
+
+const snapshotJson = JSON.stringify({
+  files,
+  blogPosts,
+  reference,
+  business: {
+    name: business.name,
+    shortName: business.shortName,
+    owner: business.owner,
+    email: business.email,
+    phone: business.phone,
+    changesEmail: CHANGES_EMAIL,
+  },
+});
+
+// Pricing summary numbers shown at a glance (so Mike sees the live figures).
+const pkgCount = vegasPackages.length;
+const tierCount = [hdrTiers, matterportTiers, floorPlanTiers, virtualStagingTiers, videoTiers, zillowTiers, commercialHdr]
+  .reduce((n, arr) => n + arr.length, 0);
 ---
 
 <!doctype html>
@@ -95,7 +171,6 @@ const snapshotJson = JSON.stringify(snapshot);
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Admin — {business.name}</title>
     <meta name="robots" content="noindex, nofollow" />
-    {/* Self-contained: only same-origin resources. No external scripts/styles. */}
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; form-action 'self' mailto:; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests" />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="X-Frame-Options" content="DENY" />
@@ -108,72 +183,37 @@ const snapshotJson = JSON.stringify(snapshot);
         --fg: #f7f4ef;
         --muted: rgba(247, 244, 239, 0.65);
         --muted-2: rgba(247, 244, 239, 0.45);
-        --brass: #c9a04a;
-        --brass-soft: rgba(201, 160, 74, 0.18);
+        --brass: #c9a572;
+        --brass-soft: rgba(201, 165, 114, 0.18);
         --card: #1a1814;
         --card-2: #211e19;
         --line: rgba(247, 244, 239, 0.12);
+        --line-2: rgba(247, 244, 239, 0.22);
         --ok: #4ecca3;
+        --warn: #e8b94a;
         --danger: #e57373;
+        --input-bg: #100f0d;
       }
       * { box-sizing: border-box; }
-      html, body {
-        margin: 0;
-        min-height: 100%;
-        background: var(--bg);
-        color: var(--fg);
-        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-        line-height: 1.5;
-      }
+      html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--fg); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.5; }
       a { color: var(--brass); }
-      .wrap { max-width: 1000px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+      code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .wrap { max-width: 1100px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
 
       /* ===== Password gate ===== */
-      .gate {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem;
-      }
-      .gate-card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 2rem;
-        max-width: 380px;
-        width: 100%;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-      }
+      .gate { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+      .gate-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 2rem; max-width: 400px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
       .gate-card h1 { font-size: 1.3rem; margin: 0 0 0.3rem; }
       .gate-card p { color: var(--muted); font-size: 0.9rem; margin: 0 0 1.4rem; }
       .gate-card label { display: block; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 0.4rem; }
-      .gate-card input {
-        width: 100%;
-        padding: 0.75rem 0.9rem;
-        background: var(--bg);
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        color: var(--fg);
-        font-size: 1rem;
-        font-family: inherit;
-      }
+      .gate-card input { width: 100%; padding: 0.75rem 0.9rem; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; color: var(--fg); font-size: 1rem; font-family: inherit; }
       .gate-card input:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 3px var(--brass-soft); }
-      .gate-card button {
-        width: 100%;
-        margin-top: 1rem;
-        padding: 0.8rem;
-        background: var(--brass);
-        color: #1a1814;
-        border: none;
-        border-radius: 8px;
-        font-size: 0.95rem;
-        font-weight: 700;
-        cursor: pointer;
-        font-family: inherit;
-      }
+      .gate-card button { width: 100%; margin-top: 1rem; padding: 0.8rem; background: var(--brass); color: #1a1814; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; font-family: inherit; }
       .gate-card button:hover { filter: brightness(1.08); }
       .gate-error { color: var(--danger); font-size: 0.85rem; margin-top: 0.8rem; min-height: 1em; }
+      .default-pw-note { margin-top: 1.2rem; padding: 0.8rem 1rem; background: rgba(232, 185, 74, 0.12); border: 1px solid rgba(232, 185, 74, 0.4); border-radius: 8px; font-size: 0.82rem; color: var(--warn); line-height: 1.5; }
+      .default-pw-note strong { color: var(--fg); }
+      .default-pw-note code { color: var(--brass); }
 
       /* ===== Dashboard ===== */
       .dash[hidden] { display: none; }
@@ -183,106 +223,91 @@ const snapshotJson = JSON.stringify(snapshot);
       .logout { background: none; border: 1px solid var(--line); color: var(--muted); padding: 0.4em 0.9em; border-radius: 7px; cursor: pointer; font-family: inherit; font-size: 0.82rem; }
       .logout:hover { color: var(--fg); border-color: var(--muted); }
 
-      .intro {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-left: 3px solid var(--brass);
-        border-radius: 10px;
-        padding: 1rem 1.2rem;
-        margin: 1.4rem 0;
-        color: var(--muted);
-        font-size: 0.92rem;
-      }
+      .intro { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--brass); border-radius: 10px; padding: 1rem 1.2rem; margin: 1.4rem 0; color: var(--muted); font-size: 0.92rem; line-height: 1.55; }
       .intro strong { color: var(--fg); }
+      .intro ol { margin: 0.6rem 0 0; padding-left: 1.2rem; }
+      .intro ol li { margin-bottom: 0.3rem; }
 
-      .toc { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.2rem 0 2rem; }
-      .toc a {
-        font-size: 0.8rem;
-        padding: 0.35em 0.8em;
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        text-decoration: none;
-        color: var(--muted);
-      }
-      .toc a:hover { color: var(--brass); border-color: var(--brass); }
+      .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.8rem; margin: 1.4rem 0; }
+      .stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 0.9rem 1rem; }
+      .stat .n { font-family: ui-monospace, monospace; font-size: 1.6rem; font-weight: 700; color: var(--brass); line-height: 1; }
+      .stat .l { font-size: 0.76rem; color: var(--muted); margin-top: 0.35rem; }
 
-      section[id] { scroll-margin-top: 1rem; }
-      .card {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        padding: 1.3rem 1.4rem;
-        margin-bottom: 1.2rem;
-      }
-      .card h2 { font-size: 1.1rem; margin: 0 0 0.9rem; display: flex; align-items: center; gap: 0.5rem; }
+      .tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 1.2rem 0 2rem; border-bottom: 1px solid var(--line); padding-bottom: 0.6rem; }
+      .tab { font-size: 0.82rem; padding: 0.4em 0.9em; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; background: none; color: var(--muted); font-family: inherit; transition: all 0.15s; }
+      .tab:hover { color: var(--fg); border-color: var(--muted); }
+      .tab.active { background: var(--brass); color: #1a1814; border-color: var(--brass); font-weight: 600; }
+
+      .panel { display: none; }
+      .panel.active { display: block; }
+      section[id], .panel { scroll-margin-top: 1rem; }
+
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 1.3rem 1.4rem; margin-bottom: 1.2rem; }
+      .card h2 { font-size: 1.1rem; margin: 0 0 0.9rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
       .card h2 .count { font-size: 0.72rem; font-weight: 600; color: var(--brass); background: var(--brass-soft); padding: 0.15em 0.6em; border-radius: 999px; }
+      .card h3 { font-size: 0.74rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--brass); margin: 1.4rem 0 0.6rem; }
 
-      table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-      th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
-      th { color: var(--muted); font-weight: 600; font-size: 0.74rem; letter-spacing: 0.04em; text-transform: uppercase; }
-      td.num, th.num { font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
-      tr:last-child td { border-bottom: none; }
-      .muted { color: var(--muted); }
-      .hint { color: var(--muted); font-size: 0.82rem; margin: -0.4rem 0 1rem; line-height: 1.5; }
-      .hint code, td code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82em; color: var(--brass); }
-      .warn { color: var(--danger); }
-      .tag { display: inline-block; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted-2); border: 1px solid var(--line); border-radius: 999px; padding: 0.1em 0.5em; margin-left: 0.4rem; vertical-align: middle; }
-      /* Wide SEO table: allow the title/description columns to wrap and the
-         path to stay on one line so each row reads cleanly. */
-      .seo-table td { font-size: 0.82rem; }
-      .seo-table td code { white-space: nowrap; }
-      .seo-table { display: block; overflow-x: auto; }
-
-      .kv { display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 1.2rem; font-size: 0.9rem; }
-      .kv dt { color: var(--muted); }
-      .kv dd { margin: 0; }
-      .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-      .chip { font-size: 0.78rem; padding: 0.25em 0.7em; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); }
-
-      .quote { font-style: italic; color: var(--fg); }
-      .quote .who { display: block; font-style: normal; color: var(--muted); font-size: 0.8rem; margin-top: 0.3rem; }
-
-      /* ===== Request changes box ===== */
-      .request {
-        background: var(--card-2);
-        border: 1px solid var(--brass);
-        border-radius: 12px;
-        padding: 1.4rem;
-        margin-top: 1.5rem;
+      /* ===== Form controls ===== */
+      .field { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.9rem; }
+      .field > label { font-size: 0.76rem; font-weight: 600; letter-spacing: 0.03em; color: var(--muted); }
+      .field input, .field select, .field textarea {
+        width: 100%; padding: 0.6rem 0.75rem; background: var(--input-bg); border: 1px solid var(--line);
+        border-radius: 7px; color: var(--fg); font-size: 0.9rem; font-family: inherit; transition: border-color 0.15s, box-shadow 0.15s;
       }
-      .request h2 { margin-top: 0; }
-      .request p { color: var(--muted); font-size: 0.9rem; margin: 0 0 1rem; }
-      .request textarea {
-        width: 100%;
-        min-height: 160px;
-        resize: vertical;
-        padding: 0.85rem;
-        background: var(--bg);
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        color: var(--fg);
-        font-family: inherit;
-        font-size: 0.92rem;
-        line-height: 1.5;
-      }
-      .request textarea:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 3px var(--brass-soft); }
-      .request-actions { display: flex; gap: 0.7rem; flex-wrap: wrap; margin-top: 1rem; align-items: center; }
-      .btn-primary {
-        background: var(--brass); color: #1a1814; border: none;
-        padding: 0.7em 1.3em; border-radius: 8px; font-weight: 700; cursor: pointer;
-        font-family: inherit; font-size: 0.9rem; text-decoration: none;
-        display: inline-flex; align-items: center; gap: 0.4rem;
-      }
+      .field textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+      .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--brass); box-shadow: 0 0 0 3px var(--brass-soft); }
+      .field .hint { font-size: 0.74rem; color: var(--muted-2); line-height: 1.4; }
+      .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+      .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 1rem; }
+      @media (max-width: 640px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+
+      .char-count { font-size: 0.72rem; color: var(--muted-2); align-self: flex-end; }
+      .char-count.over { color: var(--danger); font-weight: 600; }
+
+      /* ===== Buttons ===== */
+      .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55em 1.1em; border-radius: 7px; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; text-decoration: none; transition: filter 0.15s, background 0.15s, border-color 0.15s; }
+      .btn-primary { background: var(--brass); color: #1a1814; }
       .btn-primary:hover { filter: brightness(1.08); }
-      .btn-ghost {
-        background: none; color: var(--muted); border: 1px solid var(--line);
-        padding: 0.7em 1.3em; border-radius: 8px; cursor: pointer;
-        font-family: inherit; font-size: 0.9rem;
-      }
+      .btn-ghost { background: none; color: var(--muted); border-color: var(--line); }
       .btn-ghost:hover { color: var(--fg); border-color: var(--muted); }
-      .request-status { font-size: 0.85rem; color: var(--ok); margin-left: 0.3rem; }
+      .btn-sm { padding: 0.3em 0.7em; font-size: 0.76rem; }
+      .btn-danger { background: none; color: var(--danger); border-color: rgba(229,115,115,0.3); }
+      .btn-danger:hover { background: rgba(229,115,115,0.12); }
+      .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; margin-top: 0.4rem; }
+      .save-status { font-size: 0.82rem; color: var(--ok); }
+
+      /* ===== Array items ===== */
+      .item { border: 1px solid var(--line); border-radius: 9px; padding: 1rem; margin-bottom: 0.8rem; background: var(--card-2); }
+      .item-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.7rem; }
+      .item-head .item-title { font-weight: 600; font-size: 0.9rem; color: var(--fg); }
+      .item-tools { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+      .item-tools button { padding: 0.25em 0.55em; font-size: 0.72rem; background: var(--input-bg); color: var(--muted); border: 1px solid var(--line); border-radius: 5px; cursor: pointer; font-family: inherit; }
+      .item-tools button:hover { color: var(--fg); border-color: var(--muted); }
+      .item-tools button.danger:hover { color: var(--danger); border-color: rgba(229,115,115,0.4); }
+
+      table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+      th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+      th { color: var(--muted); font-weight: 600; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; }
+      td.num, th.num { font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+      .scroll-x { display: block; overflow-x: auto; }
+      .muted { color: var(--muted); }
+      .warn { color: var(--warn); }
+      .tag { display: inline-block; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted-2); border: 1px solid var(--line); border-radius: 999px; padding: 0.1em 0.5em; margin-left: 0.4rem; }
+
+      /* SERP preview */
+      .serp { background: #fff; color: #202124; border-radius: 8px; padding: 0.9rem 1rem; margin-top: 0.6rem; max-width: 600px; }
+      .serp .url { font-size: 0.78rem; color: #5f6368; }
+      .serp .title { font-size: 1.05rem; color: #1a0dab; margin: 0.1rem 0; cursor: pointer; }
+      .serp .desc { font-size: 0.84rem; color: #4d5156; line-height: 1.4; }
+
+      .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+      .chip { font-size: 0.76rem; padding: 0.25em 0.7em; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); }
 
       .foot { margin-top: 2.5rem; color: var(--muted-2); font-size: 0.8rem; text-align: center; }
+
+      /* Toast */
+      .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: var(--ok); color: #0f0e0c; padding: 0.8em 1.4em; border-radius: 8px; font-weight: 600; font-size: 0.88rem; box-shadow: 0 8px 30px rgba(0,0,0,0.4); z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.25s, transform 0.25s; }
+      .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
     </style>
   </head>
   <body>
@@ -290,11 +315,19 @@ const snapshotJson = JSON.stringify(snapshot);
     <div class="gate" id="gate" hidden>
       <form class="gate-card" id="gate-form">
         <h1>{business.shortName} Admin</h1>
-        <p>Enter the admin password to view and request changes to the site content.</p>
+        <p>Enter the admin password to edit site content.</p>
         <label for="pwd">Password</label>
         <input id="pwd" type="password" autocomplete="current-password" autofocus required />
         <button type="submit">Unlock</button>
         <p class="gate-error" id="gate-error" role="alert"></p>
+        {USING_DEFAULT_PASSWORD && (
+          <div class="default-pw-note">
+            <strong>Default password in use:</strong> <code>VTLV-admin-2026</code><br />
+            This site is running on the default admin password. To change it, ask your son to set the
+            <code>ADMIN_PASSWORD</code> environment variable in GitHub. Until then, anyone with this link
+            can view the editor — the content is already public, but you'll want your own password.
+          </div>
+        )}
       </form>
     </div>
 
@@ -303,59 +336,274 @@ const snapshotJson = JSON.stringify(snapshot);
       <div class="wrap">
         <div class="dash-head">
           <div>
-            <h1>{business.name} — Content Dashboard</h1>
-            <p class="sub">Read-only view of everything on the site. Use "Request changes" at the bottom to email an update.</p>
+            <h1>{business.name} — Content Editor</h1>
+            <p class="sub">Edit any section, then download the updated file and send it to your son to publish.</p>
           </div>
           <button class="logout" id="logout" type="button">Lock</button>
         </div>
 
         <div class="intro">
-          <strong>How this works:</strong> This page shows the live content of your site. You can't edit it directly
-          (it's read-only so nothing can be broken by accident). To change something, scroll to the bottom, describe
-          what you'd like changed in the box, and hit <strong>Request changes</strong> — it opens your email app with
-          the request ready to send. Your son (or whoever maintains the site) applies the update.
+          <strong>How editing works (download-based):</strong> This is a static site, so changes save as files
+          you send to your son — there's no live database.
+          <ol>
+            <li>Edit the section you want (prices, testimonials, FAQ, etc.).</li>
+            <li>Click <strong>Download JSON</strong> — the updated file saves to your computer.</li>
+            <li>Email the file to your son, or drag it into the GitHub website (he'll show you once).</li>
+            <li>The site rebuilds automatically. Your change is live in a few minutes.</li>
+          </ol>
+          Every save creates an automatic backup on GitHub, so nothing is ever lost.
         </div>
 
-        <nav class="toc" aria-label="Sections">
-          <a href="#business">Business</a>
-          <a href="#packages">Packages</a>
-          <a href="#pricing">All pricing</a>
-          <a href="#testimonials">Testimonials</a>
-          <a href="#faq">FAQ</a>
-          <a href="#services">Services</a>
-          <a href="#clients">Clients</a>
-          <a href="#seo">SEO</a>
-          <a href="#redirects">Redirects</a>
-        </nav>
+        <div class="stats">
+          <div class="stat"><div class="n">{pkgCount}</div><div class="l">Packages</div></div>
+          <div class="stat"><div class="n">{tierCount}</div><div class="l">Price tiers</div></div>
+          <div class="stat"><div class="n">{testimonials.length}</div><div class="l">Testimonials</div></div>
+          <div class="stat"><div class="n">{portfolio.length}</div><div class="l">Portfolio images</div></div>
+        </div>
 
-        <div id="content"><!-- rendered by JS from the snapshot --></div>
+        <div class="tabs" role="tablist" aria-label="Editor sections">
+          <button class="tab active" data-tab="settings" role="tab">Site Settings</button>
+          <button class="tab" data-tab="pricing" role="tab">Pricing</button>
+          <button class="tab" data-tab="testimonials" role="tab">Testimonials</button>
+          <button class="tab" data-tab="faq" role="tab">FAQ</button>
+          <button class="tab" data-tab="portfolio" role="tab">Portfolio</button>
+          <button class="tab" data-tab="services" role="tab">Services</button>
+          <button class="tab" data-tab="blog" role="tab">Blog</button>
+          <button class="tab" data-tab="seo" role="tab">SEO</button>
+          <button class="tab" data-tab="redirects" role="tab">Redirects</button>
+          <button class="tab" data-tab="integrations" role="tab">Integrations</button>
+          <button class="tab" data-tab="backup" role="tab">Backup</button>
+        </div>
 
-        {/* ===== Request changes ===== */}
-        <div class="request" id="request">
-          <h2>Request a change</h2>
-          <p>
-            Describe what you'd like updated — e.g. "Change the Glitz &amp; Glam price to $225" or "Add a new
-            testimonial from Jane Smith: …". Reference the section name so it's easy to find.
-          </p>
-          <textarea id="change-notes" placeholder={"Example:\n- Pricing: Glitz & Glam package is now $225\n- FAQ: update the turnaround answer to say 'same day for rush'\n- Testimonials: add this quote from a recent client…"}></textarea>
-          <div class="request-actions">
-            <a class="btn-primary" id="send-mailto" href="#">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-              Request changes
-            </a>
-            <button class="btn-ghost" id="copy-notes" type="button">Copy notes</button>
-            <span class="request-status" id="request-status"></span>
+        {/* ===== A. Site Settings ===== */}
+        <div class="panel active" id="panel-settings" data-panel="settings">
+          <div class="card">
+            <h2>Site Settings <span class="count">settings.json</span></h2>
+            <p class="muted" style="font-size:0.84rem;margin:-0.5rem 0 1rem">Business name, contact details, hours and social links. These appear in the header, footer and contact forms.</p>
+            <div id="settings-form"></div>
+            <div class="btn-row">
+              <button class="btn btn-primary" data-download="settings.json">Download settings.json</button>
+              <button class="btn btn-ghost btn-sm" data-reset="settings.json">Reset changes</button>
+              <span class="save-status" data-status="settings.json"></span>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== B. Pricing ===== */}
+        <div class="panel" id="panel-pricing" data-panel="pricing">
+          <div class="card">
+            <h2>Pricing Editor <span class="count">pricing.json</span></h2>
+            <p class="muted" style="font-size:0.84rem;margin:-0.5rem 0 1rem">Every price on the site. Edit package names, prices, tier brackets and add-ons. Empty price + a note becomes "Custom quote".</p>
+            <div id="pricing-form"></div>
+            <div class="btn-row">
+              <button class="btn btn-primary" data-download="pricing.json">Download pricing.json</button>
+              <button class="btn btn-ghost btn-sm" data-reset="pricing.json">Reset changes</button>
+              <span class="save-status" data-status="pricing.json"></span>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== C. Testimonials ===== */}
+        <div class="panel" id="panel-testimonials" data-panel="testimonials">
+          <div class="card">
+            <h2>Testimonials Manager <span class="count">testimonials.json</span></h2>
+            <p class="muted" style="font-size:0.84rem;margin:-0.5rem 0 1rem">Add, edit, remove and reorder client quotes. These power the testimonial sections and the star rating in search results.</p>
+            <div id="testimonials-form" data-array="testimonials.json::__root__"></div>
+            <div class="btn-row">
+              <button class="btn btn-ghost btn-sm" data-add-testimonial>+ Add testimonial</button>
+            </div>
+            <div class="btn-row" style="margin-top:1rem">
+              <button class="btn btn-primary" data-download="testimonials.json">Download testimonials.json</button>
+              <button class="btn btn-ghost btn-sm" data-reset="testimonials.json">Reset changes</button>
+              <span class="save-status" data-status="testimonials.json"></span>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== D. FAQ ===== */}
+        <div class="panel" id="panel-faq" data-panel="faq">
+          <div class="card">
+            <h2>FAQ Manager <span class="count">faq.json</span></h2>
+            <p class="muted" style="font-size:0.84rem;margin:-0.5rem 0 1rem">Frequently asked questions. These also appear as structured FAQ schema that Google and AI assistants can cite directly.</p>
+            <div id="faq-form" data-array="faq.json::__root__"></div>
+            <div class="btn-row">
+              <button class="btn btn-ghost btn-sm" data-add-faq>+ Add FAQ entry</button>
+            </div>
+            <div class="btn-row" style="margin-top:1rem">
+              <button class="btn btn-primary" data-download="faq.json">Download faq.json</button>
+              <button class="btn btn-ghost btn-sm" data-reset="faq.json">Reset changes</button>
+              <span class="save-status" data-status="faq.json"></span>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== E. Portfolio ===== */}
+        <div class="panel" id="panel-portfolio" data-panel="portfolio">
+          <div class="card">
+            <h2>Portfolio Manager <span class="count">portfolio.json</span></h2>
+            <p class="muted" style="font-size:0.84rem;margin:-0.5rem 0 1rem">Images in the portfolio gallery. Image path is relative to <code>/public</code> (e.g. <code>/images/portfolio/my-shot.jpg</code>). Add a Matterport ID to show a "View 3D Tour" button.</p>
+            <div id="portfolio-form" data-array="portfolio.json::__root__"></div>
+            <div class="btn-row">
+              <button class="btn btn-ghost btn-sm" data-add-portfolio>+ Add portfolio image</button>
+            </div>
+            <div class="btn-row" style="margin-top:1rem">
+              <button class="btn btn-primary" data-download="portfolio.json">Download portfolio.json</button>
+              <button class="btn btn-ghost btn-sm" data-reset="portfolio.json">Reset changes</button>
+              <span class="save-status" data-status="portfolio.json"></span>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== F. Services ===== */}
+        <div class="panel" id="panel-services" data-panel="services">
+          <div class="card">
+            <h2>Services Manager <span class="count">11 pages</span></h2>
+            <p class="muted" style="font-size:0.84rem;margin:-0.5rem 0 1rem">SEO title, meta description and hero copy for each service page. Keep titles under 60 characters and descriptions under 160 for best search results.</p>
+            <div id="services-form"></div>
+          </div>
+        </div>
+
+        {/* ===== G. Blog ===== */}
+        <div class="panel" id="panel-blog" data-panel="blog">
+          <div class="card">
+            <h2>Blog Manager</h2>
+            <p class="muted" style="font-size:0.84rem;margin:-0.5rem 0 1rem">Blog posts are Markdown files. Edit an existing post (downloads the updated <code>.md</code>) or create a new one. Toggle <strong>Draft</strong> to hide a post from the live site.</p>
+
+            <h3>Create new post</h3>
+            <div class="grid2">
+              <div class="field"><label>Title</label><input id="new-post-title" placeholder="Why HDR photography sells Las Vegas homes" /></div>
+              <div class="field"><label>Category</label>
+                <select id="new-post-category">
+                  <option value="real-estate-photography-tips">Real Estate Photography Tips</option>
+                  <option value="virtual-tours">Virtual Tours</option>
+                  <option value="drone-photography">Drone Photography</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid2">
+              <div class="field"><label>Publish date</label><input id="new-post-date" type="date" /></div>
+              <div class="field"><label>Draft?</label><select id="new-post-draft"><option value="true">Yes — hide for now</option><option value="false" selected>No — publish</option></select></div>
+            </div>
+            <div class="field"><label>Short description (for cards &amp; SEO)</label><input id="new-post-desc" placeholder="One-sentence summary of the post" /></div>
+            <div class="field"><label>Body (Markdown)</label><textarea id="new-post-body" rows="6" placeholder={"# Heading\n\nWrite your post in Markdown. Use **bold**, [links](https://...), and images like ![alt](/images/...)."}></textarea></div>
+            <div class="btn-row"><button class="btn btn-primary" id="create-post">Create &amp; download .md file</button></div>
+
+            <h3>Existing posts ({blogPosts.length})</h3>
+            <div id="blog-list"></div>
+          </div>
+        </div>
+
+        {/* ===== H. SEO ===== */}
+        <div class="panel" id="panel-seo" data-panel="seo">
+          <div class="card">
+            <h2>SEO Panel <span class="count">{seoCatalog.length} pages</span></h2>
+            <p class="muted" style="font-size:0.84rem;margin:-0.5rem 0 1rem">Edit the title and description Google shows for each page, with a live SERP preview and character counts. Downloads <code>seo-edits.json</code> for your son to apply (titles also need to match each page's code).</p>
+            <div id="seo-list"></div>
+            <div class="btn-row" style="margin-top:1rem">
+              <button class="btn btn-primary" data-download="seo-edits.json">Download seo-edits.json</button>
+              <span class="save-status" data-status="seo-edits.json"></span>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Target keywords</h2>
+            <p class="muted" style="font-size:0.84rem;margin:-0.5rem 0 1rem">The {allKeywords.length} search queries this site is built to rank for, grouped by intent. Reference these when writing blog posts and page copy.</p>
+            <div id="keyword-groups"></div>
+          </div>
+        </div>
+
+        {/* ===== I. Redirects ===== */}
+        <div class="panel" id="panel-redirects" data-panel="redirects">
+          <div class="card">
+            <h2>Redirects Manager <span class="count">{redirects.length} active</span></h2>
+            <p class="muted" style="font-size:0.84rem;margin:-0.5rem 0 1rem">Old WordPress URLs that bounce to their new Astro URLs. Add a new redirect below; it downloads <code>redirects.json</code> for your son to merge and run the redirect generator.</p>
+            <h3>Add a new redirect</h3>
+            <div class="grid2">
+              <div class="field"><label>Old URL (the link people have)</label><input id="new-redir-from" placeholder="/old-wordpress-page/" /></div>
+              <div class="field"><label>New URL (where it should go)</label><input id="new-redir-to" placeholder="/services/hdr-photography/" /></div>
+            </div>
+            <div class="btn-row"><button class="btn btn-primary" id="add-redirect">Add &amp; download redirects.json</button></div>
+
+            <h3>Current redirects</h3>
+            <div class="scroll-x">
+              <table><thead><tr><th>Old WordPress URL</th><th>→ New URL</th></tr></thead><tbody id="redirects-tbody"></tbody></table>
+            </div>
+          </div>
+        </div>
+
+        {/* ===== J. Integrations ===== */}
+        <div class="panel" id="panel-integrations" data-panel="integrations">
+          <div class="card">
+            <h2>Integrations <span class="count">integrations.json</span></h2>
+            <p class="muted" style="font-size:0.84rem;margin:-0.5rem 0 1rem">Settings for the external services the site connects to. Fill in what you have and download — your son wires the values into the right places. (Social profile links live in <strong>Site Settings</strong>.)</p>
+            <div id="integrations-form"></div>
+            <div class="btn-row">
+              <button class="btn btn-primary" data-download="integrations.json">Download integrations.json</button>
+              <span class="save-status" data-status="integrations.json"></span>
+            </div>
+          </div>
+          <div class="card">
+            <h2>Setup instructions</h2>
+            <h3>Google Calendar</h3>
+            <p class="muted" style="font-size:0.86rem;line-height:1.6">In Google Calendar, open your calendar settings → "Integrate calendar" → copy the "Embed code" src URL, and paste it into the field above. Your son can drop it onto the availability page.</p>
+            <h3>PayPal</h3>
+            <p class="muted" style="font-size:0.86rem;line-height:1.6">For a simple payment button, use your PayPal.me link (paypal.me/yourname). For a full button, paste the HTML PayPal gives you into the field above.</p>
+            <h3>Google Analytics (GA4)</h3>
+            <p class="muted" style="font-size:0.86rem;line-height:1.6">Create a GA4 property in Google Analytics, copy the Measurement ID (looks like G-ABCDEF1234), and your son sets it as the <code>GA4_MEASUREMENT_ID</code> environment variable. The site runs it in privacy-friendly cookieless mode by default.</p>
+            <h3>Formsubmit (contact form)</h3>
+            <p class="muted" style="font-size:0.86rem;line-height:1.6">The email above is where contact-form submissions land. The first submission triggers a one-time confirmation email from Formsubmit; after that, every form posts to your inbox.</p>
+            <button class="btn btn-ghost btn-sm" id="test-formsubmit">Send a test submission</button>
+            <span class="save-status" id="formsubmit-test-status"></span>
+            <h3>Matterport</h3>
+            <p class="muted" style="font-size:0.86rem;line-height:1.6">The default Matterport model ID is used as the placeholder tour across the site. Find it in any Matterport showcase URL after <code>?m=</code>.</p>
+            <h3>Google Business Profile</h3>
+            <p class="muted" style="font-size:0.86rem;line-height:1.6">Manage your business listing at <a href="https://business.google.com" target="_blank" rel="noopener">business.google.com</a>. Keeping hours and photos current there is the single biggest local-SEO lever.</p>
+            <h3>YouTube</h3>
+            <p class="muted" style="font-size:0.86rem;line-height:1.6">Paste your channel URL (and optional embed code for a featured video). Channel walkthroughs and behind-the-lens videos build trust.</p>
+          </div>
+        </div>
+
+        {/* ===== K. Backup / Restore ===== */}
+        <div class="panel" id="panel-backup" data-panel="backup">
+          <div class="card">
+            <h2>Backup &amp; Restore</h2>
+            <p class="muted" style="font-size:0.86rem;margin:-0.5rem 0 1rem;line-height:1.6">Download every content file at once, or upload a previous backup to see what changed. Every time you save and your son pushes the changes, a backup is automatically created on GitHub — so you can always roll back by asking him.</p>
+
+            <h3>Download all content</h3>
+            <p class="muted" style="font-size:0.84rem">Bundles every JSON content file (settings, pricing, testimonials, FAQ, portfolio, all services, integrations) into a single ZIP. Includes the current edits you've made in this session.</p>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="download-all-zip">Download all content (.zip)</button>
+              <button class="btn btn-ghost" id="download-all-json">Download all content (.json bundle)</button>
+            </div>
+
+            <h3>Upload changes to preview</h3>
+            <p class="muted" style="font-size:0.84rem">Load a backup file (the .zip from above, or a single JSON content file) to see what it contains and what would change versus the current site. Nothing is applied to the live site from here — this is just a preview.</p>
+            <div class="field">
+              <label for="upload-input">Choose a .zip or .json file</label>
+              <input id="upload-input" type="file" accept=".zip,.json,application/json,application/zip" />
+            </div>
+            <div id="upload-preview"></div>
           </div>
         </div>
 
         <p class="foot">
-          {business.name} admin · content snapshot built {new Date().toISOString().slice(0,10)}
+          {business.name} admin · content snapshot built {new Date().toISOString().slice(0,10)}<br />
+          Questions? Email <a href={"mailto:" + CHANGES_EMAIL}>{CHANGES_EMAIL}</a>
         </p>
       </div>
     </div>
 
-    <script is:inline define:vars={{ passwordHash: PASSWORD_HASH, changesEmail: CHANGES_EMAIL, snapshot: snapshotJson }}>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script is:inline define:vars={{ snapshot: snapshotJson, usingDefaultPassword: USING_DEFAULT_PASSWORD, passwordHash: PASSWORD_HASH }}>
       (function () {
+        "use strict";
+        var DATA = JSON.parse(snapshot);
+        var files = DATA.files;           // editable file map (filename -> object/array)
+        var blogPosts = DATA.blogPosts;    // blog frontmatter + body
+        var reference = DATA.reference;    // read-only context data
+        var businessInfo = DATA.business;
+
+        // ===== Password gate =====
         var gate = document.getElementById("gate");
         var dash = document.getElementById("dash");
         var gateForm = document.getElementById("gate-form");
@@ -363,249 +611,992 @@ const snapshotJson = JSON.stringify(snapshot);
         var gateError = document.getElementById("gate-error");
         var logoutBtn = document.getElementById("logout");
         var STORAGE_KEY = "vtlv_admin_unlocked";
+        var FIRST_LOGIN_KEY = "vtlv_admin_first_login_seen";
 
-        // No password configured → skip the gate entirely (local dev / preview).
-        var gateEnabled = !!passwordHash;
-
-        function showDash() {
-          gate.hidden = true;
-          dash.hidden = false;
-          renderContent();
-        }
+        function showDash() { gate.hidden = true; dash.hidden = false; buildAll(); }
 
         function sha256Hex(text) {
-          // Prefer SubtleCrypto (async). Fallback handled by caller.
           return crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(function (buf) {
             return Array.prototype.map.call(new Uint8Array(buf), function (b) {
               return b.toString(16).padStart(2, "0");
             }).join("");
           });
         }
-
         function tryUnlock() {
-          // Already unlocked on this browser?
           var saved = "no";
           try { saved = localStorage.getItem(STORAGE_KEY) || "no"; } catch (e) {}
-          if (saved === "yes") { showDash(); return true; }
-          if (!gateEnabled) { showDash(); return true; }
-          gate.hidden = false;
-          dash.hidden = true;
-          return false;
+          if (saved === "yes") { showDash(); return; }
+          gate.hidden = false; dash.hidden = true;
         }
-
         if (gateForm) {
           gateForm.addEventListener("submit", function (e) {
             e.preventDefault();
             gateError.textContent = "";
             var value = pwdInput ? pwdInput.value : "";
             if (!value) { gateError.textContent = "Please enter the password."; return; }
-            if (!window.crypto || !crypto.subtle) {
-              // SubtleCrypto unavailable (insecure context). Can't hash client-side.
-              gateError.textContent = "This browser can't verify the password securely. Try over HTTPS.";
-              return;
-            }
+            if (!window.crypto || !crypto.subtle) { gateError.textContent = "This browser can't verify the password securely. Try over HTTPS."; return; }
             sha256Hex(value).then(function (hash) {
               if (hash === passwordHash) {
                 try { localStorage.setItem(STORAGE_KEY, "yes"); } catch (e) {}
+                // First-login default-password banner (in-session).
+                if (usingDefaultPassword) {
+                  try { if (!localStorage.getItem(FIRST_LOGIN_KEY)) { showToast("Default password is VTLV-admin-2026 — change it via the ADMIN_PASSWORD env var. See the note on the login screen."); localStorage.setItem(FIRST_LOGIN_KEY, "yes"); } } catch (e) {}
+                }
                 showDash();
               } else {
                 gateError.textContent = "That password isn't right.";
                 if (pwdInput) { pwdInput.value = ""; pwdInput.focus(); }
               }
-            }).catch(function () {
-              gateError.textContent = "Couldn't verify the password. Please try again.";
-            });
+            }).catch(function () { gateError.textContent = "Couldn't verify the password. Please try again."; });
           });
         }
-
         if (logoutBtn) {
           logoutBtn.addEventListener("click", function () {
             try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
-            try { dash.hidden = true; } catch (e) {}
-            if (gateEnabled) {
-              gate.hidden = false;
-              if (pwdInput) { pwdInput.value = ""; pwdInput.focus(); }
-            } else {
-              showDash();
-            }
+            dash.hidden = true; gate.hidden = false;
+            if (pwdInput) { pwdInput.value = ""; pwdInput.focus(); }
           });
         }
 
-        // ===== Render the content snapshot as HTML =====
+        // ===== Tabs =====
+        document.querySelectorAll(".tab").forEach(function (tab) {
+          tab.addEventListener("click", function () {
+            var name = tab.dataset.tab;
+            document.querySelectorAll(".tab").forEach(function (t) { t.classList.toggle("active", t === tab); });
+            document.querySelectorAll(".panel").forEach(function (p) { p.classList.toggle("active", p.dataset.panel === name); });
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          });
+        });
+
+        // ===== Helpers =====
         function esc(s) {
           return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
             return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
           });
         }
-        function arr(s) { return Array.isArray(s) ? s : []; }
+        function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
 
-        function tableRowsTiers(rows, opts) {
+        // Build a single-line text field bound to file::path.
+        function textField(file, path, label, value, opts) {
           opts = opts || {};
-          return arr(rows).map(function (r) {
-            var label = esc(r[opts.labelKey] || r.count || r.size || r.item || "");
-            var priceCell;
-            if (typeof r.price === "number") {
-              priceCell = '<td class="num">$' + r.price + '</td>';
+          var type = opts.numeric ? "number" : "text";
+          var extra = opts.numeric ? ' step="any"' : "";
+          var hint = opts.hint ? '<span class="hint">' + esc(opts.hint) + '</span>' : "";
+          var cc = opts.charLimit ? charCount(value, opts.charLimit) : "";
+          return '<div class="field"><label>' + esc(label) + '</label>' +
+            '<input type="' + type + '"' + extra + ' data-edit="' + esc(file + "::" + path) + '" value="' + esc(value) + '" />' +
+            (cc || hint) + '</div>';
+        }
+        function textareaField(file, path, label, value, opts) {
+          opts = opts || {};
+          var isList = opts.list ? '" data-list="true' : "";
+          var attr = ' data-edit="' + esc(file + "::" + path) + isList + '"';
+          var hint = opts.hint ? '<span class="hint">' + esc(opts.hint) + '</span>' : "";
+          var cc = opts.charLimit ? charCount(value, opts.charLimit) : "";
+          var ph = opts.placeholder ? ' placeholder="' + esc(opts.placeholder) + '"' : "";
+          var rows = opts.rows ? ' rows="' + opts.rows + '"' : ' rows="3"';
+          return '<div class="field"><label>' + esc(label) + '</label>' +
+            '<textarea' + attr + rows + ph + '>' + esc(value) + '</textarea>' +
+            (cc || hint) + '</div>';
+        }
+        function charCount(value, limit) {
+          var len = String(value == null ? "" : value).length;
+          var over = len > limit ? " over" : "";
+          return '<span class="char-count' + over + '" data-char-limit="' + limit + '">' + len + ' / ' + limit + '</span>';
+        }
+
+        // ===== Collect all edits back into a file map =====
+        function collectAll() {
+          var out = deepClone(files);
+          // scalar/path fields (not inside an array item)
+          document.querySelectorAll("[data-edit]").forEach(function (el) {
+            if (el.closest("[data-array-item]")) return;
+            var parts = el.getAttribute("data-edit").split("::");
+            var file = parts[0], path = parts[1];
+            if (!out[file] || !path) return;
+            var val;
+            if (el.dataset.list === "true") {
+              val = el.value.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+            } else if (el.type === "checkbox") {
+              val = el.checked;
+            } else if (el.dataset.type === "number") {
+              val = el.value === "" ? null : Number(el.value);
             } else {
-              priceCell = '<td class="num"><em>' + esc(r.note || "Custom") + '</em></td>';
+              val = el.value;
             }
-            return '<tr><td>' + label + '</td>' + priceCell + '</tr>';
-          }).join("");
-        }
-
-        function renderContent() {
-          var d = JSON.parse(snapshot);
-          var h = [];
-
-          // Business
-          var b = d.business || {};
-          h.push('<section id="business"><div class="card"><h2>Business info</h2>');
-          h.push('<dl class="kv">');
-          h.push('<dt>Name</dt><dd>' + esc(b.name) + '</dd>');
-          h.push('<dt>Owner</dt><dd>' + esc(b.owner) + '</dd>');
-          h.push('<dt>Phone</dt><dd>' + esc(b.phone) + '</dd>');
-          h.push('<dt>Email</dt><dd>' + esc(b.email) + '</dd>');
-          h.push('<dt>Turnaround</dt><dd>' + esc(b.turnaround) + '</dd>');
-          h.push('<dt>Website</dt><dd>' + esc(b.url) + '</dd>');
-          h.push('<dt>Service area</dt><dd>' + arr(b.serviceArea).map(esc).join(" · ") + '</dd>');
-          h.push('</dl></div></section>');
-
-          // Packages
-          h.push('<section id="packages"><div class="card"><h2>Packages <span class="count">' + arr(d.packages).length + '</span></h2>');
-          h.push('<table><thead><tr><th>Name</th><th>Price</th><th>Tag</th></tr></thead><tbody>');
-          arr(d.packages).forEach(function (p) {
-            h.push('<tr><td><strong>' + esc(p.name) + '</strong><br><span style="color:var(--muted);font-size:0.82rem">' + esc(p.blurb) + '</span></td><td class="num">$' + p.price + '</td><td>' + esc(p.tag) + '</td></tr>');
+            setPath(out[file], path, val);
           });
-          h.push('</tbody></table></div></section>');
-
-          // All pricing
-          h.push('<section id="pricing"><div class="card"><h2>All pricing</h2>');
-          function tierBlock(title, rows, opts) {
-            if (!arr(rows).length) return "";
-            return '<h3 style="font-size:0.8rem;letter-spacing:0.05em;text-transform:uppercase;color:var(--brass);margin:1.1rem 0 0.4rem">' + esc(title) + '</h3>' +
-              '<table><thead><tr><th>' + esc(opts.labelHeading || "Tier") + '</th><th>Price</th></tr></thead><tbody>' +
-              tableRowsTiers(rows, opts) + '</tbody></table>';
+          // arrays (root-level arrays + nested)
+          document.querySelectorAll("[data-array]").forEach(function (container) {
+            var parts = container.getAttribute("data-array").split("::");
+            var file = parts[0], path = parts[1];
+            if (!out[file]) return;
+            var items = Array.prototype.slice.call(container.querySelectorAll(":scope > [data-array-item]"));
+            var arr = items.map(function (item) {
+              var obj = {};
+              item.querySelectorAll("[data-item-field]").forEach(function (f) {
+                var key = f.getAttribute("data-item-field");
+                var val;
+                if (f.dataset.list === "true") {
+                  val = f.value.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+                } else if (f.type === "checkbox") {
+                  val = f.checked;
+                } else if (f.dataset.type === "number") {
+                  val = f.value === "" ? null : Number(f.value);
+                } else {
+                  val = f.value;
+                }
+                setPath(obj, key, val);
+              });
+              return obj;
+            });
+            if (path === "__root__") out[file] = arr;
+            else setPath(out[file], path, arr);
+          });
+          return out;
+        }
+        function setPath(obj, path, value) {
+          if (path === "__root__") return;
+          var keys = path.split(".");
+          var cur = obj;
+          for (var i = 0; i < keys.length - 1; i++) {
+            if (cur[keys[i]] == null || typeof cur[keys[i]] !== "object") cur[keys[i]] = {};
+            cur = cur[keys[i]];
           }
-          h.push(tierBlock("HDR photography", d.hdrTiers, { labelHeading: "Tier", labelKey: "count" }));
-          h.push(tierBlock("Matterport", d.matterportTiers, { labelHeading: "Size", labelKey: "size" }));
-          h.push(tierBlock("Floor plans", d.floorPlanTiers, { labelHeading: "Size", labelKey: "size" }));
-          h.push(tierBlock("Virtual staging", d.virtualStagingTiers, { labelHeading: "Item", labelKey: "item" }));
-          h.push(tierBlock("Video", d.videoTiers, { labelHeading: "Item", labelKey: "item" }));
-          h.push(tierBlock("Zillow", d.zillowTiers, { labelHeading: "Item", labelKey: "item" }));
-          h.push(tierBlock("Commercial HDR", d.commercialHdr, { labelHeading: "Count", labelKey: "count" }));
-          // Add-on lists
-          function addonList(title, items) {
-            if (!arr(items).length) return "";
-            return '<h3 style="font-size:0.8rem;letter-spacing:0.05em;text-transform:uppercase;color:var(--brass);margin:1.1rem 0 0.4rem">' + esc(title) + '</h3>' +
-              '<div class="chips">' + arr(items).map(function (i) { return '<span class="chip">' + esc(i) + '</span>'; }).join("") + '</div>';
+          cur[keys[keys.length - 1]] = value;
+        }
+
+        // ===== Downloads =====
+        function download(filename, content, mime) {
+          var blob = new Blob([content], { type: mime || "application/json;charset=utf-8" });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url; a.download = filename;
+          document.body.appendChild(a); a.click();
+          document.body.removeChild(a);
+          setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+        }
+        function prettyJson(obj) { return JSON.stringify(obj, null, 2) + "\n"; }
+
+        function status(file, msg, ok) {
+          var el = document.querySelector('[data-status="' + file + '"]');
+          if (!el) return;
+          el.textContent = msg;
+          el.style.color = ok === false ? "var(--danger)" : "var(--ok)";
+          setTimeout(function () { if (el.textContent === msg) el.textContent = ""; }, 4000);
+        }
+        function showToast(msg) {
+          var t = document.getElementById("toast");
+          t.textContent = msg; t.classList.add("show");
+          setTimeout(function () { t.classList.remove("show"); }, 3200);
+        }
+
+        // Download buttons (per-file JSON).
+        document.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-download]");
+          if (!btn) return;
+          var file = btn.dataset.download;
+          var all = collectAll();
+          if (file === "seo-edits.json") {
+            download("seo-edits.json", prettyJson(collectSeoEdits()), "application/json;charset=utf-8");
+            status("seo-edits.json", "Downloaded seo-edits.json — send to your son.");
+            return;
           }
-          h.push(addonList("HDR add-ons", d.hdrAddOns));
-          h.push(addonList("Floor plan add-ons", d.floorPlanAddOns));
-          // Google package
-          var g = d.googlePackage || {};
-          h.push('<h3 style="font-size:0.8rem;letter-spacing:0.05em;text-transform:uppercase;color:var(--brass);margin:1.1rem 0 0.4rem">' + esc(g.name || "Google package") + '</h3>');
-          h.push('<dl class="kv"><dt>Price</dt><dd>$' + esc(g.price) + '</dd><dt>Note</dt><dd>' + esc(g.note) + '</dd></dl>');
-          if (arr(g.includes).length) {
-            h.push('<div class="chips" style="margin-top:0.5rem">' + arr(g.includes).map(function (i) { return '<span class="chip">' + esc(i) + '</span>'; }).join("") + '</div>');
+          if (!all[file]) { showToast("Nothing to download for " + file); return; }
+          download(file, prettyJson(all[file]));
+          status(file, "Downloaded " + file + " — email it to your son.");
+          showToast("Downloaded " + file);
+        });
+        // Reset buttons restore the build-time snapshot for a file.
+        document.addEventListener("click", function (e) {
+          var btn = e.target.closest("[data-reset]");
+          if (!btn) return;
+          var file = btn.dataset.reset;
+          if (!confirm("Reset " + file + " to the version currently on the live site? Your edits in this section will be lost.")) return;
+          buildPanel(file);
+          status(file, "Reset to live version.");
+        });
+
+        // ===== A. Settings =====
+        function buildSettings() {
+          var s = files["settings.json"];
+          var h = "";
+          h += '<div class="grid2">';
+          h += textField("settings.json", "name", "Business name", s.name);
+          h += textField("settings.json", "shortName", "Short name", s.shortName);
+          h += "</div>";
+          h += '<div class="grid2">';
+          h += textField("settings.json", "owner", "Owner", s.owner);
+          h += textField("settings.json", "since", "Operating since (year)", s.since, { numeric: true });
+          h += "</div>";
+          h += '<div class="grid2">';
+          h += textField("settings.json", "phone", "Phone (display)", s.phone);
+          h += textField("settings.json", "phoneHref", "Phone link (tel:)", s.phoneHref);
+          h += "</div>";
+          h += '<div class="grid2">';
+          h += textField("settings.json", "email", "Email (display)", s.email);
+          h += textField("settings.json", "emailHref", "Email link (mailto:)", s.emailHref);
+          h += "</div>";
+          h += '<div class="grid2">';
+          h += textField("settings.json", "smsHref", "Text link (sms:)", s.smsHref);
+          h += textField("settings.json", "turnaround", "Turnaround", s.turnaround);
+          h += "</div>";
+          h += '<div class="grid2">';
+          h += textField("settings.json", "realEstateSince", "In real estate since", s.realEstateSince, { numeric: true });
+          h += textField("settings.json", "url", "Website URL", s.url);
+          h += "</div>";
+          h += textareaField("settings.json", "serviceArea", "Service areas (one per line)", (s.serviceArea || []).join("\n"), { list: true, hint: "Cities/areas you serve." });
+          h += textField("settings.json", "areaNote", "Area note", s.areaNote);
+
+          h += "<h3>Social media links</h3>";
+          var so = s.social || {};
+          h += '<div class="grid2">';
+          h += textField("settings.json", "social.facebook", "Facebook", so.facebook);
+          h += textField("settings.json", "social.instagram", "Instagram", so.instagram);
+          h += "</div>";
+          h += '<div class="grid2">';
+          h += textField("settings.json", "social.youtube", "YouTube", so.youtube);
+          h += textField("settings.json", "social.x", "X / Twitter", so.x);
+          h += "</div>";
+          h += '<div class="grid2">';
+          h += textField("settings.json", "social.linkedin", "LinkedIn", so.linkedin);
+          h += textField("settings.json", "social.yelp", "Yelp", so.yelp);
+          h += "</div>";
+          document.getElementById("settings-form").innerHTML = h;
+        }
+
+        // ===== B. Pricing =====
+        function tierItemRenderer(labelHeading) {
+          return function (item, idx) {
+            var title = item.count || item.size || item.item || (labelHeading + " " + (idx + 1));
+            var h = '<div class="item-head"><span class="item-title">' + esc(title) + '</span><div class="item-tools">' +
+              '<button type="button" data-move="-1" title="Move up">↑</button>' +
+              '<button type="button" data-move="1" title="Move down">↓</button>' +
+              '<button type="button" class="danger" data-remove title="Remove">✕</button></div></div>';
+            if (item.count !== undefined) h += itemField("count", "Label / count", item.count);
+            if (item.size !== undefined) h += itemField("size", "Size bracket", item.size);
+            if (item.item !== undefined) h += itemField("item", "Item label", item.item);
+            h += '<div class="grid2">';
+            h += '<div class="field"><label>Price ($)</label><input data-item-field="price" data-type="number" type="number" step="any" value="' + (item.price == null ? "" : item.price) + '" /><span class="hint">Leave empty for "Custom quote".</span></div>';
+            h += '<div class="field"><label>Note (for custom quote)</label><input data-item-field="note" type="text" value="' + esc(item.note || "") + '" /></div>';
+            h += "</div>";
+            return h;
+          };
+        }
+        function packageItemRenderer(item, idx) {
+          var h = '<div class="item-head"><span class="item-title">' + esc(item.name || ("Package " + (idx + 1))) + '</span><div class="item-tools">' +
+            '<button type="button" data-move="-1">↑</button><button type="button" data-move="1">↓</button>' +
+            '<button type="button" class="danger" data-remove>✕</button></div></div>';
+          h += '<div class="grid2">';
+          h += itemField("name", "Package name", item.name);
+          h += itemField("tag", "Tag line", item.tag);
+          h += "</div>";
+          h += '<div class="grid2">';
+          h += '<div class="field"><label>Price ($)</label><input data-item-field="price" data-type="number" type="number" step="any" value="' + (item.price == null ? "" : item.price) + '" /></div>';
+          h += '<div class="field"><label>Featured?</label><select data-item-field="featured"><option value="false"' + (item.featured ? "" : " selected") + '>No</option><option value="true"' + (item.featured ? " selected" : "") + '>Yes — highlight</option></select></div>';
+          h += "</div>";
+          h += itemField("blurb", "Blurb", item.blurb);
+          h += itemField("sizeNote", "Size note", item.sizeNote);
+          h += '<div class="field"><label>Includes (one per line)</label><textarea data-item-field="includes" data-list="true" rows="4">' + esc((item.includes || []).join("\n")) + '</textarea></div>';
+          return h;
+        }
+        function addonListRenderer(title, file, path, items) {
+          var h = "<h3>" + esc(title) + "</h3>";
+          h += '<div class="field"><textarea data-edit="' + esc(file + "::" + path) + '" data-list="true" rows="' + Math.max(3, items.length) + '">' + esc((items || []).join("\n")) + '</textarea><span class="hint">One add-on per line.</span></div>';
+          return h;
+        }
+        function buildPricing() {
+          var p = files["pricing.json"];
+          var h = "";
+          h += "<h3>Vegas packages</h3>";
+          h += renderArray(p.vegasPackages, packageItemRenderer, { addLabel: "+ Add package" });
+          h += "<h3>HDR photo tiers</h3>";
+          h += renderArray(p.hdrTiers, tierItemRenderer("Tier"));
+          h += addonListRenderer("HDR add-ons", "pricing.json", "hdrAddOns", p.hdrAddOns);
+          h += "<h3>Matterport tiers</h3>";
+          h += renderArray(p.matterportTiers, tierItemRenderer("Size"));
+          h += "<h3>Floor plan tiers</h3>";
+          h += renderArray(p.floorPlanTiers, tierItemRenderer("Size"));
+          h += addonListRenderer("Floor plan add-ons", "pricing.json", "floorPlanAddOns", p.floorPlanAddOns);
+          h += "<h3>Virtual staging</h3>";
+          h += renderArray(p.virtualStagingTiers, tierItemRenderer("Item"));
+          h += "<h3>Video</h3>";
+          h += renderArray(p.videoTiers, tierItemRenderer("Item"));
+          h += "<h3>Zillow</h3>";
+          h += renderArray(p.zillowTiers, tierItemRenderer("Item"));
+          h += "<h3>Commercial HDR</h3>";
+          h += renderArray(p.commercialHdr, tierItemRenderer("Count"));
+          h += "<h3>Google package</h3>";
+          var g = p.googlePackage || {};
+          h += '<div class="grid2">';
+          h += textField("pricing.json", "googlePackage.name", "Name", g.name);
+          h += '<div class="field"><label>Price ($)</label><input data-edit="pricing.json::googlePackage.price" data-type="number" type="number" step="any" value="' + (g.price == null ? "" : g.price) + '" /></div>';
+          h += "</div>";
+          h += textField("pricing.json", "googlePackage.note", "Note", g.note);
+          h += textareaField("pricing.json", "googlePackage.includes", "Includes (one per line)", (g.includes || []).join("\n"), { list: true });
+          document.getElementById("pricing-form").innerHTML = h;
+          bindArrayControls(document.getElementById("pricing-form"));
+        }
+
+        // Generic array renderer — returns HTML for an array container.
+        function renderArray(arr, itemRenderer, opts) {
+          opts = opts || {};
+          arr = Array.isArray(arr) ? arr : [];
+          var h = '<div class="array-container" data-array-nested>';
+          arr.forEach(function (item, i) {
+            h += '<div class="item" data-array-item>' + itemRenderer(item, i) + "</div>";
+          });
+          h += "</div>";
+          if (opts.addLabel) h += '<div class="btn-row"><button type="button" class="btn btn-ghost btn-sm" data-add-array>' + esc(opts.addLabel) + "</button></div>";
+          return h;
+        }
+        function itemField(key, label, value) {
+          return '<div class="field"><label>' + esc(label) + '</label><input data-item-field="' + esc(key) + '" type="text" value="' + esc(value == null ? "" : value) + '" /></div>';
+        }
+
+        // Bind ↑/↓/✕ and "+ add" buttons within a container.
+        function bindArrayControls(root) {
+          root.querySelectorAll(".array-container").forEach(function (container) {
+            // add button (sibling after container)
+            var addBtn = container.nextElementSibling ? container.nextElementSibling.querySelector("[data-add-array]") : null;
+            if (addBtn && !addBtn.dataset.bound) {
+              addBtn.dataset.bound = "1";
+              addBtn.addEventListener("click", function () {
+                var firstItem = container.querySelector("[data-array-item]");
+                if (!firstItem) return;
+                var template = firstItem.cloneNode(true);
+                template.querySelectorAll("[data-item-field]").forEach(function (f) {
+                  if (f.dataset.list === "true") f.value = "";
+                  else if (f.type === "checkbox") f.checked = false;
+                  else if (f.tagName === "SELECT") { /* leave default */ }
+                  else f.value = "";
+                });
+                container.appendChild(template);
+                template.scrollIntoView({ behavior: "smooth", block: "center" });
+                var firstInput = template.querySelector("[data-item-field]");
+                if (firstInput) firstInput.focus();
+              });
+            }
+            container.querySelectorAll("[data-array-item]").forEach(function (item) {
+              var up = item.querySelector("[data-move='-1']");
+              var down = item.querySelector("[data-move='1']");
+              var rm = item.querySelector("[data-remove]");
+              if (up && !up.dataset.bound) { up.dataset.bound = "1"; up.addEventListener("click", function () { var prev = item.previousElementSibling; if (prev) container.insertBefore(item, prev); }); }
+              if (down && !down.dataset.bound) { down.dataset.bound = "1"; down.addEventListener("click", function () { var next = item.nextElementSibling; if (next) container.insertBefore(next, item); }); }
+              if (rm && !rm.dataset.bound) { rm.dataset.bound = "1"; rm.addEventListener("click", function () { if (confirm("Remove this item?")) item.remove(); }); }
+            });
+          });
+        }
+
+        // ===== C. Testimonials (root array) =====
+        function buildTestimonials() {
+          var arr = files["testimonials.json"];
+          var container = document.getElementById("testimonials-form");
+          var h = "";
+          arr.forEach(function (t, i) {
+            h += '<div class="item" data-array-item><div class="item-head"><span class="item-title">' + esc(t.name || ("Testimonial " + (i + 1))) + '</span><div class="item-tools">' +
+              '<button type="button" data-move="-1">↑</button><button type="button" data-move="1">↓</button>' +
+              '<button type="button" class="danger" data-remove>✕</button></div></div>';
+            h += '<div class="grid2">';
+            h += itemField("name", "Client name", t.name);
+            h += itemField("context", "Context (e.g. Matterport client)", t.context);
+            h += "</div>";
+            h += '<div class="field"><label>Quote</label><textarea data-item-field="quote" rows="3">' + esc(t.quote || "") + '</textarea></div>';
+            h += itemField("avatar", "Avatar image path", t.avatar);
+            h += "</div>";
+          });
+          container.innerHTML = h;
+          // testimonial container IS the data-array root; bind its controls.
+          container.querySelectorAll("[data-array-item]").forEach(function (item) {
+            var up = item.querySelector("[data-move='-1']");
+            var down = item.querySelector("[data-move='1']");
+            var rm = item.querySelector("[data-remove]");
+            if (up) up.addEventListener("click", function () { var prev = item.previousElementSibling; if (prev) container.insertBefore(item, prev); });
+            if (down) down.addEventListener("click", function () { var next = item.nextElementSibling; if (next) container.insertBefore(next, item); });
+            if (rm) rm.addEventListener("click", function () { if (confirm("Remove this testimonial?")) item.remove(); });
+          });
+        }
+        document.addEventListener("click", function (e) {
+          if (e.target.closest("[data-add-testimonial]")) {
+            var container = document.getElementById("testimonials-form");
+            var div = document.createElement("div");
+            div.className = "item";
+            div.setAttribute("data-array-item", "");
+            div.innerHTML = '<div class="item-head"><span class="item-title">New testimonial</span><div class="item-tools">' +
+              '<button type="button" data-move="-1">↑</button><button type="button" data-move="1">↓</button>' +
+              '<button type="button" class="danger" data-remove>✕</button></div></div>' +
+              '<div class="grid2">' + itemField("name", "Client name", "") + itemField("context", "Context", "") + "</div>" +
+              '<div class="field"><label>Quote</label><textarea data-item-field="quote" rows="3"></textarea></div>' +
+              itemField("avatar", "Avatar image path", "/images/team/");
+            container.appendChild(div);
+            var item = div;
+            item.querySelector("[data-move='-1']").addEventListener("click", function () { var p = item.previousElementSibling; if (p) container.insertBefore(item, p); });
+            item.querySelector("[data-move='1']").addEventListener("click", function () { var n = item.nextElementSibling; if (n) container.insertBefore(n, item); });
+            item.querySelector("[data-remove]").addEventListener("click", function () { if (confirm("Remove this testimonial?")) item.remove(); });
+            div.scrollIntoView({ behavior: "smooth", block: "center" });
+            div.querySelector("[data-item-field]").focus();
           }
-          h.push('</div></section>');
+        });
 
-          // Testimonials
-          h.push('<section id="testimonials"><div class="card"><h2>Testimonials <span class="count">' + arr(d.testimonials).length + '</span></h2>');
-          arr(d.testimonials).forEach(function (t) {
-            h.push('<p class="quote">"' + esc(t.quote) + '"<span class="who">— ' + esc(t.name) + ', ' + esc(t.context) + '</span></p>');
+        // ===== D. FAQ (root array) =====
+        function buildFaq() {
+          var arr = files["faq.json"];
+          var container = document.getElementById("faq-form");
+          var h = "";
+          arr.forEach(function (f, i) {
+            h += '<div class="item" data-array-item><div class="item-head"><span class="item-title">Q' + (i + 1) + '</span><div class="item-tools">' +
+              '<button type="button" data-move="-1">↑</button><button type="button" data-move="1">↓</button>' +
+              '<button type="button" class="danger" data-remove>✕</button></div></div>';
+            h += '<div class="field"><label>Question</label><input data-item-field="q" type="text" value="' + esc(f.q || "") + '" /></div>';
+            h += '<div class="field"><label>Answer</label><textarea data-item-field="a" rows="3">' + esc(f.a || "") + '</textarea></div>';
+            h += "</div>";
           });
-          h.push('</div></section>');
-
-          // FAQ
-          h.push('<section id="faq"><div class="card"><h2>FAQ <span class="count">' + arr(d.faqs).length + '</span></h2>');
-          arr(d.faqs).forEach(function (f, i) {
-            h.push('<p style="font-weight:600;margin:1rem 0 0.2rem">' + (i + 1) + '. ' + esc(f.q) + '</p>');
-            h.push('<p style="color:var(--muted);margin:0 0 0.5rem">' + esc(f.a) + '</p>');
-          });
-          h.push('</div></section>');
-
-          // Services
-          h.push('<section id="services"><div class="card"><h2>Services <span class="count">' + arr(d.services).length + '</span></h2>');
-          h.push('<table><thead><tr><th>Service</th><th>Audience</th></tr></thead><tbody>');
-          arr(d.services).forEach(function (s) {
-            h.push('<tr><td><strong>' + esc(s.label) + '</strong></td><td>' + esc(s.audience) + '</td></tr>');
-          });
-          h.push('</tbody></table></div></section>');
-
-          // Clients
-          h.push('<section id="clients"><div class="card"><h2>Client logos <span class="count">' + arr(d.clients).length + '</span></h2>');
-          h.push('<div class="chips">' + arr(d.clients).map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join("") + '</div>');
-          h.push('</div></section>');
-
-          // SEO — per-page meta overview (replaces Yoast's meta list)
-          var seoRows = arr(d.seo);
-          h.push('<section id="seo"><div class="card"><h2>SEO <span class="count">' + seoRows.length + ' pages</span></h2>');
-          h.push('<p class="hint">What Google sees for each page. Titles are clamped at 60 chars and descriptions at 160 on the live site; over-long rows here are flagged so you can trim them before they get cut off in search results.</p>');
-          h.push('<table class="seo-table"><thead><tr><th>Page</th><th>Title</th><th class="num">Chars</th><th>Description</th><th class="num">Chars</th><th>Schema</th></tr></thead><tbody>');
-          seoRows.forEach(function (p) {
-            var titleWarn = p.titleLen > 60 ? ' class="warn"' : '';
-            var descWarn = p.descLen > 160 ? ' class="warn"' : '';
-            var badge = p.noindex ? ' <span class="tag">noindex</span>' : '';
-            h.push('<tr><td><code>' + esc(p.path) + '</code>' + badge + '</td>');
-            h.push('<td' + titleWarn + '>' + esc(p.title) + '</td><td class="num"' + titleWarn + '>' + p.titleLen + '</td>');
-            h.push('<td' + descWarn + '>' + esc(p.description) + '</td><td class="num"' + descWarn + '>' + p.descLen + '</td>');
-            h.push('<td class="muted">' + esc(p.schema) + '</td></tr>');
-          });
-          h.push('</tbody></table></div></section>');
-
-          // Redirects — old WordPress URL → new Astro URL map
-          var redirRows = arr(d.redirects);
-          h.push('<section id="redirects"><div class="card"><h2>Redirects <span class="count">' + redirRows.length + '</span></h2>');
-          h.push('<p class="hint">Old WordPress permalinks that now bounce to their new Astro URLs, preserving SEO rankings and inbound links. Edit <code>src/data/redirects.ts</code> and run <code>npm run gen:redirects</code> to change this list.</p>');
-          h.push('<table class="seo-table"><thead><tr><th>Old WordPress URL</th><th>→ New URL</th></tr></thead><tbody>');
-          redirRows.forEach(function (r) {
-            h.push('<tr><td><code>' + esc(r.from) + '</code></td><td><code>' + esc(r.to) + '</code></td></tr>');
-          });
-          h.push('</tbody></table></div></section>');
-
-          document.getElementById("content").innerHTML = h.join("");
-        }
-
-        // ===== Request changes mailto builder =====
-        var sendBtn = document.getElementById("send-mailto");
-        var copyBtn = document.getElementById("copy-notes");
-        var notesEl = document.getElementById("change-notes");
-        var statusEl = document.getElementById("request-status");
-
-        function buildMailto() {
-          var notes = (notesEl && notesEl.value.trim()) || "(no notes entered)";
-          var subject = encodeURIComponent("Website content change request — " + (d() && d().business ? d().business.name : "VTLV"));
-          var body = encodeURIComponent(
-            "Hi,\n\nI'd like to request the following changes to the website:\n\n" +
-            notes + "\n\n" +
-            "Thanks,\n" + (d() && d().business ? d().business.owner : "Mike")
-          );
-          return "mailto:" + changesEmail + "?subject=" + subject + "&body=" + body;
-        }
-        // Tiny helper to re-read snapshot for the mailto subject/signature.
-        function d() { try { return JSON.parse(snapshot); } catch (e) { return {}; } }
-
-        if (sendBtn) {
-          sendBtn.addEventListener("click", function (e) {
-            // Let it act as a real link so the mailto handoff works; just set href.
-            sendBtn.setAttribute("href", buildMailto());
-            if (statusEl) { statusEl.textContent = "Opening your email app…"; }
+          container.innerHTML = h;
+          bindRootArrayControls(container, function () {
+            return '<div class="item" data-array-item><div class="item-head"><span class="item-title">New Q</span><div class="item-tools">' +
+              '<button type="button" data-move="-1">↑</button><button type="button" data-move="1">↓</button>' +
+              '<button type="button" class="danger" data-remove>✕</button></div></div>' +
+              '<div class="field"><label>Question</label><input data-item-field="q" type="text" /></div>' +
+              '<div class="field"><label>Answer</label><textarea data-item-field="a" rows="3"></textarea></div>';
           });
         }
-        if (copyBtn) {
-          copyBtn.addEventListener("click", function () {
-            var notes = notesEl ? notesEl.value : "";
-            if (!notes.trim()) { if (statusEl) statusEl.textContent = "Nothing to copy yet."; return; }
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(notes).then(function () {
-                if (statusEl) statusEl.textContent = "Copied to clipboard.";
-              }, function () { if (statusEl) statusEl.textContent = "Couldn't copy — select and copy manually."; });
-            } else {
-              notesEl.select(); document.execCommand("copy");
-              if (statusEl) statusEl.textContent = "Copied to clipboard.";
+        document.addEventListener("click", function (e) {
+          if (e.target.closest("[data-add-faq]")) addRootArrayitem("faq-form", '<div class="field"><label>Question</label><input data-item-field="q" type="text" /></div><div class="field"><label>Answer</label><textarea data-item-field="a" rows="3"></textarea></div>');
+        });
+
+        // ===== E. Portfolio (root array) =====
+        function buildPortfolio() {
+          var arr = files["portfolio.json"];
+          var container = document.getElementById("portfolio-form");
+          var cats = ["Interior", "Exterior", "Drone", "Staging", "3D Tour", "Commercial", "Floor Plan"];
+          var h = "";
+          arr.forEach(function (s, i) {
+            h += '<div class="item" data-array-item><div class="item-head"><span class="item-title">' + esc(s.alt ? s.alt.slice(0, 40) : "Image " + (i + 1)) + '</span><div class="item-tools">' +
+              '<button type="button" data-move="-1">↑</button><button type="button" data-move="1">↓</button>' +
+              '<button type="button" class="danger" data-remove>✕</button></div></div>';
+            h += itemField("src", "Image path (/images/...)", s.src);
+            h += itemField("alt", "Alt text (describe the image)", s.alt);
+            h += '<div class="grid2">';
+            h += '<div class="field"><label>Category</label><select data-item-field="category">' + cats.map(function (c) { return '<option' + (s.category === c ? " selected" : "") + ">" + c + "</option>"; }).join("") + '</select></div>';
+            h += '<div class="field"><label>Wide tile?</label><select data-item-field="span"><option value="false"' + (s.span ? "" : " selected") + '>No</option><option value="true"' + (s.span ? " selected" : "") + '>Yes — span 2 columns</option></select></div>';
+            h += "</div>";
+            h += itemField("matterportId", "Matterport model ID (optional)", s.matterportId || "");
+            h += "</div>";
+          });
+          container.innerHTML = h;
+          bindRootArrayControls(container, function () {
+            var inner = itemField("src", "Image path (/images/...)", "/images/portfolio/") +
+              itemField("alt", "Alt text", "") +
+              '<div class="grid2"><div class="field"><label>Category</label><select data-item-field="category">' + cats.map(function (c) { return "<option>" + c + "</option>"; }).join("") + '</select></div>' +
+              '<div class="field"><label>Wide tile?</label><select data-item-field="span"><option value="false" selected>No</option><option value="true">Yes</option></select></div></div>' +
+              itemField("matterportId", "Matterport model ID (optional)", "");
+            return inner;
+          });
+        }
+        document.addEventListener("click", function (e) {
+          if (e.target.closest("[data-add-portfolio]")) {
+            var cats = ["Interior", "Exterior", "Drone", "Staging", "3D Tour", "Commercial", "Floor Plan"];
+            var inner = itemField("src", "Image path", "/images/portfolio/") + itemField("alt", "Alt text", "") +
+              '<div class="grid2"><div class="field"><label>Category</label><select data-item-field="category">' + cats.map(function (c) { return "<option>" + c + "</option>"; }).join("") + '</select></div><div class="field"><label>Wide tile?</label><select data-item-field="span"><option value="false" selected>No</option><option value="true">Yes</option></select></div></div>' +
+              itemField("matterportId", "Matterport model ID (optional)", "");
+            addRootArrayitem("portfolio-form", inner);
+          }
+        });
+
+        // Shared controls for a root-level array container (testimonials/faq/portfolio).
+        function bindRootArrayControls(container, templateFn) {
+          container.querySelectorAll("[data-array-item]").forEach(function (item) {
+            wireRootItem(container, item);
+          });
+          container._template = templateFn;
+        }
+        function wireRootItem(container, item) {
+          var up = item.querySelector("[data-move='-1']");
+          var down = item.querySelector("[data-move='1']");
+          var rm = item.querySelector("[data-remove]");
+          if (up) up.onclick = function () { var p = item.previousElementSibling; if (p) container.insertBefore(item, p); };
+          if (down) down.onclick = function () { var n = item.nextElementSibling; if (n) container.insertBefore(n, item); };
+          if (rm) rm.onclick = function () { if (confirm("Remove this item?")) item.remove(); };
+        }
+        function addRootArrayitem(containerId, innerHtml) {
+          var container = document.getElementById(containerId);
+          var div = document.createElement("div");
+          div.className = "item";
+          div.setAttribute("data-array-item", "");
+          div.innerHTML = '<div class="item-head"><span class="item-title">New entry</span><div class="item-tools">' +
+            '<button type="button" data-move="-1">↑</button><button type="button" data-move="1">↓</button>' +
+            '<button type="button" class="danger" data-remove>✕</button></div></div>' + innerHtml;
+          container.appendChild(div);
+          wireRootItem(container, div);
+          div.scrollIntoView({ behavior: "smooth", block: "center" });
+          var first = div.querySelector("[data-item-field]");
+          if (first) first.focus();
+        }
+
+        // ===== F. Services =====
+        function buildServices() {
+          var slugs = Object.keys(files).filter(function (k) { return k.indexOf("services/") === 0 && k.indexOf(".json") > 0; });
+          var labels = {
+            "3d-tours": "3D & Virtual Tours", "as-built": "As-Built & Construction Docs", commercial: "Commercial",
+            "drone-photography": "Drone Photography", "floor-plans": "Floor Plans", "google-business-view": "Google Business View",
+            "hdr-photography": "HDR Photography", "photo-packages": "Photo Packages", residential: "Residential",
+            "twilight-photography": "Twilight Photography", "vacation-rentals": "Vacation Rentals", "virtual-staging": "Virtual Staging",
+          };
+          var h = "";
+          slugs.forEach(function (file) {
+            var s = files[file];
+            var slug = file.replace("services/", "").replace(".json", "");
+            var label = labels[slug] || slug;
+            h += '<div class="item"><div class="item-head"><span class="item-title">' + esc(label) + '</span>' +
+              '<button type="button" class="btn btn-primary btn-sm" data-download="' + esc(file) + '">Download ' + esc(file.split("/")[1]) + '</button></div>';
+            h += textField(file, "title", "SEO title (≤60 chars)", s.title, { charLimit: 60 });
+            h += textareaField(file, "description", "Meta description (≤160 chars)", s.description, { charLimit: 160, rows: 2 });
+            h += '<div class="grid2">';
+            h += textField(file, "eyebrow", "Hero eyebrow", s.eyebrow);
+            h += textField(file, "headline", "Hero headline", s.headline);
+            h += "</div>";
+            h += textareaField(file, "lead", "Hero lead paragraph", s.lead, { rows: 3 });
+            h += '<span class="save-status" data-status="' + esc(file) + '"></span>';
+            h += "</div>";
+          });
+          document.getElementById("services-form").innerHTML = h;
+          wireCharCounters(document.getElementById("services-form"));
+        }
+        // Live character counters: update on input.
+        function wireCharCounters(root) {
+          root.querySelectorAll("[data-char-limit]").forEach(function (cc) {
+            var limit = parseInt(cc.dataset.charLimit, 10);
+            var field = cc.closest(".field");
+            var input = field ? field.querySelector("input, textarea") : null;
+            if (input) {
+              input.addEventListener("input", function () {
+                var len = input.value.length;
+                cc.textContent = len + " / " + limit;
+                cc.classList.toggle("over", len > limit);
+              });
             }
           });
+        }
+
+        // ===== G. Blog =====
+        function buildBlogList() {
+          var list = document.getElementById("blog-list");
+          if (!blogPosts.length) { list.innerHTML = '<p class="muted">No posts yet. Create one above.</p>'; return; }
+          var h = "";
+          blogPosts.forEach(function (p) {
+            h += '<div class="item"><div class="item-head"><span class="item-title">' + esc(p.title) + (p.draft ? ' <span class="tag">draft</span>' : "") + '</span><div class="item-tools">' +
+              '<button type="button" data-edit-post="' + esc(p.slug) + '">Edit</button>' +
+              '<button type="button" data-toggle-draft="' + esc(p.slug) + '">' + (p.draft ? "Publish" : "Unpublish") + '</button>' +
+              '<button type="button" data-del-post="' + esc(p.slug) + '" class="danger">Delete</button></div></div>';
+            h += '<p class="muted" style="font-size:0.82rem;margin:0">' + esc(p.publishDate) + " · " + esc(p.category) + " · " + esc(p.description) + "</p>";
+            h += "</div>";
+          });
+          list.innerHTML = h;
+        }
+        document.addEventListener("click", function (e) {
+          var editBtn = e.target.closest("[data-edit-post]");
+          var toggleBtn = e.target.closest("[data-toggle-draft]");
+          var delBtn = e.target.closest("[data-del-post]");
+          if (editBtn) {
+            var slug = editBtn.dataset.editPost;
+            var p = blogPosts.find(function (b) { return b.slug === slug; });
+            if (p) openPostEditor(p);
+          }
+          if (toggleBtn) {
+            var slug2 = toggleBtn.dataset.toggleDraft;
+            var p2 = blogPosts.find(function (b) { return b.slug === slug2; });
+            if (p2) {
+              p2.draft = !p2.draft;
+              openPostEditor(p2);
+            }
+          }
+          if (delBtn) {
+            var slug3 = delBtn.dataset.delPost;
+            if (confirm("Delete '" + slug3 + "'? This downloads a delete instruction file for your son — the original post isn't removed until he applies it.")) {
+              download("DELETE-" + slug3 + ".md", "# This file tells your son to DELETE the post: src/content/blog/" + slug3 + ".md\n", "text/markdown;charset=utf-8");
+              showToast("Downloaded delete instruction for " + slug3);
+            }
+          }
+        });
+        function openPostEditor(p) {
+          var overlay = document.createElement("div");
+          overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:flex;align-items:center;justify-content:center;padding:1.5rem;";
+          var box = document.createElement("div");
+          box.style.cssText = "background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1.4rem;max-width:760px;width:100%;max-height:90vh;overflow:auto;";
+          box.innerHTML =
+            '<h2 style="margin:0 0 1rem;font-size:1.1rem">Edit post: ' + esc(p.slug) + '</h2>' +
+            '<div class="field"><label>Title</label><input id="pe-title" type="text" value="' + esc(p.title) + '" /></div>' +
+            '<div class="grid2"><div class="field"><label>Description</label><input id="pe-desc" type="text" value="' + esc(p.description) + '" /></div>' +
+            '<div class="field"><label>Category</label><input id="pe-cat" type="text" value="' + esc(p.category) + '" /></div></div>' +
+            '<div class="grid2"><div class="field"><label>Publish date</label><input id="pe-date" type="date" value="' + esc(p.publishDate) + '" /></div>' +
+            '<div class="field"><label>Author</label><input id="pe-author" type="text" value="' + esc(p.author) + '" /></div></div>' +
+            '<div class="grid2"><div class="field"><label>Hero image</label><input id="pe-hero" type="text" value="' + esc(p.heroImage) + '" /></div>' +
+            '<div class="field"><label>Hero alt text</label><input id="pe-heroalt" type="text" value="' + esc(p.heroAlt) + '" /></div></div>' +
+            '<div class="field"><label>Draft?</label><select id="pe-draft"><option value="true"' + (p.draft ? " selected" : "") + '>Yes — hide</option><option value="false"' + (!p.draft ? " selected" : "") + '>No — publish</option></select></div>' +
+            '<div class="field"><label>Body (Markdown)</label><textarea id="pe-body" rows="12">' + esc(p.body || "") + '</textarea></div>' +
+            '<div class="btn-row"><button class="btn btn-primary" id="pe-save">Download updated .md</button><button class="btn btn-ghost" id="pe-close">Close</button></div>';
+          overlay.appendChild(box);
+          document.body.appendChild(overlay);
+          overlay.querySelector("#pe-close").onclick = function () { document.body.removeChild(overlay); };
+          overlay.addEventListener("click", function (ev) { if (ev.target === overlay) document.body.removeChild(overlay); });
+          overlay.querySelector("#pe-save").onclick = function () {
+            var front = [
+              "---",
+              'title: ' + jsonStr(overlay.querySelector("#pe-title").value),
+              'description: ' + jsonStr(overlay.querySelector("#pe-desc").value),
+              "publishDate: " + overlay.querySelector("#pe-date").value,
+              'author: ' + jsonStr(overlay.querySelector("#pe-author").value),
+              'category: ' + jsonStr(overlay.querySelector("#pe-cat").value),
+              "draft: " + overlay.querySelector("#pe-draft").value,
+              'heroImage: ' + jsonStr(overlay.querySelector("#pe-hero").value),
+              'heroAlt: ' + jsonStr(overlay.querySelector("#pe-heroalt").value),
+              "---",
+              "",
+            ].join("\n");
+            var body = overlay.querySelector("#pe-body").value;
+            download(p.slug + ".md", front + body + "\n", "text/markdown;charset=utf-8");
+            showToast("Downloaded " + p.slug + ".md");
+          };
+        }
+        function jsonStr(s) { return JSON.stringify(s); }
+        document.getElementById("create-post").addEventListener("click", function () {
+          var title = document.getElementById("new-post-title").value.trim();
+          var desc = document.getElementById("new-post-desc").value.trim();
+          var cat = document.getElementById("new-post-category").value;
+          var date = document.getElementById("new-post-date").value || new Date().toISOString().slice(0, 10);
+          var draft = document.getElementById("new-post-draft").value === "true";
+          var body = document.getElementById("new-post-body").value;
+          if (!title) { showToast("Add a title first."); return; }
+          var slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
+          var front = [
+            "---",
+            'title: ' + jsonStr(title),
+            'description: ' + jsonStr(desc || title),
+            "publishDate: " + date,
+            'author: "Mike Madsen"',
+            'category: ' + jsonStr(cat),
+            "draft: " + draft,
+            'heroImage: "/images/portfolio/sierra-skye-living.jpg"',
+            'heroAlt: "Las Vegas real estate photography"',
+            "---",
+            "",
+          ].join("\n");
+          download(slug + ".md", front + body + "\n", "text/markdown;charset=utf-8");
+          showToast("Downloaded " + slug + ".md — drop into src/content/blog/");
+        });
+
+        // ===== H. SEO =====
+        var seoEdits = {}; // path -> {title, description}
+        function buildSeoList() {
+          var list = document.getElementById("seo-list");
+          var h = "";
+          reference.seo.forEach(function (p) {
+            var titleNow = seoEdits[p.path] ? seoEdits[p.path].title : p.title;
+            var descNow = seoEdits[p.path] ? seoEdits[p.path].description : p.description;
+            h += '<div class="item" data-seo-path="' + esc(p.path) + '">';
+            h += '<div class="item-head"><span class="item-title mono">' + esc(p.path) + (p.noindex ? ' <span class="tag">noindex</span>' : "") + '</span><span class="muted" style="font-size:0.74rem">schema: ' + esc(p.schema) + '</span></div>';
+            h += '<div class="serp"><div class="url">' + esc(("virtualtourslasvegas.com" + (p.path === "/" ? "/" : p.path)).replace(/\/$/, "")) + '</div>';
+            h += '<div class="title" data-serp-title>' + esc(titleNow) + '</div>';
+            h += '<div class="desc" data-serp-desc>' + esc(descNow) + '</div></div>';
+            h += '<div class="field" style="margin-top:0.8rem"><label>Title (≤60)</label><input data-seo-field="title" type="text" value="' + esc(titleNow) + '" />' + charCount(titleNow, 60) + "</div>";
+            h += '<div class="field"><label>Description (≤160)</label><textarea data-seo-field="description" rows="2">' + esc(descNow) + '</textarea>' + charCount(descNow, 160) + "</div>";
+            h += "</div>";
+          });
+          list.innerHTML = h;
+          wireSeoLive();
+        }
+        function wireSeoLive() {
+          document.querySelectorAll("[data-seo-path]").forEach(function (item) {
+            var path = item.dataset.seoPath;
+            var titleInput = item.querySelector('[data-seo-field="title"]');
+            var descInput = item.querySelector('[data-seo-field="description"]');
+            var serpTitle = item.querySelector("[data-serp-title]");
+            var serpDesc = item.querySelector("[data-serp-desc]");
+            var tcc = titleInput.closest(".field").querySelector(".char-count");
+            var dcc = descInput.closest(".field").querySelector(".char-count");
+            function upd() {
+              var t = titleInput.value, d = descInput.value;
+              serpTitle.textContent = t; serpDesc.textContent = d;
+              tcc.textContent = t.length + " / 60"; tcc.classList.toggle("over", t.length > 60);
+              dcc.textContent = d.length + " / 160"; dcc.classList.toggle("over", d.length > 160);
+              if (t !== originalSeo(path).title || d !== originalSeo(path).description) {
+                seoEdits[path] = { title: t, description: d };
+              } else {
+                delete seoEdits[path];
+              }
+            }
+            titleInput.addEventListener("input", upd); descInput.addEventListener("input", upd);
+          });
+        }
+        function originalSeo(path) {
+          var e = reference.seo.find(function (s) { return s.path === path; });
+          return e ? { title: e.title, description: e.description } : { title: "", description: "" };
+        }
+        function collectSeoEdits() {
+          var out = { _note: "Apply these title/description edits to src/data/seo-catalog.ts AND the matching page frontmatter. Generated by the admin SEO panel.", edits: [] };
+          Object.keys(seoEdits).forEach(function (path) {
+            out.edits.push({ path: path, title: seoEdits[path].title, description: seoEdits[path].description });
+          });
+          if (!out.edits.length) out._note += " (No changes were made — this is the current catalog.)";
+          return out;
+        }
+        function buildKeywordGroups() {
+          var h = "";
+          reference.keywordGroups.forEach(function (g) {
+            h += "<h3>" + esc(g.label) + " <span class='muted' style='font-weight:400;text-transform:none;letter-spacing:0'>(" + g.terms.length + ")</span></h3>";
+            h += '<p class="muted" style="font-size:0.82rem;margin:-0.3rem 0 0.6rem">' + esc(g.note) + "</p>";
+            h += '<div class="chips">' + g.terms.map(function (t) { return '<span class="chip">' + esc(t) + "</span>"; }).join("") + "</div>";
+          });
+          document.getElementById("keyword-groups").innerHTML = h;
+        }
+
+        // ===== I. Redirects =====
+        function buildRedirectsTable() {
+          var tb = document.getElementById("redirects-tbody");
+          var h = "";
+          reference.redirects.forEach(function (r) {
+            h += "<tr><td><code>" + esc(r.from) + "</code></td><td><code>" + esc(r.to) + "</code></td></tr>";
+          });
+          tb.innerHTML = h;
+        }
+        document.getElementById("add-redirect").addEventListener("click", function () {
+          var from = document.getElementById("new-redir-from").value.trim();
+          var to = document.getElementById("new-redir-to").value.trim();
+          if (!from || !to) { showToast("Fill in both URLs."); return; }
+          // Strip leading slash + trailing for the `from` form expected by redirects.ts.
+          var fromNorm = from.replace(/^\/+|\/+$/g, "").replace(/\/index$/, "") || "index";
+          var existing = reference.redirects.map(function (r) {
+            return { from: r.from.replace(/^\//, "").replace(/\/$/, ""), to: r.to };
+          });
+          existing.push({ from: fromNorm + "/index", to: to });
+          var payload = {
+            _note: "Merge these redirects into src/data/redirects.ts and run `npm run gen:redirects`. Each `from` is without leading slash and should end in '/index'.",
+            redirects: existing.map(function (r) { return { from: r.from, to: r.to }; }),
+          };
+          download("redirects.json", prettyJson(payload));
+          showToast("Downloaded redirects.json with your new redirect.");
+        });
+
+        // ===== J. Integrations =====
+        function buildIntegrations() {
+          var i = files["integrations.json"];
+          var h = "";
+          h += "<h3>Formsubmit (contact form)</h3>";
+          h += textField("integrations.json", "formsubmitEmail", "Email that receives form submissions", i.formsubmitEmail, { hint: "First submission triggers a one-time confirmation email from Formsubmit." });
+          h += "<h3>Google Analytics 4</h3>";
+          h += textField("integrations.json", "ga4MeasurementId", "GA4 Measurement ID (G-XXXXXXXXXX)", i.ga4MeasurementId, { hint: "Your son sets this as the GA4_MEASUREMENT_ID env var." });
+          h += "<h3>PayPal</h3>";
+          h += textField("integrations.json", "paypalLink", "PayPal.me link or button HTML", i.paypalLink);
+          h += "<h3>Google Calendar</h3>";
+          h += textareaField("integrations.json", "googleCalendarEmbedUrl", "Calendar embed URL (the iframe src)", i.googleCalendarEmbedUrl, { hint: "From Google Calendar → Settings → Integrate calendar → Embed code." });
+          h += "<h3>Matterport</h3>";
+          h += textField("integrations.json", "defaultMatterportId", "Default Matterport model ID", i.defaultMatterportId);
+          h += "<h3>YouTube</h3>";
+          h += textField("integrations.json", "youtubeChannelUrl", "YouTube channel URL", i.youtubeChannelUrl);
+          h += textareaField("integrations.json", "youtubeEmbedCode", "Featured video embed code (optional)", i.youtubeEmbedCode, { rows: 2 });
+          h += "<h3>Google Business Profile</h3>";
+          h += textField("integrations.json", "googleBusinessProfileUrl", "Google Business Profile URL", i.googleBusinessProfileUrl);
+          document.getElementById("integrations-form").innerHTML = h;
+        }
+        document.getElementById("test-formsubmit").addEventListener("click", function () {
+          var email = (collectAll()["integrations.json"] || {}).formsubmitEmail;
+          var statusEl = document.getElementById("formsubmit-test-status");
+          statusEl.textContent = "Sending test…"; statusEl.style.color = "var(--muted)";
+          fetch("https://formsubmit.co/ajax/" + encodeURIComponent(email), {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({ name: "VTLV Admin", _subject: "Admin panel test submission", message: "This is a test from the admin Integrations panel. If you see this, Formsubmit is working.", _template: "table" }),
+          }).then(function (r) {
+            if (r.ok) { statusEl.textContent = "Test sent — check " + email + " (first send may need a one-time confirmation)."; statusEl.style.color = "var(--ok)"; }
+            else { statusEl.textContent = "Formsubmit returned an error. Check the email address."; statusEl.style.color = "var(--danger)"; }
+          }).catch(function () {
+            statusEl.textContent = "Couldn't reach Formsubmit (network/CORS). This is expected on some networks; the live form still works.";
+            statusEl.style.color = "var(--warn)";
+          });
+        });
+
+        // ===== K. Backup / Restore =====
+        // Minimal STORE-method (no compression) ZIP — pure JS, no deps.
+        function crc32Table() {
+          var t = new Uint32Array(256);
+          for (var n = 0; n < 256; n++) {
+            var c = n;
+            for (var k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+            t[n] = c >>> 0;
+          }
+          return t;
+        }
+        var CRC_TABLE = crc32Table();
+        function crc32(bytes) {
+          var c = 0xffffffff;
+          for (var i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+          return (c ^ 0xffffffff) >>> 0;
+        }
+        function strBytes(s) { return new TextEncoder().encode(s); }
+        function u16(n) { return String.fromCharCode(n & 0xff, (n >>> 8) & 0xff); }
+        function u32(n) { return String.fromCharCode((n & 0xff), (n >>> 8) & 0xff, (n >>> 16) & 0xff, (n >>> 24) & 0xff); }
+        function makeZip(fileList) {
+          // STORE-method ZIP (no compression), pure JS, no deps. Emits one local
+          // file header + data per entry, a central directory, and an EOCD record.
+          // All offsets are computed in BYTES (UTF-8) so multi-byte filenames and
+          // content lengths match what the spec expects.
+          var chunks = [];
+          var centralParts = [];
+          var offset = 0;
+          fileList.forEach(function (f) {
+            var dataBytes = strBytes(f.text);
+            var nameBytes = strBytes(f.name);
+            var crc = crc32(dataBytes);
+            var size = dataBytes.length;
+            var namelen = nameBytes.length;
+            // Local file header (signature 0x04034b50), version 2.0, no flags.
+            var localHeader =
+              "\x50\x4b\x03\x04" + u16(20) + u16(0) + u16(0) + u16(0) +
+              u32(crc) + u32(size) + u32(size) + u16(namelen) + u16(0) + f.name;
+            chunks.push(strBytes(localHeader));
+            chunks.push(dataBytes);
+            // Central directory header (signature 0x02014b50).
+            var centralHeader =
+              "\x50\x4b\x01\x02" + u16(20) + u16(20) + u16(0) + u16(0) + u16(0) +
+              u32(crc) + u32(size) + u32(size) + u16(namelen) + u16(0) + u16(0) + u16(0) + u16(0) + u16(0) + u32(0) + u32(offset) + f.name;
+            centralParts.push(centralHeader);
+            offset += strBytes(localHeader).length + size;
+          });
+          var centralAll = centralParts.join("");
+          var cdSize = strBytes(centralAll).length;
+          // End of central directory record (signature 0x06054b50).
+          var eocd = "\x50\x4b\x05\x06" + u16(0) + u16(0) + u16(fileList.length) + u16(fileList.length) +
+            u32(cdSize) + u32(offset) + u16(0);
+          chunks.push(strBytes(centralAll));
+          chunks.push(strBytes(eocd));
+          var total = 0; chunks.forEach(function (c) { total += c.length; });
+          var out = new Uint8Array(total);
+          var pos = 0;
+          chunks.forEach(function (c) { out.set(c, pos); pos += c.length; });
+          return new Blob([out], { type: "application/zip" });
+        }
+        document.getElementById("download-all-zip").addEventListener("click", function () {
+          var all = collectAll();
+          var fileList = Object.keys(all).filter(function (k) { return k !== "seo-edits.json"; }).map(function (k) {
+            return { name: k, text: prettyJson(all[k]) };
+          });
+          fileList.push({ name: "README.txt", text: "Virtual Tours Las Vegas — content backup\nDownloaded " + new Date().toISOString() + "\n\nEach JSON file goes into src/data/cms/ (services into src/data/cms/services/).\nDrop them into the GitHub repo (or email to your son) and the site rebuilds.\n" });
+          var blob = makeZip(fileList);
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url; a.download = "vtlv-content-backup-" + new Date().toISOString().slice(0, 10) + ".zip";
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+          showToast("Downloaded content backup (.zip)");
+        });
+        document.getElementById("download-all-json").addEventListener("click", function () {
+          var all = collectAll();
+          var bundle = { _note: "VTLV content bundle. Each key is a file path under src/data/cms/.", generated: new Date().toISOString(), files: all };
+          download("vtlv-content-backup-" + new Date().toISOString().slice(0, 10) + ".json", prettyJson(bundle));
+          showToast("Downloaded content bundle (.json)");
+        });
+
+        // Upload + diff preview.
+        document.getElementById("upload-input").addEventListener("change", function (e) {
+          var file = e.target.files && e.target.files[0];
+          if (!file) return;
+          var preview = document.getElementById("upload-preview");
+          preview.innerHTML = '<p class="muted">Reading ' + esc(file.name) + "…</p>";
+          var reader = new FileReader();
+          reader.onload = function () {
+            var uploaded = {};
+            if (/\.zip$/i.test(file.name)) {
+              showToast("ZIP parsing isn't supported in-browser yet — please upload the .json bundle or an individual content JSON.");
+              preview.innerHTML = '<p class="warn">Could not preview a ZIP here. Use the .json bundle download instead, or unzip locally and upload an individual JSON file.</p>';
+              return;
+            }
+            try {
+              var parsed = JSON.parse(reader.result);
+              if (parsed.files && typeof parsed.files === "object") uploaded = parsed.files;
+              else uploaded = { "(uploaded file)": parsed };
+            } catch (err) {
+              preview.innerHTML = '<p class="warn">That file isn\'t valid JSON.</p>';
+              return;
+            }
+            renderUploadDiff(uploaded, preview);
+          };
+          reader.readAsText(file);
+        });
+        function renderUploadDiff(uploaded, container) {
+          var current = files;
+          var html = '<h3 style="margin-top:1rem">Preview: ' + Object.keys(uploaded).length + ' file(s)</h3>';
+          Object.keys(uploaded).forEach(function (name) {
+            var before = current[name];
+            var after = uploaded[name];
+            var changed = before ? JSON.stringify(before) !== JSON.stringify(after) : true;
+            html += '<div class="item"><div class="item-head"><span class="item-title mono">' + esc(name) + (changed ? ' <span class="tag" style="color:var(--warn);border-color:var(--warn)">' + (before ? "changed" : "new") + '</span>' : ' <span class="tag">unchanged</span>') + '</span></div>';
+            if (changed && before) {
+              // Simple top-level field diff.
+              var diffs = diffObjects(before, after);
+              if (diffs.length) {
+                html += '<table class="scroll-x" style="margin-top:0.4rem"><thead><tr><th>Field</th><th>Before</th><th>After</th></tr></thead><tbody>';
+                diffs.slice(0, 25).forEach(function (d) {
+                  html += "<tr><td><code>" + esc(d.key) + '</code></td><td class="muted">' + esc(trunc(d.before)) + "</td><td>" + esc(trunc(d.after)) + "</td></tr>";
+                });
+                if (diffs.length > 25) html += '<tr><td colspan="3" class="muted">…and ' + (diffs.length - 25) + " more changes</td></tr>";
+                html += "</tbody></table>";
+              }
+            }
+            html += "</div>";
+          });
+          html += '<p class="muted" style="font-size:0.82rem">To apply: download the file(s) from the relevant section above using these values, or send the uploaded file directly to your son. Nothing is changed on the live site from this preview.</p>';
+          container.innerHTML = html;
+        }
+        function diffObjects(a, b) {
+          var out = [];
+          if (Array.isArray(a) || Array.isArray(b)) {
+            var alen = Array.isArray(a) ? a.length : 0;
+            var blen = Array.isArray(b) ? b.length : 0;
+            if (alen !== blen) out.push({ key: "(array length)", before: alen, after: blen });
+            else {
+              for (var i = 0; i < alen; i++) {
+                if (JSON.stringify(a[i]) !== JSON.stringify(b[i])) out.push({ key: "[" + i + "]", before: JSON.stringify(a[i]), after: JSON.stringify(b[i]) });
+              }
+            }
+            return out;
+          }
+          if (typeof a !== "object" || typeof b !== "object") {
+            if (JSON.stringify(a) !== JSON.stringify(b)) out.push({ key: "(value)", before: a, after: b });
+            return out;
+          }
+          var keys = Object.keys(Object.assign({}, a, b));
+          keys.forEach(function (k) {
+            var av = a[k], bv = b[k];
+            if (JSON.stringify(av) !== JSON.stringify(bv)) out.push({ key: k, before: av, after: bv });
+          });
+          return out;
+        }
+        function trunc(v) {
+          var s = typeof v === "string" ? v : JSON.stringify(v);
+          return s.length > 60 ? s.slice(0, 60) + "…" : s;
+        }
+
+        // ===== Panel (re)builders, keyed by file for reset =====
+        function buildPanel(file) {
+          if (file === "settings.json") buildSettings();
+          else if (file === "pricing.json") buildPricing();
+          else if (file === "testimonials.json") buildTestimonials();
+          else if (file === "faq.json") buildFaq();
+          else if (file === "portfolio.json") buildPortfolio();
+          else if (file === "integrations.json") buildIntegrations();
+        }
+        function buildAll() {
+          buildSettings();
+          buildPricing();
+          buildTestimonials();
+          buildFaq();
+          buildPortfolio();
+          buildServices();
+          buildBlogList();
+          buildSeoList();
+          buildKeywordGroups();
+          buildRedirectsTable();
+          buildIntegrations();
         }
 
         // Boot.

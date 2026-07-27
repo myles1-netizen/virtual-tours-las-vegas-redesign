@@ -169,6 +169,55 @@ export const seoCatalog: SeoEntry[] = [
     schema: ["BreadcrumbList"],
   },
   {
+    path: "/locations/",
+    title: "Real Estate Photographer Locations — Las Vegas Valley & Beyond | VTLV",
+    description:
+      "City-by-city real estate photography from Virtual Tours Las Vegas: Henderson, Summerlin, North Las Vegas, Boulder City, Pahrump and Mesquite.",
+    schema: ["BreadcrumbList"],
+  },
+  {
+    path: "/locations/henderson/",
+    title: "Henderson Real Estate Photographer | Virtual Tours Las Vegas",
+    description:
+      "Henderson, NV real estate photography — HDR, Matterport 3D tours, drone and floor plans for Anthem, Cadence, Inspirada, Lake Las Vegas and MacDonald Highlands.",
+    schema: ["Service", "FAQPage", "BreadcrumbList"],
+  },
+  {
+    path: "/locations/summerlin/",
+    title: "Summerlin Real Estate Photographer | Virtual Tours Las Vegas",
+    description:
+      "Summerlin & Summerlin South real estate photography — HDR, Matterport 3D tours, drone and twilight for The Ridges, Red Rock Country Club and Skye Canyon.",
+    schema: ["Service", "FAQPage", "BreadcrumbList"],
+  },
+  {
+    path: "/locations/north-las-vegas/",
+    title: "North Las Vegas Real Estate Photographer | Virtual Tours Las Vegas",
+    description:
+      "North Las Vegas real estate photography — HDR, Matterport 3D tours, drone and floor plans for Aliante, Eldorado, Providence and Skye Canyon.",
+    schema: ["Service", "FAQPage", "BreadcrumbList"],
+  },
+  {
+    path: "/locations/boulder-city/",
+    title: "Boulder City Real Estate Photographer | Virtual Tours Las Vegas",
+    description:
+      "Boulder City, NV real estate photography — HDR, Matterport 3D tours, drone and floor plans for custom homes and Lake Mead-view properties.",
+    schema: ["Service", "FAQPage", "BreadcrumbList"],
+  },
+  {
+    path: "/locations/pahrump/",
+    title: "Pahrump Real Estate Photographer | Virtual Tours Las Vegas",
+    description:
+      "Pahrump, NV real estate photography — HDR, Matterport 3D tours, drone and floor plans for acreage properties and equestrian estates in Nye County.",
+    schema: ["Service", "FAQPage", "BreadcrumbList"],
+  },
+  {
+    path: "/locations/mesquite/",
+    title: "Mesquite Real Estate Photographer | Virtual Tours Las Vegas",
+    description:
+      "Mesquite, NV real estate photography — HDR, Matterport 3D tours, drone and floor plans for golf-course homes and retirement communities.",
+    schema: ["Service", "FAQPage", "BreadcrumbList"],
+  },
+  {
     path: "/blog/",
     title: "Blog — Las Vegas Real Estate Photography Tips & Market | VTLV",
     description:

@@ -183,8 +183,13 @@ const DEFAULT_CSP = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: https:",
-  // Matterport 3D embeds load from my.matterport.com (already used by MatterportEmbed/Popup).
-  "frame-src https://my.matterport.com",
+  // Iframe embeds used across the site:
+  //   - my.matterport.com       — Matterport 3D tours (MatterportEmbed/Popup)
+  //   - www.youtube-nocookie.com — privacy-friendly YouTube embeds (YouTubeEmbed)
+  //   - maps.google.com          — Google Maps embeds (MapEmbed)
+  // Other third-party embeds (Calendly, Typeform, etc.) must be added here when
+  // first used; the Embed.astro component documents this requirement.
+  "frame-src https://my.matterport.com https://www.youtube-nocookie.com https://maps.google.com",
   // formsubmit.co receives the contact + booking form submissions (AJAX POST).
   // GA4 beacons to its measurement endpoints (only added when GA4 is on).
   ga4Enabled
