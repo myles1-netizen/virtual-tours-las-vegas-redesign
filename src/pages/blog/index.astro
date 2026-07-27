@@ -69,7 +69,7 @@ const categories: Category[] = [
       <SectionHeader
         eyebrow="Latest"
         title="Recent posts."
-        lead="Straight answers to the questions agents, hosts and sellers ask Mike most often."
+        lead="Straight answers to the questions agents, hosts and sellers ask me most often."
       />
       {posts.length > 0 ? (
         <div class="post-grid">
@@ -97,9 +97,9 @@ const categories: Category[] = [
         </div>
       ) : (
         <div class="comingsoon" data-reveal>
-          <p class="eyebrow center">Coming soon</p>
+          <p class="eyebrow center">No posts yet</p>
           <p class="comingsoon-body">
-            The blog launches shortly. In the meantime, Mike answers real questions every day on the phone —
+            I answer real questions every day on the phone —
             <a href={business.phoneHref}>call or text {business.phone}</a> with yours, or browse the
             <a href={asset("/faq/")}> FAQs</a>.
           </p>
@@ -114,7 +114,7 @@ const categories: Category[] = [
       <SectionHeader
         eyebrow="What you'll find here"
         title="Three beats. One photographer's perspective."
-        lead="Each category collects the questions Mike fields most often from agents, hosts and sellers across the Las Vegas Valley."
+        lead="Each category collects the questions I field most often from agents, hosts and sellers across the Las Vegas Valley."
       />
       <div class="cat-grid">
         {categories.map((cat, i) => (
@@ -137,7 +137,7 @@ const categories: Category[] = [
 
   <CTABand
     title="Have a question worth a blog post?"
-    body={`Mike would rather answer it directly. Call or text ${business.phone} — same-day replies are the norm.`}
+    body={`I'd rather answer it directly. Call or text ${business.phone} — same-day replies are the norm.`}
   />
 </Base>
 

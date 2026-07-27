@@ -23,6 +23,9 @@ export interface Props {
   autoplay?: boolean;
   /** Remove Matterport branding (plan-dependent). */
   hideBrand?: boolean;
+  /** Contact link used by the graceful "Book a demo" fallback if the model
+      fails to load (wrong ID, network, or Matterport returns an error). */
+  contactHref?: string;
 }
 
 const {
@@ -33,6 +36,7 @@ const {
   mls = false,
   autoplay = false,
   hideBrand = false,
+  contactHref,
 } = Astro.props;
 
 // Build the Matterport showcase URL once. Keep params minimal & standards-based.
@@ -82,7 +86,7 @@ const frameId = `mp-${modelId.replace(/[^a-z0-9]/gi, "").slice(0, 12)}`;
   </button>
 
   {/* The iframe is rendered with NO src; JS sets it on click. loading="lazy" is a
-      belt-and-suspenders guard in case the frame is ever pre-populated. */}
+     belt-and-suspenders guard in case the frame is ever pre-populated. */}
   <iframe
     class="mp-frame"
     id={frameId}
@@ -93,6 +97,25 @@ const frameId = `mp-${modelId.replace(/[^a-z0-9]/gi, "").slice(0, 12)}`;
     allow="xr-spatial-tracking; gyroscope; accelerometer; fullscreen"
     allowfullscreen
   ></iframe>
+
+  {/* Graceful fallback: if the model fails to load (wrong ID, deleted, network,
+      or Matterport returns its "Oops, model not available" page), JS reveals
+      this overlay with a "Book a demo" CTA instead of leaving a broken frame. */}
+  <div class="mp-error" data-mp-error hidden>
+    <div class="mp-error-card">
+      <span class="mp-error-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+      </span>
+      <p class="mp-error-title">Live demo unavailable</p>
+      <p class="mp-error-body">
+        This sample 3D model couldn't be loaded right now. Book a demo and I'll walk you
+        through a real Las Vegas property tour — dollhouse, floor plan and measurement views included.
+      </p>
+      <a class="mp-error-cta" href={contactHref || asset("/contact/")} data-mp-error-cta>
+        Book a 3D tour demo
+      </a>
+    </div>
+  </div>
 </div>
 
 <style>
@@ -212,6 +235,65 @@ const frameId = `mp-${modelId.replace(/[^a-z0-9]/gi, "").slice(0, 12)}`;
     .mp-ph-play { width: 54px; height: 54px; }
     .mp-ph-title { font-size: 0.95rem; }
   }
+
+  /* ===== Graceful error fallback =====
+     Shown by JS ([data-mp-error] loses [hidden]) when the model fails to load.
+     Covers the broken iframe so the visitor never sees Matterport's "Oops,
+     model not available" screen — they get a clean "Book a demo" CTA instead. */
+  .mp-error {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    padding: clamp(1.2rem, 4vw, 2.5rem);
+    background: radial-gradient(120% 120% at 30% 20%, #2a2620 0%, #1a1814 60%, #0f0e0c 100%);
+    text-align: center;
+  }
+  .mp-error[hidden] { display: none; }
+  .mp-error-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
+    max-width: 44ch;
+  }
+  .mp-error-icon {
+    width: 64px; height: 64px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: rgba(176, 141, 87, 0.16);
+    color: var(--brass-2, #c9a572);
+    margin-bottom: 0.3rem;
+  }
+  .mp-error-title {
+    font-family: var(--font-display, Georgia, serif);
+    font-size: 1.25rem;
+    color: var(--paper, #f7f4ef);
+  }
+  .mp-error-body {
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: rgba(247, 244, 239, 0.7);
+  }
+  .mp-error-cta {
+    margin-top: 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.7em 1.4em;
+    background: var(--brass-btn, #8a6a3c);
+    color: #fff;
+    font-family: var(--font-body, system-ui);
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: background 0.25s var(--ease, ease), transform 0.25s var(--ease, ease);
+  }
+  .mp-error-cta:hover { background: var(--brass-btn-2, #7a5e34); transform: translateY(-2px); }
 </style>
 
 <script>
@@ -220,7 +302,21 @@ const frameId = `mp-${modelId.replace(/[^a-z0-9]/gi, "").slice(0, 12)}`;
   function initEmbed(root: HTMLElement) {
     const btn = root.querySelector<HTMLButtonElement>("[data-mp-load]");
     const frame = root.querySelector<HTMLIFrameElement>("[data-mp-frame]");
+    const err = root.querySelector<HTMLElement>("[data-mp-error]");
     if (!btn || !frame) return;
+
+    let failed = false;
+    let loaded = false;
+
+    // Show the graceful "Book a demo" fallback. Called when we believe the
+    // model didn't load (see the heuristics in load()).
+    const showError = () => {
+      if (failed) return;
+      failed = true;
+      // Stop the broken frame from rendering Matterport's error page.
+      frame.src = "about:blank";
+      if (err) err.hidden = false;
+    };
 
     const load = () => {
       if (root.dataset.loaded === "true") return;
@@ -228,6 +324,25 @@ const frameId = `mp-${modelId.replace(/[^a-z0-9]/gi, "").slice(0, 12)}`;
       root.dataset.loaded = "true";
       // Give the player a beat, then move focus inside for keyboard users.
       window.setTimeout(() => { try { frame.focus({ preventScroll: true }); } catch {} }, 200);
+
+      // === Failure detection ===
+      // The iframe is cross-origin (my.matterport.com), so we can't read its
+      // document to spot the "Oops, model not available" screen. Two heuristics
+      // catch the common failures without false-positiving on slow loads:
+      //   1. The frame's `error` event (network/CSP block of the host).
+      //   2. A generous timeout: if nothing has fired `load` after 12s, the
+      //      model likely didn't resolve → show the fallback.
+      // A successful `load` event cancels the timeout so real tours render.
+      const failTimer = window.setTimeout(() => {
+        if (!loaded) showError();
+      }, 12000);
+      const onLoad = () => {
+        loaded = true;
+        window.clearTimeout(failTimer);
+        frame.removeEventListener("error", showError);
+      };
+      frame.addEventListener("load", onLoad, { once: true });
+      frame.addEventListener("error", showError, { once: true });
     };
 
     btn.addEventListener("click", load);

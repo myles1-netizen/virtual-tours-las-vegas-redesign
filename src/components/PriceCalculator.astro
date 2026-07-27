@@ -552,6 +552,7 @@ const configJson = JSON.stringify(config);
       <div class="addon-more">
         <button type="button" class="btn-link" data-addon-add>+ Add a custom item</button>
         <ul class="custom-items" role="list" data-custom-items></ul>
+        <p class="custom-note">Custom items are estimates — final pricing confirmed with Mike before booking.</p>
         <template data-custom-item-tmpl>
           <li class="custom-item-row">
             <input type="text" class="ci-name" placeholder="Describe it (e.g. extra 10 HDR photos)" />
@@ -582,7 +583,7 @@ const configJson = JSON.stringify(config);
       <a class="btn brass btn-block summary-cta" data-book href={asset("/contact/")}>
         Book this
       </a>
-      <p class="summary-alt">Or <a href={asset("/contact/")}>ask Mike to confirm the scope →</a></p>
+      <p class="summary-alt">Or <a href={asset("/contact/")}>ask me to confirm the scope →</a></p>
     </div>
   </aside>
 
@@ -958,6 +959,13 @@ const configJson = JSON.stringify(config);
 
   /* "+ More" custom add-on area */
   .addon-more { margin-top: 0.7rem; }
+  .custom-note {
+    margin-top: 0.8rem;
+    font-size: 0.74rem;
+    line-height: 1.45;
+    color: var(--stone-2);
+    font-style: italic;
+  }
   .btn-link {
     display: inline-flex;
     align-items: center;
@@ -1046,10 +1054,10 @@ const configJson = JSON.stringify(config);
     margin-top: 0.4rem;
     line-height: 1.2;
   }
-  /* One line item per row — name on the left, price pinned right, never wraps
-     awkwardly even at 375px. The price is locked to its own line via nowrap.
-     Each row uses a flex layout with the name + sub stacked on the left so the
-     description reads cleanly under the item name, price aligned on the right. */
+  /* One line item per row — name grows left, price pinned right, never runs
+     together. The name + sub-text stack in a left column (.bd-left) so the
+     package features read as muted sub-text under the item name, and the price
+     stays aligned on the right. 16px row gap, dashed dividers between rows. */
   .breakdown { display: flex; flex-direction: column; gap: 1rem; margin: 1.1rem 0 0; padding: 0; list-style: none; }
   .breakdown li {
     display: flex;
@@ -1061,18 +1069,25 @@ const configJson = JSON.stringify(config);
     line-height: 1.35;
   }
   .breakdown li:last-child { border-bottom: none; }
-  /* Name + sub stack on the left, price pinned right. */
-  .breakdown .bd-name {
+  /* Left column = name (bold) on top of the sub-text (muted). The sub sits
+     beneath the name so package features read as supporting detail, not as a
+     run-on with the price. */
+  .breakdown .bd-left {
     flex: 1 1 auto;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding-right: 0.4rem;
+  }
+  .breakdown .bd-name {
     display: block;
     font-size: var(--step--1);
     font-weight: 600;
     color: var(--on-dark);
-    padding-right: 0.4rem;
   }
   .breakdown .bd-price { font-family: var(--font-display); color: var(--on-dark); white-space: nowrap; flex: 0 0 auto; align-self: flex-start; font-size: var(--step--1); }
-  .breakdown .bd-sub { color: rgba(247,244,239,0.55); font-size: 0.72rem; font-weight: 400; display: block; margin-top: 0.2rem; }
+  .breakdown .bd-sub { color: rgba(247,244,239,0.55); font-size: 0.72rem; font-weight: 400; display: block; }
   .breakdown .bd-empty {
     color: rgba(247,244,239,0.6);
     border-bottom: none;
@@ -1296,9 +1311,12 @@ const configJson = JSON.stringify(config);
         const priceEl = row.querySelector(".ci-price");
         const name = (nameEl?.value || "").trim();
         if (!name) return; // empty rows don't count
-        const price = priceEl ? (Number(priceEl.value) || 0) : 0;
-        // Flag as custom so Mike knows it's a self-entered line, not a catalog price.
-        lines.push({ name, sub: price > 0 ? "Custom item — confirm with me" : "Custom item (no amount entered)", price, custom: true });
+        const entered = priceEl ? (Number(priceEl.value) || 0) : 0;
+        // A blank amount is a custom quote (price:null) so it renders as
+        // "Custom Quote" instead of "$0" and never adds a fake $0 to the total.
+        // An entered amount flows through as a real estimate line.
+        const price = entered > 0 ? entered : null;
+        lines.push({ name, sub: "Custom item — confirm with Mike", price, custom: true });
       });
 
       // Force every price to a real number before summing so a stray string
@@ -1324,13 +1342,15 @@ const configJson = JSON.stringify(config);
         breakdown.innerHTML = '<li class="bd-empty">Pick a service to see your total.</li>';
       } else {
         breakdown.innerHTML = lines.map((l) => {
-          // Floor-plan overage & similar: price is null → "Custom" (confirm with me).
-          // Custom "+ More" items with a real price show that price normally.
-          const priceTxt = (l.price == null)
-            ? '<span class="bd-custom">Custom</span>'
+          // Items without a numeric price (floor-plan "Custom quote", custom
+          // "+ More" rows left blank) render as "Custom Quote" so the row is
+          // never empty and signals it needs confirmation with Mike.
+          const priceTxt = (l.price == null || (Number(l.price) === 0 && l.custom))
+            ? '<span class="bd-custom">Custom Quote</span>'
             : `$${Number(l.price).toLocaleString()}`;
           const sub = l.sub ? `<span class="bd-sub">${l.sub}</span>` : "";
-          return `<li class="bd-item"><span class="bd-name">${l.name}${sub}</span><span class="bd-price">${priceTxt}</span></li>`;
+          // Name + sub stack in a left column (.bd-left), price pinned right.
+          return `<li class="bd-item"><span class="bd-left"><span class="bd-name">${l.name}</span>${sub}</span><span class="bd-price">${priceTxt}</span></li>`;
         }).join("");
       }
       totalEl.textContent = "$" + total.toLocaleString();

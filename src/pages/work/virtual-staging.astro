@@ -14,24 +14,36 @@ const description = "See real before/after examples of virtual staging by Mike M
   <PageHero
     eyebrow="Virtual staging · Las Vegas"
     title="Empty rooms, staged in post."
-    lead="Drag any slider to see real Mike-shot before/after examples. Virtual staging lets buyers see a room's potential without the cost and logistics of physical staging, and staged listings photograph better, sell faster, and stand out on MLS."
+    lead="Drag any slider to see real before/after examples from my work. Virtual staging lets buyers see a room's potential without the cost and logistics of physical staging, and staged listings photograph better, sell faster, and stand out on MLS."
     image={asset("/images/portfolio/staging-living-staged.jpg")}
     imageAlt="Beautifully staged Las Vegas living room after virtual staging"
   />
 
-  <section class="section">
+  <section class="section pairs-section">
     <div class="container">
+      <SectionHeader
+        eyebrow="Before / after gallery"
+        title="Drag any handle. The difference is the staging."
+        lead="Every pair below is a real room from my work — empty on the left, virtually staged on the right. Slide to compare."
+      />
       <div class="pairs">
         {stagingPairs.map((p, i) => (
-          <div class="pair-wrap" data-reveal data-reveal-delay={String((i % 2) + 1)}>
-            <BeforeAfterSlider
-              before={p.before}
-              beforeAlt={p.beforeAlt}
-              after={p.after}
-              afterAlt={p.afterAlt}
-              label={p.label}
-            />
-          </div>
+          <figure class="pair-section" data-reveal>
+            <figcaption class="pair-heading">
+              <span class="pair-index">{String(i + 1).padStart(2, "0")}</span>
+              <h3 class="pair-title">{p.label}</h3>
+              <span class="pair-hint">Drag the handle ←→</span>
+            </figcaption>
+            <div class="pair-slider">
+              <BeforeAfterSlider
+                before={p.before}
+                beforeAlt={p.beforeAlt}
+                after={p.after}
+                afterAlt={p.afterAlt}
+                label={p.label}
+              />
+            </div>
+          </figure>
         ))}
       </div>
     </div>
@@ -78,19 +90,71 @@ const description = "See real before/after examples of virtual staging by Mike M
 
   <CTABand
     title="Want to see your vacant listing staged?"
-    body="Send Mike a photo of the empty room. He'll show you what virtual staging can do before you commit."
+    body="Send me a photo of the empty room. I'll show you what virtual staging can do before you commit."
     image={asset("/images/portfolio/staging-bedroom-staged-2.jpg")}
   />
 </Base>
 
 <style>
+  /* ===== Staging before/after pairs =====
+     Each pair gets its own full-width section with the slider filling the
+     container width. The BeforeAfterSlider component caps itself at 760px by
+     default; we override it here so each comparison is large and legible
+     (tall enough to read furniture detail, wide enough to span the column). */
+  .pairs-section { background: var(--paper-2); }
   .pairs {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: clamp(1.5rem, 3vw, 2.5rem) clamp(1.5rem, 3vw, 2.5rem);
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(2.5rem, 5vw, 4.5rem);
+    margin-top: 1rem;
   }
-  .pair-wrap { display: flex; justify-content: center; }
+  .pair-section {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .pair-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 0.9rem;
+    flex-wrap: wrap;
+  }
+  .pair-index {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    color: var(--brass);
+    line-height: 1;
+  }
+  .pair-title {
+    font-family: var(--font-display);
+    font-size: var(--step-2);
+    color: var(--ink);
+    line-height: 1.1;
+  }
+  .pair-hint {
+    margin-left: auto;
+    font-size: var(--step--1);
+    color: var(--stone-2);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  /* Slider fills the container width and renders large (min 600px tall on
+     desktop). The .ba element inside the component is width:100% under its
+     max-width cap, so removing the cap here lets it grow edge-to-edge. */
+  .pair-slider { width: 100%; }
+  .pair-slider :global(.ba) {
+    max-width: 100%;
+    width: 100%;
+  }
+  /* Large 3:2 frame — tall enough to see furniture detail. aspect-ratio keeps
+     it responsive; the min-height enforces the "at least 600px tall on desktop"
+     requirement where the viewport allows. */
+  .pair-slider :global(.ba-frame) {
+    aspect-ratio: 3 / 2;
+    min-height: clamp(280px, 46vw, 640px);
+  }
 
   .vs-grid {
     display: grid;
@@ -132,8 +196,9 @@ const description = "See real before/after examples of virtual staging by Mike M
   .vs-price { font-family: var(--font-display); font-size: var(--step-3); color: var(--brass-2); }
 
   @media (max-width: 880px) {
-    .pairs { grid-template-columns: 1fr; }
     .vs-grid { grid-template-columns: repeat(2, 1fr); }
+    /* Hint sits on its own line on phones to keep the title row tidy. */
+    .pair-hint { margin-left: 0; width: 100%; }
   }
   @media (max-width: 520px) {
     .vs-grid { grid-template-columns: 1fr; }

@@ -29,16 +29,16 @@ const areaFaqs = [
     q: `Do you charge a travel fee for ${loc.name}?`,
     a:
       loc.driveTime.startsWith("80") || loc.driveTime.startsWith("60")
-        ? `${loc.name} is outside the Las Vegas Valley (about ${loc.driveTime} from Mike's central base), so it's quoted individually rather than on the standard valley rate. Mike often bundles ${loc.name} shoots with nearby work to keep the trip efficient. Call ${business.phone} for a quote.`
-        : `No. ${loc.name} is part of the Las Vegas Valley (about ${loc.driveTime} from Mike's central base, ${loc.distance}), so standard shoots there carry no travel surcharge. Outlying areas beyond the valley are quoted case by case.`,
+        ? `${loc.name} is outside the Las Vegas Valley (about ${loc.driveTime} from my central base), so it's quoted individually rather than on the standard valley rate. I often bundle ${loc.name} shoots with nearby work to keep the trip efficient. Call ${business.phone} for a quote.`
+        : `No. ${loc.name} is part of the Las Vegas Valley (about ${loc.driveTime} from my central base, ${loc.distance}), so standard shoots there carry no travel surcharge. Outlying areas beyond the valley are quoted case by case.`,
   },
   {
     q: `What's the turnaround time for ${loc.name} photography?`,
-    a: `Standard delivery is the same as everywhere Mike shoots: HDR photos and Matterport 3D tours in 24–48 hours, and floor plans within 48 hours. Rush next-morning delivery is available.`,
+    a: `Standard delivery is the same as everywhere I shoot: HDR photos and Matterport 3D tours in 24–48 hours, and floor plans within 48 hours. Rush next-morning delivery is available.`,
   },
   {
     q: `Can you fly a drone in ${loc.name}?`,
-    a: `Yes. Mike is an FAA Part 107 certified drone pilot and handles the airspace authorizations required ${loc.state === "NV" ? "in the Las Vegas area" : "across state lines"}. ${loc.practicalNote}`,
+    a: `Yes. I am an FAA Part 107 certified drone pilot and handle the airspace authorizations required ${loc.state === "NV" ? "in the Las Vegas area" : "across state lines"}. ${loc.practicalNote}`,
   },
 ];
 
@@ -127,7 +127,7 @@ const targetTerms = keywordsForLocation(loc.slug.replace(/-/g, " ")).slice(0, 8)
     <div class="container">
       <SectionHeader
         eyebrow="Neighborhoods"
-        title={`Where Mike shoots in ${loc.name}.`}
+        title={`Where I shoot in ${loc.name}.`}
         lead={`Communities and sub-areas ${loc.possessive} agents and sellers book photography for most often. If yours isn't listed, it's still covered — call ${business.phone}.`}
       />
       <ul class="area-list" role="list" data-reveal>

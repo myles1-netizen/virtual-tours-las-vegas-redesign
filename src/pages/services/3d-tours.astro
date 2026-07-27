@@ -171,7 +171,14 @@ const heroLead = meta.lead || "";
     grid-template-columns: 1fr 1.2fr;
     gap: clamp(1.5rem, 4vw, 3rem);
     align-items: center;
+    /* Keep the grid centered in the container so the embed isn't visually
+       pushed to one side on wide screens. */
+    max-width: 1080px;
+    margin-inline: auto;
   }
+  /* The embed fills its grid cell edge-to-edge so it reads as full-width
+     within the column (the MatterportEmbed component is width:100%). */
+  .demo-embed { width: 100%; min-width: 0; }
   .demo-title { font-size: var(--step-3); margin-top: 0.4rem; }
   .demo-lead { margin-top: 1rem; }
   .demo-note { font-size: var(--step--1); color: var(--stone); margin-top: 1rem; }

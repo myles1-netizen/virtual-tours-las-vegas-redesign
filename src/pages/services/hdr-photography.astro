@@ -12,7 +12,17 @@ import { hdrTiers, hdrAddOns, portfolio, business } from "../../data/site";
 // CMS-editable SEO + hero copy (src/data/cms/services/hdr-photography.json).
 import meta from "../../data/cms/services/hdr-photography.json";
 
-const interiorShots = portfolio.filter((s) => s.category === "Interior").slice(0, 8);
+// HDR is interior-focused, so the "Why HDR" gallery pulls together the
+// Interior shots plus the interior-style Exterior shots (sierra-skye living &
+// kitchen, spitze) that are clearly rooms, not exteriors. Capped at 8 so the
+// grid stays full and centered instead of showing 2 lone tiles in a 4-col row.
+const interiorShots = portfolio
+  .filter((s) => s.category === "Interior" || [
+    "sierra-skye-living.jpg",
+    "sierra-skye-kitchen.jpg",
+    "spitze-interior.jpg",
+  ].some((name) => s.src.endsWith(name)))
+  .slice(0, 8);
 
 const title = meta.title || "HDR Real Estate Photography Las Vegas | VTLV";
 const description = meta.description || "Professional HDR real estate photography in Las Vegas. High dynamic range photos with clean windows, true colors and real shadow detail — MLS-ready and delivered in 24–48 hours. Pricing from $110.";
@@ -41,7 +51,7 @@ const heroLead = meta.lead || "High Dynamic Range photography straightens walls,
       <SectionHeader
         eyebrow="Why HDR"
         title="The difference between a showing and a scroll-past."
-        lead="Lazy cell-phone shots with crooked walls, people in mirrors and blown-out windows cost showings. Mike shoots every property on a mirrorless DSLR and processes each image by hand to MLS standards."
+        lead="Lazy cell-phone shots with crooked walls, people in mirrors and blown-out windows cost showings. I shoot every property on a mirrorless DSLR and process each image by hand to MLS standards."
         align="center"
       />
     </div>
@@ -49,7 +59,11 @@ const heroLead = meta.lead || "High Dynamic Range photography straightens walls,
 
   <section class="section sm">
     <div class="container">
-      <Gallery shots={interiorShots} />
+      {/* Constrain + center the gallery so partial rows read as intentional
+          rather than a ragged 4-col grid with a lone tile. */}
+      <div class="hdr-gallery">
+        <Gallery shots={interiorShots} />
+      </div>
     </div>
   </section>
 
@@ -97,6 +111,9 @@ const heroLead = meta.lead || "High Dynamic Range photography straightens walls,
 
 <style>
   .paper-2 { background: var(--paper-2); }
+  /* Center the HDR gallery and keep it from going edge-to-edge on wide
+     screens — equal-size tiles, consistent gaps, balanced layout. */
+  .hdr-gallery { max-width: 1000px; margin-inline: auto; }
   .pricing-row {
     display: grid;
     grid-template-columns: 1.2fr 1fr;

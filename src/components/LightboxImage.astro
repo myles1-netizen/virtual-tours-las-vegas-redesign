@@ -1,0 +1,128 @@
+---
+// LightboxImage — wraps any image with a global click-to-enlarge lightbox.
+//
+// The actual viewer is a single shared overlay mounted once per page by
+// GlobalLightbox.astro (one dark fullscreen layer, shared across every
+// LightboxImage and any raw <img data-lightbox> on the page). This component
+// just renders a themed thumbnail that opts the image into the global viewer
+// via data attributes:
+//   - data-lightbox           → opts the image into the global viewer
+//   - data-lightbox-src       → the full-size URL (defaults to the img src)
+//   - data-lightbox-alt       → caption text (defaults to the img alt)
+//   - data-lightbox-group     → optional grouping key; images sharing a group
+//                               navigate prev/next inside the viewer
+//
+// Usage:
+//   <LightboxImage src="/img/room.jpg" alt="Living room" group="staging" />
+//   <LightboxImage src={thumb} full={full} alt="..." caption="Custom caption" />
+import { asset } from "../data/site";
+
+export interface Props {
+  /** Thumbnail image path (resolved against the deployment base). */
+  src: string;
+  /** Full-size image path. Defaults to `src`. */
+  full?: string;
+  /** Alt text for the thumbnail (also used as the caption if no caption given). */
+  alt?: string;
+  /** Explicit caption shown under the enlarged image. */
+  caption?: string;
+  /** Optional group key — images with the same group navigate prev/next. */
+  group?: string;
+  /** Thumbnail width/height for layout stability. */
+  width?: number;
+  height?: number;
+  /** loading attribute for the thumbnail. */
+  loading?: "lazy" | "eager";
+  /** Extra classes on the wrapper. */
+  class?: string;
+}
+
+const {
+  src,
+  full,
+  alt = "",
+  caption,
+  group,
+  width,
+  height,
+  loading = "lazy",
+  class: className = "",
+} = Astro.props;
+
+const thumbSrc = asset(src);
+const fullSrc = asset(full ?? src);
+const captionText = caption ?? alt;
+---
+
+<figure class:list={["lb-img-wrap", className]} data-lightbox-figure>
+  <button
+    type="button"
+    class="lb-img-btn"
+    data-lightbox
+    data-lightbox-src={fullSrc}
+    data-lightbox-alt={captionText}
+    data-lightbox-group={group}
+    aria-label={`Enlarge image: ${captionText || "image"}`}
+  >
+    <img
+      class="lb-img"
+      src={thumbSrc}
+      alt={alt}
+      loading={loading}
+      decoding="async"
+      width={width}
+      height={height}
+    />
+    <span class="lb-img-zoom" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6M8 11h6"/></svg>
+    </span>
+  </button>
+  {captionText && <figcaption class="lb-img-cap">{captionText}</figcaption>}
+</figure>
+
+<style>
+  .lb-img-wrap { margin: 0; }
+  .lb-img-btn {
+    display: block;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: none;
+    cursor: zoom-in;
+    position: relative;
+    width: 100%;
+    border-radius: var(--radius);
+    overflow: hidden;
+    line-height: 0;
+  }
+  .lb-img { width: 100%; height: auto; display: block; transition: transform 0.5s var(--ease); }
+  .lb-img-btn:hover .lb-img { transform: scale(1.03); }
+  .lb-img-btn:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
+
+  .lb-img-zoom {
+    position: absolute;
+    bottom: 0.7rem;
+    right: 0.7rem;
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    background: var(--brass);
+    color: #fff;
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+    pointer-events: none;
+  }
+  .lb-img-btn:hover .lb-img-zoom,
+  .lb-img-btn:focus-visible .lb-img-zoom { opacity: 1; transform: scale(1); }
+
+  .lb-img-cap {
+    margin-top: 0.5rem;
+    font-size: var(--step--1);
+    color: var(--stone);
+    text-align: center;
+    line-height: 1.4;
+  }
+</style>

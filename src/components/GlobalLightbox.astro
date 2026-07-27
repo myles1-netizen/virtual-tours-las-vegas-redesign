@@ -1,0 +1,370 @@
+---
+// GlobalLightbox — one shared fullscreen image viewer per page.
+//
+// Drop <GlobalLightbox /> once anywhere in a page (or in the layout) to mount
+// the overlay. Any element with [data-lightbox] then opens it:
+//   - LightboxImage.astro renders these automatically.
+//   - Raw images opt in by adding the attribute:
+//       <img data-lightbox data-lightbox-src="..." data-lightbox-alt="..." />
+//     or a wrapper:
+//       <a data-lightbox data-lightbox-src="..." ...><img .../></a>
+//
+// Features:
+//   - Full-screen dark overlay, image contained to the viewport.
+//   - Caption (alt text) shown under the image.
+//   - Prev/next navigation when the opener shares a data-lightbox-group with
+//     others (arrows on screen, ArrowLeft/ArrowRight on keyboard, swipe on
+//     touch).
+//   - Close on Escape, X button, or click-outside the image.
+//   - Pinch-zoom + drag-pan on touch (native via a transform driven by
+//     pointer/gesture events), and wheel + drag on desktop.
+//
+// It deliberately does NOT hijack the Gallery.astro or MatterportPopup.astro
+// viewers (they have their own [data-lightbox-trigger] / [data-matterport-*]
+// hooks); this only reacts to the plain [data-lightbox] attribute.
+---
+
+<div
+  class="glb"
+  data-global-lightbox
+  hidden
+  role="dialog"
+  aria-modal="true"
+  aria-label="Image viewer"
+>
+  <button class="glb-close" type="button" data-glb-close aria-label="Close image viewer (Escape)">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+  </button>
+  <button class="glb-nav glb-prev" type="button" data-glb-prev aria-label="Previous image" hidden>
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+  </button>
+  <button class="glb-nav glb-next" type="button" data-glb-next aria-label="Next image" hidden>
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+  </button>
+  <div class="glb-stage" data-glb-stage>
+    <img class="glb-img" data-glb-img alt="" />
+  </div>
+  <p class="glb-cap" data-glb-cap></p>
+</div>
+
+<style>
+  .glb {
+    position: fixed;
+    inset: 0;
+    z-index: 1100; /* above the Gallery lightbox (1000) and header (100) */
+    background: rgba(15, 14, 12, 0.97);
+    display: grid;
+    grid-template-rows: 1fr auto;
+    align-items: center;
+    justify-items: center;
+    padding: clamp(1rem, 3vw, 3rem);
+    animation: glb-fade 0.25s var(--ease);
+    /* Allow overscroll to pass through to the image pan, not the page. */
+    overscroll-behavior: contain;
+  }
+  .glb[hidden] { display: none; }
+  @keyframes glb-fade { from { opacity: 0; } to { opacity: 1; } }
+
+  .glb-stage {
+    grid-row: 1;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    /* The image is transformed by JS for zoom/pan; the stage is the clip. */
+    touch-action: none; /* we handle pinch/drag ourselves */
+  }
+  .glb-img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: var(--radius);
+    box-shadow: 0 20px 80px rgba(0, 0, 0, 0.5);
+    transform-origin: center center;
+    transition: transform 0.18s var(--ease);
+    user-select: none;
+    -webkit-user-drag: none;
+    will-change: transform;
+  }
+  /* When the user is actively dragging/pinching, kill the transition so the
+     image tracks the pointer 1:1. JS adds .glb-dragging for the gesture. */
+  .glb-img.glb-dragging { transition: none; }
+
+  .glb-cap {
+    grid-row: 2;
+    color: rgba(247, 244, 239, 0.78);
+    font-size: var(--step--1);
+    text-align: center;
+    max-width: 70ch;
+    margin: 0.6rem 0 0;
+    line-height: 1.4;
+  }
+  .glb-cap:empty { display: none; }
+
+  .glb-close,
+  .glb-nav {
+    position: absolute;
+    color: var(--on-dark);
+    width: 52px;
+    height: 52px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(247, 244, 239, 0.08);
+    transition: background 0.2s var(--ease), transform 0.2s var(--ease);
+    z-index: 2;
+  }
+  .glb-close:hover,
+  .glb-nav:hover { background: rgba(247, 244, 239, 0.18); }
+  .glb-close:focus-visible,
+  .glb-nav:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+  .glb-close { top: 1.2rem; right: 1.2rem; }
+  .glb-prev { left: clamp(0.5rem, 3vw, 2rem); top: 50%; transform: translateY(-50%); }
+  .glb-next { right: clamp(0.5rem, 3vw, 2rem); top: 50%; transform: translateY(-50%); }
+  .glb-prev:hover { transform: translateY(-50%) translateX(-3px); }
+  .glb-next:hover { transform: translateY(-50%) translateX(3px); }
+
+  @media (max-width: 520px) {
+    .glb-close,
+    .glb-nav { width: 44px; height: 44px; }
+    /* Smaller side-nav hit targets, keep them reachable on phones. */
+    .glb-prev { left: 0.4rem; }
+    .glb-next { right: 0.4rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .glb { animation: none; }
+    .glb-img { transition: none; }
+  }
+</style>
+
+<script>
+  (() => {
+    const root = document.querySelector<HTMLElement>("[data-global-lightbox]");
+    if (!root) return;
+    const img = root.querySelector<HTMLImageElement>("[data-glb-img]");
+    const cap = root.querySelector<HTMLElement>("[data-glb-cap]");
+    const stage = root.querySelector<HTMLElement>("[data-glb-stage]");
+    const closeBtn = root.querySelector<HTMLButtonElement>("[data-glb-close]");
+    const prevBtn = root.querySelector<HTMLButtonElement>("[data-glb-prev]");
+    const nextBtn = root.querySelector<HTMLButtonElement>("[data-glb-next]");
+    if (!img || !stage || !closeBtn) return;
+
+    // Collect every [data-lightbox] trigger on the page, grouped by
+    // data-lightbox-group. Ungrouped triggers are solo (no prev/next).
+    type Entry = { src: string; alt: string; group: string };
+    const triggers = Array.from(document.querySelectorAll<HTMLElement>("[data-lightbox]"));
+    const entries: Entry[] = triggers.map((t) => ({
+      src: t.dataset.lightboxSrc || t.querySelector("img")?.getAttribute("src") || "",
+      alt: t.dataset.lightboxAlt || t.querySelector("img")?.getAttribute("alt") || "",
+      group: t.dataset.lightboxGroup || "",
+    })).filter((e) => e.src);
+
+    let current = -1;
+
+    // ---- Zoom / pan state ----
+    let scale = 1;
+    let tx = 0; // translateX in px
+    let ty = 0;
+    const MIN_SCALE = 1;
+    const MAX_SCALE = 4;
+
+    function applyTransform() {
+      img.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    }
+    function resetView() {
+      scale = 1;
+      tx = 0;
+      ty = 0;
+      img.classList.remove("glb-dragging");
+      applyTransform();
+    }
+
+    function open(i: number) {
+      if (i < 0 || i >= entries.length) return;
+      current = i;
+      show();
+      root.hidden = false;
+      document.body.style.overflow = "hidden";
+      resetView();
+      // Focus the image so keyboard arrows/escape land here.
+      requestAnimationFrame(() => closeBtn.focus());
+    }
+    function show() {
+      const e = entries[current];
+      img.src = e.src;
+      img.alt = e.alt;
+      if (cap) cap.textContent = e.alt;
+      // Show prev/next only when other images share this group.
+      const group = e.group;
+      const hasGroup = !!group;
+      const groupCount = hasGroup ? entries.filter((x) => x.group === group).length : 1;
+      if (prevBtn) prevBtn.hidden = !hasGroup || groupCount < 2;
+      if (nextBtn) nextBtn.hidden = !hasGroup || groupCount < 2;
+    }
+    function close() {
+      root.hidden = true;
+      document.body.style.overflow = "";
+      img.src = "";
+      resetView();
+      // Return focus to the trigger that opened the viewer.
+      triggers[current]?.focus();
+    }
+    function step(dir: number) {
+      const e = entries[current];
+      if (!e.group) return;
+      // Find the indices that share the same group, then cycle.
+      const idxs = entries
+        .map((x, i) => (x.group === e.group ? i : -1))
+        .filter((i) => i >= 0);
+      const pos = idxs.indexOf(current);
+      const nextPos = (pos + dir + idxs.length) % idxs.length;
+      current = idxs[nextPos];
+      show();
+      resetView();
+    }
+
+    // Wire triggers. Each trigger opens at its own index.
+    triggers.forEach((t, i) => {
+      t.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        open(i);
+      });
+    });
+
+    closeBtn.addEventListener("click", close);
+    prevBtn?.addEventListener("click", () => step(-1));
+    nextBtn?.addEventListener("click", () => step(1));
+
+    // Click on the backdrop (the root or empty stage area) closes — but NOT a
+    // click on the image itself (so zoomed users can tap without dismissing).
+    root.addEventListener("click", (e) => {
+      if (e.target === root || e.target === stage) close();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (root.hidden) return;
+      if (e.key === "Escape") { e.preventDefault(); close(); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); step(1); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); }
+      // Zoom with + / - when the viewer is open.
+      else if (e.key === "+" || e.key === "=") { e.preventDefault(); zoomTo(Math.min(MAX_SCALE, scale + 0.5), true); }
+      else if (e.key === "-" || e.key === "_") { e.preventDefault(); zoomTo(Math.max(MIN_SCALE, scale - 0.5), true); }
+    });
+
+    // ---- Wheel zoom (desktop) ----
+    stage.addEventListener("wheel", (e) => {
+      if (root.hidden) return;
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.12 : 0.89;
+      zoomTo(Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale * factor)), false, e.clientX, e.clientY);
+    }, { passive: false });
+
+    function zoomTo(next: number, animate: boolean, cx?: number, cy?: number) {
+      // Zoom toward a focal point (pointer), defaulting to center.
+      const rect = img.getBoundingClientRect();
+      const stageRect = stage.getBoundingClientRect();
+      const fx = (cx ?? stageRect.left + stageRect.width / 2) - (rect.left + rect.width / 2);
+      const fy = (cy ?? stageRect.top + stageRect.height / 2) - (rect.top + rect.height / 2);
+      const ratio = next / scale;
+      // Keep the focal point visually fixed: adjust translate proportionally.
+      tx = fx - (fx - tx) * ratio;
+      ty = fy - (fy - ty) * ratio;
+      scale = next;
+      if (animate) img.classList.remove("glb-dragging");
+      applyTransform();
+      if (scale <= MIN_SCALE) { tx = 0; ty = 0; applyTransform(); }
+    }
+
+    // ---- Pointer drag pan (mouse + single-touch) ----
+    // For pinch (two-touch) we synthesize scale from the pointer distance.
+    const pointers = new Map<number, { x: number; y: number }>();
+    let dragStart: { tx: number; ty: number; x: number; y: number } | null = null;
+    let pinchStart: { dist: number; scale: number; tx: number; ty: number } | null = null;
+
+    stage.addEventListener("pointerdown", (e) => {
+      if (root.hidden) return;
+      stage.setPointerCapture(e.pointerId);
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size === 1) {
+        // Only allow panning once zoomed in; at scale=1 a drag closes instead.
+        dragStart = { tx, ty, x: e.clientX, y: e.clientY };
+        img.classList.add("glb-dragging");
+      } else if (pointers.size === 2) {
+        const pts = Array.from(pointers.values());
+        pinchStart = { dist: dist(pts[0], pts[1]), scale, tx, ty };
+        dragStart = null;
+      }
+    });
+
+    stage.addEventListener("pointermove", (e) => {
+      if (root.hidden || !pointers.has(e.pointerId)) return;
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const pts = Array.from(pointers.values());
+
+      if (pointers.size >= 2 && pinchStart) {
+        // Pinch zoom: scale follows the ratio of finger distances.
+        const d = dist(pts[0], pts[1]);
+        const next = Math.max(MIN_SCALE, Math.min(MAX_SCALE, pinchStart.scale * (d / pinchStart.dist)));
+        const midX = (pts[0].x + pts[1].x) / 2;
+        const midY = (pts[0].y + pts[1].y) / 2;
+        // Re-anchor around the midpoint so the zoom tracks the fingers.
+        const rect = img.getBoundingClientRect();
+        const fx = midX - (rect.left + rect.width / 2);
+        const fy = midY - (rect.top + rect.height / 2);
+        const ratio = next / pinchStart.scale;
+        tx = pinchStart.tx * ratio + fx * (1 - ratio);
+        ty = pinchStart.ty * ratio + fy * (1 - ratio);
+        scale = next;
+        applyTransform();
+        return;
+      }
+
+      if (dragStart) {
+        // Pan: only when zoomed in. At scale=1, ignore (let the backdrop
+        // click-to-close handle dismiss instead).
+        if (scale > MIN_SCALE) {
+          tx = dragStart.tx + (e.clientX - dragStart.x);
+          ty = dragStart.ty + (e.clientY - dragStart.y);
+          applyTransform();
+        }
+      }
+    });
+
+    const endPointer = (e: PointerEvent) => {
+      if (!pointers.has(e.pointerId)) return;
+      const wasDrag = dragStart !== null || pinchStart !== null;
+      pointers.delete(e.pointerId);
+      try { stage.releasePointerCapture(e.pointerId); } catch {}
+      if (pointers.size < 2) pinchStart = null;
+      if (pointers.size === 0) {
+        dragStart = null;
+        img.classList.remove("glb-dragging");
+        // Snap back to center if zoomed all the way out.
+        if (scale <= MIN_SCALE) { tx = 0; ty = 0; applyTransform(); }
+        // If the user tapped (no real movement) at scale 1, treat as backdrop tap → close.
+        if (!wasDrag && scale <= MIN_SCALE) {
+          // small move threshold handled implicitly: a true tap has dragStart
+          // but near-zero delta; we close on any non-pinch tap at 1x.
+          close();
+        }
+      }
+    };
+    stage.addEventListener("pointerup", endPointer);
+    stage.addEventListener("pointercancel", endPointer);
+
+    function dist(a: { x: number; y: number }, b: { x: number; y: number }) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    // Double-click / double-tap toggles zoom.
+    stage.addEventListener("dblclick", (e) => {
+      if (root.hidden) return;
+      if (scale > MIN_SCALE) resetView();
+      else zoomTo(2.5, true, e.clientX, e.clientY);
+    });
+  })();
+</script>

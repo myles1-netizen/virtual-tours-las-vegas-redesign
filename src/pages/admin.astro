@@ -664,7 +664,40 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       .activity-list .al-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brass); margin-top: 7px; flex: 0 0 8px; }
       .activity-list b { font-size: 13.5px; }
       .activity-list small { color: var(--muted); font-size: 12px; }
-      .quick-draft textarea { min-height: 120px; }
+      .quick-draft textarea {
+        min-height: 150px;
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 14px;
+        line-height: 1.55;
+        border: 1px solid var(--line-strong);
+        border-radius: 6px;
+        background: var(--input-bg);
+        color: var(--ink);
+        resize: vertical;
+        box-sizing: border-box;
+        transition: border-color .15s, box-shadow .15s;
+      }
+      .quick-draft textarea:focus {
+        outline: none;
+        border-color: var(--brass);
+        box-shadow: 0 0 0 3px var(--brass-soft);
+      }
+      .quick-draft input[type="text"] {
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 14px;
+        border: 1px solid var(--line-strong);
+        border-radius: 6px;
+        background: var(--input-bg);
+        color: var(--ink);
+        box-sizing: border-box;
+      }
+      .quick-draft input[type="text"]:focus {
+        outline: none;
+        border-color: var(--brass);
+        box-shadow: 0 0 0 3px var(--brass-soft);
+      }
 
       /* WordPress-style list table (filter/search/bulk bar) */
       .list-toolbar {
@@ -1518,7 +1551,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
             el("span", { class: "w-sub" }, "Jot a post idea")));
         const draftBody = el("div", { class: "w-body quick-draft" });
         const draftTitle = el("input", { type: "text", placeholder: "Title", style: { marginBottom: "8px" } });
-        const draftNotes = el("textarea", { placeholder: "What's on your mind? Notes become a draft post." });
+        const draftNotes = el("textarea", { placeholder: "What's on your mind? Type a quick draft..." });
         draftBody.appendChild(draftTitle);
         draftBody.appendChild(draftNotes);
         draftBody.appendChild(el("div", { style: { display: "flex", gap: "8px", marginTop: "10px" } },
@@ -1565,13 +1598,11 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
           if (!commits.length) { body.appendChild(el("p", { class: "sub" }, "No recent activity.")); return; }
           const list = el("ul", { class: "activity-list" });
           for (const c of commits) {
-            const a = c.author || c.commit.author;
             const msg = esc(c.commit.message.split("\n")[0]);
-            const who = esc((a && a.login) || c.commit.author.name || "you");
             const when = new Date(c.commit.author.date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
             list.appendChild(el("li", {},
               el("span", { class: "al-dot" }),
-              el("div", {}, el("b", {}, msg), el("small", {}, `${who} committed \u00b7 ${when}`))));
+              el("div", {}, el("b", {}, msg), el("small", {}, when))));
           }
           body.appendChild(list);
         } catch {
@@ -4565,7 +4596,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
           el("div", { class: "actions" }, el("a", { class: "btn", href: "https://analytics.google.com", target: "_blank", rel: "noopener noreferrer" }, "Connect Google Analytics \u2197")),
         ));
 
-        // Stat cards (placeholder numbers as requested)
+        // Stat cards (sample data until GA4 is connected)
         const grid = el("div", { class: "grid grid-2" });
         grid.appendChild(statBox("\u{1F465}", "492", "Total Unique Visitors (28 days)"));
         grid.appendChild(statBox("\u23F1\uFE0F", "1m 25s", "Avg. Time on Page"));

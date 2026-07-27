@@ -15,7 +15,7 @@ const description = "Residential, commercial and vacation-rental photography in 
   <PageHero
     eyebrow="Services"
     title="Photography & 3D for every kind of property."
-    lead="Pick the property type and add the services you need. Residential listings, commercial space, vacation rentals or new construction: Mike shoots it all, with the same photographer from booking to delivery."
+    lead="Pick the property type and add the services you need. Residential listings, commercial space, vacation rentals or new construction: I shoot it all, with the same photographer from booking to delivery."
     image={asset("/images/portfolio/sierra-skye-kitchen.jpg")}
     imageAlt="Modern Las Vegas kitchen photographed for a residential listing"
   />
@@ -82,20 +82,26 @@ const description = "Residential, commercial and vacation-rental photography in 
     background: var(--paper);
     border: 1px solid var(--line-light);
     border-radius: var(--radius-lg);
-    display: flex; flex-direction: column; gap: 0.5rem;
+    display: flex; flex-direction: column; gap: 0.6rem;
+    min-height: 180px;
     transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.3s var(--ease);
     text-decoration: none;
     color: var(--ink);
   }
   .addon-link:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); border-color: transparent; }
-  .addon-link h3 { font-size: var(--step-1); }
+  .addon-link h3 { font-size: var(--step-1); line-height: 1.15; }
   .addon-link p { font-size: var(--step--1); color: var(--stone); line-height: 1.5; flex-grow: 1; }
+  /* Nested links inside a card (e.g. the staging before/after gallery link)
+     inherit the brass accent but keep their own affordance. */
   .addon-link a { color: var(--brass); font-weight: 600; }
   .addon-link .text-link { margin-top: 0.3rem; flex-grow: 0; }
 
+  @media (max-width: 1024px) {
+    /* Tablet: 2 columns keep cards readable (3-up gets cramped mid-width). */
+    .addons { grid-template-columns: repeat(2, 1fr); }
+  }
   @media (max-width: 880px) {
     .routes-grid { grid-template-columns: 1fr; }
-    .addons { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 560px) {
     .addons { grid-template-columns: 1fr; }

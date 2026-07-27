@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import SiteHeader from "../components/SiteHeader.astro";
 import SiteFooter from "../components/SiteFooter.astro";
+import GlobalLightbox from "../components/GlobalLightbox.astro";
 import { business, asset, testimonials } from "../data/site";
 
 export interface Props {
@@ -332,6 +333,9 @@ const csp = cspOverride ?? DEFAULT_CSP;
     <main id="main">
       <slot />
     </main>
+    {/* One shared fullscreen image viewer per page. Any element with
+        [data-lightbox] (incl. all LightboxImage instances) opens it. */}
+    <GlobalLightbox />
     <SiteFooter />
 
     <script>

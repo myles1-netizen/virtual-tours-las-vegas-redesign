@@ -12,7 +12,22 @@ const { image, alt, title, body, bullets = [], reverse = false } = Astro.props;
 ---
 <article class="sblock" data-reverse={reverse ? "true" : "false"} data-reveal>
   <div class="sblock-img">
-    <img src={image} alt={alt} loading="lazy" width="700" height="525" />
+    {/* The feature image is click-to-enlarge via the global lightbox.
+        data-lightbox-src/full alt let the viewer show the full image with a
+        caption, without leaving the page. */}
+    <button
+      type="button"
+      class="sblock-img-btn"
+      data-lightbox
+      data-lightbox-src={image}
+      data-lightbox-alt={alt}
+      aria-label={`Enlarge image: ${alt}`}
+    >
+      <img src={image} alt={alt} loading="lazy" width="700" height="525" />
+      <span class="sblock-zoom" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6M8 11h6"/></svg>
+      </span>
+    </button>
   </div>
   <div class="sblock-body">
     <h3 class="display sblock-title">{title}</h3>
@@ -44,8 +59,41 @@ const { image, alt, title, body, bullets = [], reverse = false } = Astro.props;
     aspect-ratio: 4/3;
     box-shadow: var(--shadow-card);
   }
+  /* Click-to-enlarge: the image is a full-size button so the whole frame is
+     the tap target, with a brass zoom badge that appears on hover. */
+  .sblock-img-btn {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: none;
+    cursor: zoom-in;
+    position: relative;
+    line-height: 0;
+  }
+  .sblock-img-btn:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
   .sblock-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.7s var(--ease); }
   .sblock:hover .sblock-img img { transform: scale(1.03); }
+  .sblock-zoom {
+    position: absolute;
+    bottom: 0.7rem;
+    right: 0.7rem;
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    background: var(--brass);
+    color: #fff;
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+    pointer-events: none;
+  }
+  .sblock:hover .sblock-zoom,
+  .sblock-img-btn:focus-visible .sblock-zoom { opacity: 1; transform: scale(1); }
   .sblock-title { font-size: var(--step-3); }
   .sblock-text { color: var(--stone); margin-top: 0.9rem; line-height: 1.6; }
   .sblock-bullets { display: flex; flex-direction: column; gap: 0.55rem; margin-top: 1.2rem; }
