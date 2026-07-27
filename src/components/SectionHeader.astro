@@ -1,0 +1,36 @@
+---
+export interface Props {
+  eyebrow?: string;
+  title: string;
+  lead?: string;
+  align?: "left" | "center";
+  as?: "h1" | "h2";
+  class?: string;
+}
+const {
+  eyebrow,
+  title,
+  lead,
+  align = "left",
+  as = "h2",
+  class: className = "",
+} = Astro.props;
+const Tag = as;
+---
+<div class:list={["section-head", `align-${align}`, className]} data-reveal>
+  {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+  <Tag class="display title">{title}</Tag>
+  {lead && <p class="lead" set:html={lead} />}
+</div>
+
+<style>
+  .section-head { max-width: 70ch; }
+  .align-center { margin-inline: auto; text-align: center; display: flex; flex-direction: column; align-items: center; }
+  .align-center .lead { margin-inline: auto; }
+  .title {
+    font-size: var(--step-4);
+    line-height: var(--leading-tight);
+  }
+  .align-center .title { max-width: 22ch; }
+  .lead { margin-top: 1.1rem; }
+</style>

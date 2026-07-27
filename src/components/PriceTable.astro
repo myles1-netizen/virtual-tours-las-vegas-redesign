@@ -1,0 +1,70 @@
+---
+export interface Tier { count?: string; size?: string; item?: string; price: number | null; note?: string; }
+export interface Props {
+  title: string;
+  tiers: Tier[];
+  note?: string;
+}
+const { title, tiers, note } = Astro.props;
+---
+<div class="ptable" data-reveal>
+  <h3 class="pt-title">{title}</h3>
+  <dl class="pt-rows">
+    {tiers.map((t) => (
+      <div class="pt-row">
+        <dt>{t.count ?? t.size ?? t.item}</dt>
+        <dd>
+          {t.price === null
+            ? <span class="pt-custom">{t.note ?? "Custom"}</span>
+            : <>
+                <span class="pt-cur">$</span>{t.price}
+              </>}
+        </dd>
+      </div>
+    ))}
+  </dl>
+  {note && <p class="pt-note">{note}</p>}
+</div>
+
+<style>
+  .ptable {
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-lg);
+    padding: clamp(1.4rem, 1rem + 1.5vw, 2rem);
+    height: 100%;
+  }
+  .pt-title {
+    font-family: var(--font-display);
+    font-size: var(--step-2);
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid var(--line-light);
+  }
+  .pt-rows { display: flex; flex-direction: column; }
+  .pt-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px dashed var(--line-light);
+  }
+  .pt-row:last-child { border-bottom: none; }
+  .pt-row dt {
+    font-size: var(--step--1);
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .pt-row dd {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    color: var(--ink);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: baseline;
+  }
+  .pt-cur { font-size: 0.8rem; opacity: 0.6; margin-right: 1px; }
+  .pt-custom { font-family: var(--font-body); font-size: var(--step--1); color: var(--brass); font-weight: 600; }
+  .pt-note { margin-top: 1rem; font-size: 0.82rem; color: var(--stone); }
+</style>

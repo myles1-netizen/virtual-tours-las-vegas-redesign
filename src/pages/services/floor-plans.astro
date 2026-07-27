@@ -1,0 +1,128 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import ServiceBlock from "../../components/ServiceBlock.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import PriceTable from "../../components/PriceTable.astro";
+import CTABand from "../../components/CTABand.astro";
+import Gallery from "../../components/Gallery.astro";
+import { floorPlanTiers, floorPlanAddOns, portfolio, business } from "../../data/site";
+
+const floorShots = portfolio.filter((s) => s.category === "Floor Plan");
+
+const title = "Floor Plans Las Vegas — Schematic, 3D & CAD | VTLV";
+const description = "Las Vegas real estate floor plans — schematic 2D, colored living spaces, 3D floor plans and CAD files. Buyers retain listings with floor plans longer. 48-hour turnaround, PDF delivery. Pricing from $120.";
+---
+<Base title={title} description={description} heroVariant="dark">
+  <PageHero
+    eyebrow="Floor plans"
+    title="Help buyers remember the layout."
+    lead="Floor plans help buyers map out the home, remember the layout, and imagine where their furniture will go. Listings with floor plans hold buyer attention longer, and most short-term rental platforms require a posted floor plan showing exits."
+    image={asset("/images/portfolio/floorplan-combined.jpg")}
+    imageAlt="Combined floor plan with measurements for a multi-story Las Vegas property"
+  />
+
+  <section class="section">
+    <div class="container narrow text-center">
+      <SectionHeader
+        eyebrow="Schematic vs blueprint"
+        title="Schematic floor plans show what's there now."
+        lead="Schematic plans show the basic flow, doorways and room layout of an existing building. They aren't drawn to architectural scale. Blueprints are precisely scaled drawings with framing, plumbing and electrical, intended for new construction. VTLV floor plans cover existing construction only."
+        align="center"
+      />
+    </div>
+  </section>
+
+  <section class="section sm">
+    <div class="container">
+      <Gallery shots={floorShots} />
+    </div>
+  </section>
+
+  <section class="section paper-2">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Pricing"
+        title="Floor plans priced by size and story count."
+        lead="48-hour turnaround, PDF delivery. Same-day available when added to an HDR or Matterport shoot on the same property."
+      />
+      <div class="pricing-row">
+        <PriceTable title="Floor plans" tiers={floorPlanTiers} />
+        <div class="addons-card">
+          <h3>Add-ons</h3>
+          <ul role="list">
+            {floorPlanAddOns.map((a) => <li>{a}</li>)}
+          </ul>
+          <p class="ao-note">All plans can be delivered as schematic 2D, with optional colored living spaces, 3D rendering, CAD file export, or animated video walk-through.</p>
+        </div>
+      </div>
+      <div class="text-center" style="margin-top:2.5rem">
+        <a href={asset("/contact/")} class="btn brass">Book a floor plan</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ServiceBlock
+        image={asset("/images/portfolio/floorplan-3d.jpg")}
+        alt="Stylized 3D floor plan rendering showing furnished living spaces"
+        title="2D, colored, 3D & CAD"
+        body="Every floor plan starts as a precise schematic. From there you can add colored living spaces for visual warmth, a 3D isometric rendering to show furnished layout, a CAD file for architects and contractors, or an animated video walk-through of the plan."
+        bullets={["Schematic 2D as standard", "Colored living spaces +$25", "3D isometric +$80", "CAD file +$40"]}
+      />
+      <ServiceBlock
+        reverse
+        image={asset("/images/portfolio/floorplan-bw.jpg")}
+        alt="Black and white schematic floor plan for a Las Vegas listing"
+        title="Generated from Matterport scans"
+        body="When you book a Matterport 3D tour, schematic floor plans can be generated from the same scan data, saving a separate site visit and capturing exact measurements in the process. Optional Matterpak BIM export drops the data straight into SketchUp, Revit or AutoCAD."
+        bullets={["Generated from 3D scan data", "Saves a separate site visit", "Optional BIM / CAD export"]}
+      />
+    </div>
+  </section>
+
+  <CTABand
+    title="Add a floor plan to your listing."
+    body={`48-hour turnaround on standalone plans. Call or text ${business.phone}.`}
+    image={asset("/images/portfolio/floorplan-combined.jpg")}
+  />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .pricing-row {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+    align-items: start;
+  }
+  .addons-card {
+    padding: clamp(1.4rem, 1rem + 1.5vw, 2rem);
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-lg);
+  }
+  .addons-card h3 {
+    font-family: var(--font-body);
+    font-size: 0.72rem; font-weight: 700;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--brass);
+    margin-bottom: 1rem;
+  }
+  .addons-card ul { display: flex; flex-direction: column; gap: 0.55rem; }
+  .addons-card li {
+    font-size: var(--step--1);
+    color: var(--ink-2);
+    padding-left: 1rem;
+    position: relative;
+    line-height: 1.4;
+  }
+  .addons-card li::before { content: "·"; position: absolute; left: 0; color: var(--brass); font-weight: 700; }
+  .ao-note { margin-top: 1rem; font-size: 0.82rem; color: var(--stone); padding-top: 0.8rem; border-top: 1px dashed var(--line-light); line-height: 1.5; }
+
+  @media (max-width: 880px) { .pricing-row { grid-template-columns: 1fr; } }
+</style>

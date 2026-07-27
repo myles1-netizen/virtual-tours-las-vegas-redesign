@@ -1,0 +1,99 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import BeforeAfterSlider from "../../components/BeforeAfterSlider.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import CTABand from "../../components/CTABand.astro";
+import { stagingPairs, virtualStagingTiers, business } from "../../data/site";
+
+const title = "Virtual Staging Las Vegas — Empty Rooms Furnished | VTLV";
+const description = "Las Vegas virtual staging by Mike Madsen. Empty rooms become fully furnished, photorealistic living spaces — faster and cheaper than physical staging. $25/photo. See real before/after examples.";
+---
+<Base title={title} description={description} heroVariant="dark">
+  <PageHero
+    eyebrow="Virtual staging"
+    title="Stage vacant rooms in post."
+    lead="Virtual staging fills vacant rooms with realistic, properly-scaled furniture, letting buyers see the potential without the cost of physical staging. $25/photo, delivered with your HDR set in 24–48 hours."
+    image={asset("/images/portfolio/staging-living-staged.jpg")}
+    imageAlt="Las Vegas living room after virtual staging with realistic furniture"
+  />
+
+  <section class="section">
+    <div class="container">
+      <div class="pairs">
+        {stagingPairs.map((p, i) => (
+          <div class="pair-wrap" data-reveal data-reveal-delay={String((i % 2) + 1)}>
+            <BeforeAfterSlider
+              before={p.before}
+              beforeAlt={p.beforeAlt}
+              after={p.after}
+              afterAlt={p.afterAlt}
+              label={p.label}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section paper-2">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Pricing"
+        title="From $25 per photo."
+        lead="Per-photo pricing on landscape or portrait stills, with panoramic 360 and 3D floor plan options also available."
+      />
+      <div class="vs-tiers">
+        {virtualStagingTiers.map((t) => (
+          <div class="vs-tier" data-reveal>
+            <span class="vs-item">{t.item}</span>
+            <span class="vs-price">${t.price}</span>
+          </div>
+        ))}
+      </div>
+      <div class="text-center" style="margin-top:2.5rem">
+        <a href={asset("/contact/")} class="btn brass">Book virtual staging</a>
+        <p class="muted" style="margin-top:1rem; font-size:0.85rem">Want more before/after examples? <a href={asset("/work/virtual-staging/")} style="color:var(--brass); font-weight:600">View the full gallery →</a></p>
+      </div>
+    </div>
+  </section>
+
+  <CTABand
+    title="Stage every vacant room."
+    body={`From $25/photo. Call or text ${business.phone}.`}
+    image={asset("/images/portfolio/staging-bedroom-staged-2.jpg")}
+  />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .pairs {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+    align-items: start;
+  }
+  .pair-wrap { display: flex; justify-content: center; }
+  .vs-tiers {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(1rem, 3vw, 2.5rem);
+    margin-top: 2.5rem;
+  }
+  .vs-tier {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 1.4rem 1.8rem;
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius);
+    min-width: 200px;
+  }
+  .vs-item { font-size: var(--step--1); color: var(--stone); text-align: center; }
+  .vs-price { font-family: var(--font-display); font-size: var(--step-3); color: var(--brass); }
+  @media (max-width: 880px) { .pairs { grid-template-columns: 1fr; } }
+</style>

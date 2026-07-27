@@ -1,0 +1,149 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import ServiceBlock from "../../components/ServiceBlock.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import CTABand from "../../components/CTABand.astro";
+import { googlePackage, commercialPanoramas, business } from "../../data/site";
+
+const title = "Google Business View & Street View 360 Las Vegas | VTLV";
+const description = "Google Trusted Photographer in Las Vegas. 360 virtual tours published directly to your Google Business profile and Google Maps — boosting local discoverability for restaurants, retail, salons and venues. Get Me On Google package from $500.";
+---
+<Base title={title} description={description} heroVariant="dark">
+  <PageHero
+    eyebrow="Google Business View"
+    title="Show up on Google Maps with a 360 tour."
+    lead="As a Google Trusted Photographer, Mike can publish a 360 virtual tour directly to your Google Business profile and Street View. It's one of the highest-ROI local discoverability moves available. Every business that shows up in Maps search benefits."
+    image={asset("/images/portfolio/matterport-360.jpg")}
+    imageAlt="360-degree virtual tour panorama ready to publish to Google Business View"
+  />
+
+  <section class="section">
+    <div class="container narrow text-center">
+      <SectionHeader
+        eyebrow="Why Google Business View"
+        title="Your business shows up with a tour, not just a pin."
+        lead="When someone searches your business on Google or Maps, an embedded 360 tour lets them walk inside before they decide to visit. Restaurants, retail shops, salons, gyms, event venues — anywhere customers 'see before they go' benefits."
+        align="center"
+      />
+    </div>
+  </section>
+
+  <section class="section paper-2">
+    <div class="container">
+      <SectionHeader
+        eyebrow="The package"
+        title={`${googlePackage.name} — $${googlePackage.price}`}
+        lead="The most-booked way to get on Google. Photography, a 360 virtual tour, and publishing to your Google Business profile, bundled."
+      />
+      <div class="gpack-card" data-reveal>
+        <div class="gpack-text">
+          <ul class="gpack-includes" role="list">
+            {googlePackage.includes.map((inc) => (
+              <li>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                <span>{inc}</span>
+              </li>
+            ))}
+          </ul>
+          <p class="gpack-note">{googlePackage.note}</p>
+          <a href={asset("/contact/")} class="btn brass">Book the Google package</a>
+        </div>
+        <div class="gpack-img">
+          <img src={asset("/images/portfolio/warehouse-drone-1.jpg")} alt="Commercial warehouse documented with aerial drone photography" loading="lazy" width="600" height="450" />
+        </div>
+      </div>
+
+      <SectionHeader
+        eyebrow="Standalone 360 panoramas"
+        title="Or add Google Street View publishing to any 360 tour."
+        lead="If you already have a Matterport or 360 tour booked, publishing to Google Street View is a $50 add-on. Standalone panoramic 360s at three quality and price tiers:"
+      />
+      <div class="pano-tiers">
+        <div class="pano-card" data-reveal>
+          <h3>Premium 360 (8-shot)</h3>
+          <p class="pano-sub">DSLR-stitched ultra-high resolution</p>
+          <ul role="list">{commercialPanoramas.premium.map((p) => <li><span>{p.count}</span><strong>${p.price}</strong></li>)}</ul>
+        </div>
+        <div class="pano-card" data-reveal data-reveal-delay="1">
+          <h3>Express 360</h3>
+          <p class="pano-sub">Rapid capture for smaller spaces</p>
+          <ul role="list">{commercialPanoramas.express.map((p) => <li><span>{p.count}</span><strong>${p.price}</strong></li>)}</ul>
+        </div>
+      </div>
+      <p class="pano-addon">+ $50 Google Street View posting on any of the above.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ServiceBlock
+        image={asset("/images/portfolio/mattertag.jpg")}
+        alt="Mattertag info hotspot embedded in a 360 tour"
+        title="Where it shows up"
+        body="Your tour appears on Google Search, Google Maps, and your Google Business profile. Customers can 'walk inside' directly from search results. It also adds visual depth that plain photos can't, particularly valuable for venues, restaurants and retail where the interior experience is the selling point."
+        bullets={["Appears in Google Search & Maps", "Embedded in your Business profile", "Boosts local SEO discoverability"]}
+      />
+    </div>
+  </section>
+
+  <CTABand
+    title="Get your business on Google with a tour."
+    body={`From $500, including publishing. Call or text ${business.phone}.`}
+    image={asset("/images/portfolio/matterport-360.jpg")}
+  />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .gpack-card {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: center;
+    background: var(--dark);
+    color: var(--paper);
+    border-radius: var(--radius-lg);
+    padding: clamp(1.6rem, 1.2rem + 1.5vw, 2.4rem);
+    margin-block: 2.5rem 3.5rem;
+  }
+  .gpack-text .eyebrow { color: var(--brass-2); }
+  .gpack-includes { display: flex; flex-direction: column; gap: 0.65rem; margin: 0 0 1.2rem; }
+  .gpack-includes li { display: flex; align-items: flex-start; gap: 0.6rem; font-size: var(--step-1); color: var(--paper); }
+  .gpack-includes svg { color: var(--brass-2); flex-shrink: 0; margin-top: 4px; }
+  .gpack-note { font-size: 0.82rem; color: rgba(247,244,239,0.6); margin-bottom: 1.3rem; }
+  .gpack-img { border-radius: var(--radius); overflow: hidden; aspect-ratio: 4/3; }
+  .gpack-img img { width: 100%; height: 100%; object-fit: cover; }
+
+  .pano-tiers {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+    max-width: 700px;
+    margin-inline: auto;
+  }
+  .pano-card {
+    padding: clamp(1.5rem, 1.2rem + 1.5vw, 2rem);
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-lg);
+  }
+  .pano-card h3 { font-size: var(--step-1); }
+  .pano-sub { font-size: 0.82rem; color: var(--stone); margin: 0.3rem 0 1rem; }
+  .pano-card ul { display: flex; flex-direction: column; gap: 0.55rem; }
+  .pano-card li {
+    display: flex; justify-content: space-between;
+    font-size: var(--step--1); color: var(--ink-2);
+    padding-bottom: 0.45rem; border-bottom: 1px dashed var(--line-light);
+  }
+  .pano-card li:last-child { border-bottom: none; padding-bottom: 0; }
+  .pano-card strong { color: var(--ink); font-weight: 600; }
+  .pano-addon { text-align: center; margin-top: 1.2rem; font-size: var(--step--1); color: var(--brass); font-weight: 600; }
+
+  @media (max-width: 760px) {
+    .gpack-card { grid-template-columns: 1fr; }
+    .pano-tiers { grid-template-columns: 1fr; }
+  }
+</style>

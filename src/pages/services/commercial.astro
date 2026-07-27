@@ -1,0 +1,144 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import ServiceBlock from "../../components/ServiceBlock.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import CTABand from "../../components/CTABand.astro";
+import PriceTable from "../../components/PriceTable.astro";
+import { commercialHdr, commercialPanoramas, googlePackage, business } from "../../data/site";
+
+const title = "Commercial Real Estate Photography Las Vegas — Office, Retail, Industrial | VTLV";
+const description = "Commercial real estate photography in Las Vegas for offices, retail, restaurants, industrial and event venues. HDR photography, Matterport 3D, 360 virtual tours, Google Business View, drone and as-built surveys — with extended licensing.";
+---
+<Base title={title} description={description} heroVariant="dark">
+  <PageHero
+    eyebrow="Commercial"
+    title="Advertising-grade imagery for commercial space."
+    lead="Office complexes, retail, restaurants, industrial facilities, event venues and tenant improvements. Commercial assets need extended licensing for long campaigns. Mike structures every shoot around how the imagery will actually be used."
+    image={asset("/images/portfolio/warehouse-drone-1.jpg")}
+    imageAlt="Commercial warehouse documented with aerial drone photography in Las Vegas"
+  />
+
+  <section class="section">
+    <div class="container narrow text-center">
+      <SectionHeader
+        eyebrow="For brokers, owners & businesses"
+        title="Future clients process images faster than words."
+        lead="Whether you're leasing office space, marketing a restaurant, or documenting a renovation, professional imagery is the difference between a prospect who books a tour and one who scrolls past. Extended 1–3 year licensing keeps your assets working."
+        align="center"
+      />
+    </div>
+  </section>
+
+  <section class="section sm">
+    <div class="container">
+      <div class="blocks">
+        <ServiceBlock
+          image={asset("/images/portfolio/brooklyn-1.jpg")}
+          alt="Commercial interior space photographed for advertising use"
+          title="Commercial HDR photography"
+          body="Advertising-grade HDR photography for marketing campaigns, leasing materials and portfolios. Licensing structured for long-term commercial use, typically 1–3 years."
+          bullets={["5–20+ photo packages", "Rush and twilight options", "Extended commercial licensing"]}
+        />
+        <ServiceBlock
+          reverse
+          image={asset("/images/portfolio/matterport-360.jpg")}
+          alt="Matterport 3D tour of a Las Vegas commercial property"
+          title="Matterport & 360 virtual tours"
+          body="Let prospects walk the space from anywhere. Matterport 3D dollhouse tours for immersive exploration, or DSLR-stitched panoramic 360s at three quality tiers — Express, Enhanced and Premium — sized to budget and resolution needs."
+          bullets={["Three 360 quality tiers", "Google Street View publishing", "Embed-ready for any website"]}
+        />
+        <ServiceBlock
+          image={asset("/images/portfolio/warehouse-drone-2.jpg")}
+          alt="Industrial property aerial view by an FAA-certified drone pilot"
+          title="Aerial drone & Google Business View"
+          body="FAA-compliant drone imagery showing site layout, parking and proximity to infrastructure. Plus Google Business View: 360 tours published directly to your Google Business profile and Maps, boosting local discoverability."
+          bullets={["FAA Part 107 certified", "Airspace-approved near LV airports", "Published to Google Maps & Search"]}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="section paper-2">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Commercial pricing"
+        title="Transparent commercial rates."
+        lead="No quote-and-wait. Real published pricing on the most common commercial scopes. Custom quotes for unusual spaces or extended licensing."
+        align="center"
+      />
+      <div class="ptables">
+        <PriceTable title="HDR commercial photos" tiers={commercialHdr} />
+        <PriceTable title="Premium 360 panoramas (8-shot)" tiers={commercialPanoramas.premium} />
+        <PriceTable title="Express 360 panoramas" tiers={commercialPanoramas.express} />
+      </div>
+
+      <div class="gpack" data-reveal>
+        <div class="gpack-text">
+          <p class="eyebrow">Most-booked commercial package</p>
+          <h3 class="display">{googlePackage.name}</h3>
+          <p class="gpack-price">${googlePackage.price}</p>
+          <ul class="gpack-includes" role="list">
+            {googlePackage.includes.map((inc) => (
+              <li>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                <span>{inc}</span>
+              </li>
+            ))}
+          </ul>
+          <p class="gpack-note">{googlePackage.note}</p>
+          <a href={asset("/contact/")} class="btn brass">Book this package</a>
+        </div>
+        <div class="gpack-img">
+          <img src={asset("/images/portfolio/listing-01.jpg")} alt="Aerial drone photo of a two-story Las Vegas commercial office building" loading="lazy" width="600" height="450" />
+        </div>
+      </div>
+      <p class="text-center muted" style="margin-top:2rem">
+        <a href={asset("/pricing/")} class="text-link">See all commercial pricing →</a>
+      </p>
+    </div>
+  </section>
+
+  <CTABand
+    title="Request commercial pricing."
+    body={`Tell Mike about the space and how you'll use the imagery. Most quotes go out same-day. Call or text ${business.phone}.`}
+    image={asset("/images/portfolio/warehouse-drone-1.jpg")}
+  />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .blocks { display: flex; flex-direction: column; gap: clamp(3rem, 6vw, 5rem); }
+  .ptables {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+  }
+  .gpack {
+    margin-top: 3rem;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: center;
+    background: var(--dark);
+    color: var(--paper);
+    border-radius: var(--radius-lg);
+    padding: clamp(1.6rem, 1.2rem + 1.5vw, 2.4rem);
+  }
+  .gpack-text .eyebrow { color: var(--brass-2); }
+  .gpack-text h3 { color: var(--paper); font-size: var(--step-3); margin-top: 0.4rem; }
+  .gpack-price { font-family: var(--font-display); font-size: var(--step-5); color: var(--brass-2); margin-top: 0.5rem; }
+  .gpack-includes { display: flex; flex-direction: column; gap: 0.55rem; margin: 1.3rem 0; }
+  .gpack-includes li { display: flex; align-items: flex-start; gap: 0.6rem; font-size: var(--step--1); color: rgba(247,244,239,0.85); }
+  .gpack-includes svg { color: var(--brass-2); flex-shrink: 0; margin-top: 3px; }
+  .gpack-note { font-size: 0.78rem; color: rgba(247,244,239,0.55); margin-bottom: 1.3rem; }
+  .gpack-img { border-radius: var(--radius); overflow: hidden; aspect-ratio: 4/3; }
+  .gpack-img img { width: 100%; height: 100%; object-fit: cover; }
+
+  @media (max-width: 880px) {
+    .ptables { grid-template-columns: 1fr; max-width: 480px; margin-inline: auto; }
+    .gpack { grid-template-columns: 1fr; }
+  }
+</style>

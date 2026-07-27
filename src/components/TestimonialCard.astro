@@ -1,0 +1,51 @@
+---
+import { asset, type Testimonial } from "../data/site";
+export interface Props { t: Testimonial; }
+const { t } = Astro.props;
+---
+<figure class="tcard" data-reveal>
+  <div class="stars" aria-label="5 out of 5 stars">
+    {Array.from({ length: 5 }).map(() => (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    ))}
+  </div>
+  <blockquote class="quote">"{t.quote}"</blockquote>
+  <figcaption class="who">
+    <img src={asset(t.avatar)} alt="" loading="lazy" width="44" height="44" />
+    <span class="who-meta">
+      <span class="who-name">{t.name}</span>
+      <span class="who-context">{t.context}</span>
+    </span>
+  </figcaption>
+</figure>
+
+<style>
+  .tcard {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    padding: clamp(1.6rem, 1.2rem + 1.5vw, 2.2rem);
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-lg);
+    height: 100%;
+  }
+  .stars { display: flex; gap: 2px; color: var(--brass); }
+  .quote {
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    line-height: 1.45;
+    color: var(--ink);
+    flex-grow: 1;
+  }
+  .who { display: flex; align-items: center; gap: 0.85rem; }
+  .who img {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--paper-2);
+  }
+  .who-meta { display: flex; flex-direction: column; line-height: 1.3; }
+  .who-name { font-weight: 600; font-size: var(--step--1); }
+  .who-context { font-size: 0.78rem; color: var(--stone); }
+</style>

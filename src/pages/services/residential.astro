@@ -1,0 +1,121 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import ServiceBlock from "../../components/ServiceBlock.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import CTABand from "../../components/CTABand.astro";
+import { business, vegasPackages } from "../../data/site";
+import PricingCard from "../../components/PricingCard.astro";
+
+const title = "Residential Real Estate Photography Las Vegas — HDR, 3D & Drone | VTLV";
+const description = "Las Vegas residential real estate photography for agents and sellers. HDR photos, Matterport 3D virtual tours, Zillow 3D Home, drone, floor plans, virtual staging and twilight — delivered MLS-ready in 24–48 hours.";
+---
+<Base title={title} description={description} heroVariant="dark">
+  <PageHero
+    eyebrow="Residential real estate"
+    title="Listing media that earns the click."
+    lead="The complete package for Las Vegas residential listings: HDR photography, 3D tours, drone, floor plans, virtual staging and twilight. MLS-ready, delivered in 24–48 hours, shot by Mike, never outsourced."
+    image={asset("/images/portfolio/sierra-skye-living.jpg")}
+    imageAlt="Bright contemporary Las Vegas living room, HDR real estate photography"
+  />
+
+  <section class="section">
+    <div class="container narrow text-center intro">
+      <SectionHeader
+        eyebrow="For agents & sellers"
+        title="95% of buyers start online. Your photos decide whether they click."
+        lead="Lazy cell-phone shots with crooked walls and blown-out windows cost showings. Professional HDR photography is the single highest-ROI line item on a listing, and it's where everything else (the 3D tour, the social posts, the MLS gallery) builds from."
+        align="center"
+      />
+    </div>
+  </section>
+
+  <section class="section sm">
+    <div class="container">
+      <div class="blocks">
+        <ServiceBlock
+          image={asset("/images/portfolio/sierra-skye-kitchen.jpg")}
+          alt="Modern Las Vegas kitchen with island, HDR real estate photo"
+          title="HDR photography"
+          body="High dynamic range stills that capture what the eye actually sees: clean windows, true colors, real shadow detail. Every shot straightened, beautifully lit and edited to MLS standards."
+          bullets={["10–90+ photos per shoot", "Free MLS slideshow with every package", "Rush next-morning delivery available"]}
+        />
+        <ServiceBlock
+          reverse
+          image={asset("/images/portfolio/matterport-360.jpg")}
+          alt="360-degree virtual tour panorama of a Las Vegas listing"
+          title="Matterport 3D virtual tours"
+          body="A true walk-through 3D model: dollhouse view, floor plan view, measurement tools and Mattertag info hotspots. The most immersive way to pre-qualify buyers before they ever tour in person."
+          bullets={["6 months free hosting included", "Branded + unbranded MLS links", "Viewable in VR headsets"]}
+        />
+        <ServiceBlock
+          image={asset("/images/portfolio/mattertag.jpg")}
+          alt="Mattertag info hotspot embedded in a Matterport 3D tour"
+          title="Zillow 3D Home tours"
+          body="Free-hosted 3D tour that lives on Zillow, and ranks your listing higher in Zillow search. Optional Zillow floor plan integration makes your listing stand out in the map view."
+          bullets={["Free Zillow hosting forever", "Boosts Zillow search ranking", "Floor plan integration available"]}
+        />
+        <ServiceBlock
+          reverse
+          image={asset("/images/portfolio/drone-aerial.jpg")}
+          alt="Aerial drone photo of a Las Vegas property and surrounding neighborhood"
+          title="Drone photography"
+          body="FAA Part 107 aerial imagery showing lot size, orientation and proximity to amenities. Mike handles airspace approvals near Las Vegas airports. Agents flying their own drones risk steep FAA penalties."
+          bullets={["FAA-certified pilot", "Airspace-approved near McCarran/Harry Reid", "Adds dramatic context to any listing"]}
+        />
+        <ServiceBlock
+          image={asset("/images/portfolio/floorplan-combined.jpg")}
+          alt="Combined floor plan with measurements for a multi-story Las Vegas property"
+          title="Floor plans"
+          body="Schematic 2D plans, colored living spaces, 3D floor plans and CAD files. Listings with floor plans get more time from buyers. They help people remember the layout and imagine their furniture in the space."
+          bullets={["2D, colored, 3D and CAD options", "Same-day available with HDR shoots", "48-hour standalone turnaround"]}
+        />
+        <ServiceBlock
+          reverse
+          image={asset("/images/portfolio/staging-living-staged.jpg")}
+          alt="Living room after virtual staging with realistic furniture"
+          title="Virtual staging & twilight"
+          body="Fill vacant rooms with photoreal furniture, or capture the property at blue hour for that warm, scroll-stopping exterior. Both available as add-ons to any package or as standalone shoots."
+          bullets={["Virtual staging from $25/photo", "Twilight exterior add-on", "See the before/after gallery"]}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="section paper-2">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Residential packages"
+        title="Three ways to book, or build your own."
+        lead="Each Vegas package bundles the most-requested services. Need something different? Every service is also available on its own."
+        align="center"
+      />
+      <div class="pkg-grid">
+        {vegasPackages.map((p) => <PricingCard pkg={p} />)}
+      </div>
+      <p class="text-center muted" style="margin-top:2rem">
+        <a href={asset("/pricing/")} class="text-link">Full pricing →</a>
+      </p>
+    </div>
+  </section>
+
+  <CTABand
+    title="Book your listing shoot."
+    body={`Most residential shoots are on the calendar within 48 hours. Call or text ${business.phone}.`}
+    image={asset("/images/portfolio/listing-02.jpg")}
+  />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .blocks { display: flex; flex-direction: column; gap: clamp(3rem, 6vw, 5rem); }
+  .pkg-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    align-items: stretch;
+    margin-top: 2.5rem;
+  }
+  @media (max-width: 880px) { .pkg-grid { grid-template-columns: 1fr; max-width: 480px; margin-inline: auto; } }
+</style>

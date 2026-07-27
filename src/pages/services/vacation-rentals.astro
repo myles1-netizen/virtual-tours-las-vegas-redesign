@@ -1,0 +1,101 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import ServiceBlock from "../../components/ServiceBlock.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import CTABand from "../../components/CTABand.astro";
+import { business } from "../../data/site";
+
+const title = "Vacation Rental Photography Las Vegas — Airbnb & Vrbo | VTLV";
+const description = "Las Vegas vacation rental photography for Airbnb and Vrbo hosts. Listing photography, Matterport 3D tours, floor plans, drone and amenity photos — the imagery that earns more bookings at higher nightly rates.";
+---
+<Base title={title} description={description} heroVariant="dark">
+  <PageHero
+    eyebrow="Vacation rentals"
+    title="Listings that earn the booking."
+    lead="Airbnb's own research shows professionally photographed listings earn measurably more than amateur ones. Mike shoots vacation rentals with the same care as a luxury listing, because to a guest scrolling at midnight, that's exactly what your property is."
+    image={asset("/images/portfolio/badura.jpg")}
+    imageAlt="Community pool and clubhouse amenity photo for a Las Vegas property"
+  />
+
+  <section class="section">
+    <div class="container narrow text-center">
+      <SectionHeader
+        eyebrow="For Airbnb & Vrbo hosts"
+        title="When guests see poor photos, they assume everything else is poor too."
+        lead="Travelers process images faster than words, and a single dark, crooked, or cell-phone shot signals a host cutting corners. Professional listing photos are the cheapest occupancy lift available to a short-term rental."
+        align="center"
+      />
+    </div>
+  </section>
+
+  <section class="section sm">
+    <div class="container">
+      <div class="blocks">
+        <ServiceBlock
+          image={asset("/images/portfolio/brooklyn-1.jpg")}
+          alt="Well-lit residential interior photographed for a vacation rental listing"
+          title="Listing photography"
+          body="HDR stills that capture the space the way your guests will experience it: bright, accurate, inviting. Optimized for Airbnb, Vrbo and your direct-booking site."
+          bullets={["Optimized for Airbnb & Vrbo galleries", "Twilight & amenities included on request", "Same 24–48h delivery"]}
+        />
+        <ServiceBlock
+          reverse
+          image={asset("/images/portfolio/matterport-360.jpg")}
+          alt="Matterport virtual tour of a Las Vegas vacation rental"
+          title="Matterport 3D tours"
+          body="Let guests walk the entire rental before they book. A 3D tour pre-qualifies guests, reduces complaints about 'surprises', and stands out in crowded search results. Most short-term rental platforms also require a posted floor plan showing exits."
+          bullets={["Pre-qualifies guests before booking", "Required floor plans available", "QR-code linkable from print materials"]}
+        />
+        <ServiceBlock
+          image={asset("/images/portfolio/drone-aerial.jpg")}
+          alt="Aerial drone view of a Las Vegas vacation rental neighborhood"
+          title="Drone & amenity photography"
+          body="Show the property's setting — pool, view, proximity to the Strip or airport — with FAA-compliant aerial imagery. Plus amenity photos that highlight the features guests actually filter for."
+          bullets={["FAA Part 107 certified pilot", "Pool, view and exterior context", "Community amenity coverage"]}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="section paper-2">
+    <div class="container narrow">
+      <SectionHeader
+        eyebrow="Pricing & licensing"
+        title="Vacation rental shoots, structured for hosts."
+        lead="Short-term rentals operate commercially within residential zones, so media is typically licensed for longer periods than a single home sale, usually 1–3 years at a premium. Mike will scope the right licensing for how you actually use the imagery."
+        align="center"
+      />
+      <div class="cta-box" data-reveal>
+        <p class="eyebrow center">Get a custom vacation-rental quote</p>
+        <h3 class="display">Tell Mike about your rental.</h3>
+        <p class="lead" style="margin-inline:auto">Number of units, platforms, amenities, location. Most quotes go out same day.</p>
+        <div class="btn-row" style="justify-content:center; margin-top:1.5rem">
+          <a href={business.phoneHref} class="btn brass">Call {business.phone}</a>
+          <a href={asset("/contact/")} class="btn outline">Request a quote</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <CTABand
+    title="Book your rental shoot."
+    body={`Better photos, more bookings, higher nightly rates. Call or text ${business.phone}.`}
+    image={asset("/images/portfolio/sierra-skye-kitchen.jpg")}
+  />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .blocks { display: flex; flex-direction: column; gap: clamp(3rem, 6vw, 5rem); }
+  .cta-box {
+    margin-top: 2.5rem;
+    padding: clamp(2rem, 1.5rem + 2vw, 3rem);
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-lg);
+    text-align: center;
+  }
+  .cta-box h3 { font-size: var(--step-3); margin-top: 0.4rem; }
+</style>

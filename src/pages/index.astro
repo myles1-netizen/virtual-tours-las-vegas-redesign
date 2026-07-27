@@ -1,0 +1,505 @@
+---
+import { asset } from "../data/site";
+import Base from "../layouts/Base.astro";
+import TrustBar from "../components/TrustBar.astro";
+import Gallery from "../components/Gallery.astro";
+import BeforeAfterSlider from "../components/BeforeAfterSlider.astro";
+import PricingCard from "../components/PricingCard.astro";
+import TestimonialCard from "../components/TestimonialCard.astro";
+import CTABand from "../components/CTABand.astro";
+import SectionHeader from "../components/SectionHeader.astro";
+import ServiceCard from "../components/ServiceCard.astro";
+import {
+  business, trust, serviceBuyers, portfolio,
+  vegasPackages, testimonials, process, stagingPairs,
+} from "../data/site";
+
+const featuredShots = portfolio.filter((s) =>
+  ["sierra-skye-living", "sierra-skye-kitchen", "drone-aerial", "brooklyn-1",
+   "matterport-360", "listing-01", "spitze-interior", "floorplan-combined"]
+    .some((n) => s.src.includes(n))
+).slice(0, 8);
+
+const title = "Virtual Tours Las Vegas — Real Estate Photographer Mike Madsen";
+const description = "Las Vegas real estate photographer Mike Madsen — HDR photography, Matterport 3D virtual tours, Zillow 3D Home, drone, floor plans & virtual staging. The sole photographer for Zillow Offers and Lennar in Las Vegas. 24–48 hour delivery.";
+---
+<Base title={title} description={description} heroVariant="dark">
+  {/* ===== HERO ===== */}
+  <section class="hero">
+    <div class="hero-bg">
+      <img src={asset("/images/portfolio/sierra-skye-living.jpg")} alt="Sunlit Las Vegas living room captured with professional HDR real estate photography" fetchpriority="high" />
+      <div class="hero-shade"></div>
+    </div>
+    <div class="container hero-inner">
+      <div class="hero-text">
+        <p class="eyebrow" data-reveal>Las Vegas · Henderson · The Valley</p>
+        <h1 class="display hero-title" data-reveal data-reveal-delay="1">
+          The photographer Zillow &amp; Lennar trusted with their listings.
+        </h1>
+        <p class="lead lg hero-lead" data-reveal data-reveal-delay="2">
+          Mike Madsen: full-service Las Vegas real estate photographer and 3D virtual tour provider. HDR photography, Matterport, drone, floor plans and virtual staging, delivered in <strong>24–48 hours</strong>.
+        </p>
+        <div class="btn-row hero-cta" data-reveal data-reveal-delay="3">
+          <a href={asset("/work/")} class="btn brass">View the portfolio</a>
+          <a href={business.phoneHref} class="btn outline">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            Call {business.phone}
+          </a>
+        </div>
+      </div>
+      <aside class="hero-creds" data-reveal data-reveal-delay="4">
+        <div class="cred-card">
+          <p class="cred-since">In real estate since {business.realEstateSince}</p>
+          <p class="cred-line">Shooting Las Vegas properties since {business.since}</p>
+          <ul class="cred-list" role="list">
+            {trust.map((t) => (
+              <li>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                <span>{t}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </aside>
+    </div>
+    <a href="#trust" class="hero-scroll" aria-label="Scroll down">
+      <span></span>
+    </a>
+  </section>
+
+  {/* ===== TRUST BAR ===== */}
+  <section class="section sm trust-section" id="trust">
+    <div class="container">
+      <TrustBar />
+    </div>
+  </section>
+
+  {/* ===== PORTFOLIO FEATURE ===== */}
+  <section class="section portfolio-feature">
+    <div class="container">
+      <div class="pf-head">
+        <div data-reveal>
+          <p class="eyebrow">Selected work</p>
+          <h2 class="display pf-title">Photography that sells the listing.</h2>
+        </div>
+        <a href={asset("/work/")} class="text-link" data-reveal data-reveal-delay="1">View full portfolio →</a>
+      </div>
+      <Gallery shots={featuredShots} />
+    </div>
+  </section>
+
+  {/* ===== WHY MIKE ===== */}
+  <section class="section dark why">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Why work with Mike"
+        title="You hire the photographer. Not a gig worker."
+        lead="Most real estate photo companies are middlemen who outsource your listing to whoever's closest. Mike shoots every property himself. He's the same photographer Zillow trusted with the Offers program and Lennar trusted with their new builds."
+      />
+      <div class="why-grid">
+        <article class="why-card" data-reveal data-reveal-delay="1">
+          <div class="why-icon">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+          <h3>The actual photographer</h3>
+          <p>One point of contact. One standard. Mike captures, edits and delivers every shoot himself, never a rotating cast of subcontractors.</p>
+        </article>
+        <article class="why-card" data-reveal data-reveal-delay="2">
+          <div class="why-icon">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          </div>
+          <h3>Real-estate native</h3>
+          <p>A licensed agent working in the industry since {business.realEstateSince}. He understands listings, MLS workflow and what actually makes a buyer click, because he's been on that side.</p>
+        </article>
+        <article class="why-card" data-reveal data-reveal-delay="3">
+          <div class="why-icon">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-8-4.5-8-11.8V5l8-3 8 3v5.2c0 7.3-8 11.8-8 11.8z"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <h3>Certified &amp; trusted</h3>
+          <p>FAA Part 107 drone pilot and Google Trusted Photographer. The credentials to fly near Las Vegas airports and publish to Google Street View.</p>
+        </article>
+        <article class="why-card" data-reveal data-reveal-delay="4">
+          <div class="why-icon">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <h3>Fast, predictable delivery</h3>
+          <p>MLS-ready photos, tour links and floor plans in your inbox within 24–48 hours. Rush next-morning delivery available when you need to go live.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== SERVICES BY BUYER ===== */}
+  <section class="section services-routes">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Built for what you're selling"
+        title="Find the right package for your property."
+        lead="Residential listings, commercial space, vacation rentals or new construction: start with the buyer type and add the services you need."
+      />
+      <div class="routes-grid">
+        {serviceBuyers.map((b, i) => <ServiceCard b={b} index={i} />)}
+      </div>
+    </div>
+  </section>
+
+  {/* ===== STAGING TEASER ===== */}
+  <section class="section staging-teaser">
+    <div class="container">
+      <div class="st-grid">
+        <div class="st-text">
+          <p class="eyebrow" data-reveal>Virtual staging</p>
+          <h2 class="display st-title" data-reveal data-reveal-delay="1">
+            Empty rooms become <span class="brass">move-in ready</span> in a click.
+          </h2>
+          <p class="lead" data-reveal data-reveal-delay="2">
+            Virtual staging fills vacant rooms with realistic, properly-scaled furniture so buyers can see the potential without the cost of physical staging. Drag the slider to see real Mike-shot examples.
+          </p>
+          <ul class="st-points" role="list" data-reveal data-reveal-delay="3">
+            <li>Photoreal furniture scaled to your room</li>
+            <li>Multiple styles — modern, traditional, glam</li>
+            <li>Faster and far cheaper than physical staging</li>
+            <li>Staged photos for MLS + 360 panoramas for tours</li>
+          </ul>
+          <a href={asset("/work/virtual-staging/")} class="text-link" data-reveal data-reveal-delay="3">See the full before/after gallery →</a>
+        </div>
+        <div class="st-slider" data-reveal data-reveal-delay="2">
+          <BeforeAfterSlider
+            before={stagingPairs[0].before}
+            beforeAlt={stagingPairs[0].beforeAlt}
+            after={stagingPairs[0].after}
+            afterAlt={stagingPairs[0].afterAlt}
+            label={stagingPairs[0].label}
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== PRICING SNAPSHOT ===== */}
+  <section class="section paper-2 pricing-snap">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Transparent pricing"
+        title="Three Las Vegas packages. Pick yours."
+        lead="No quote-and-wait. Real, published pricing sized to your property. The full full price list is on the pricing page."
+        align="center"
+      />
+      <div class="pkg-grid">
+        {vegasPackages.map((p) => <PricingCard pkg={p} />)}
+      </div>
+      <div class="text-center" style="margin-top:2.5rem" data-reveal>
+        <a href={asset("/pricing/")} class="btn outline">See full pricing</a>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== PROCESS ===== */}
+  <section class="section dark process-section">
+    <div class="container">
+      <SectionHeader
+        eyebrow="How it works"
+        title="From booking to MLS in three steps."
+      />
+      <div class="proc-grid">
+        {process.map((p, i) => (
+          <article class="proc" data-reveal data-reveal-delay={String(i + 1)}>
+            <span class="proc-num">{p.step}</span>
+            <h3 class="proc-title">{p.title}</h3>
+            <p class="proc-body">{p.body}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* ===== TESTIMONIALS ===== */}
+  <section class="section testimonials-section">
+    <div class="container">
+      <SectionHeader
+        eyebrow="What clients say"
+        title="Rated five stars by Las Vegas agents & hosts."
+      />
+      <div class="t-grid">
+        {testimonials.map((t) => <TestimonialCard t={t} />)}
+      </div>
+    </div>
+  </section>
+
+  {/* ===== SERVICE AREA ===== */}
+  <section class="section area-section">
+    <div class="container">
+      <div class="area-grid">
+        <div data-reveal>
+          <p class="eyebrow">Service area</p>
+          <h2 class="display area-title">Proudly local to Las Vegas.</h2>
+          <p class="lead">Centrally located about three miles east of the Strip. Mike shoots across the entire Las Vegas Valley, from Summerlin and Henderson to North Las Vegas and beyond.</p>
+          <ul class="area-list" role="list">
+            {business.serviceArea.map((a) => (
+              <li>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                {a}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div class="area-stat" data-reveal data-reveal-delay="2">
+          <div class="area-img">
+            <img src={asset("/images/portfolio/drone-aerial.jpg")} alt="Aerial drone view of a Las Vegas neighborhood" loading="lazy" width="700" height="525" />
+          </div>
+          <p class="area-cred">Locally based · Same-day availability · {business.turnaround} delivery</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ===== FINAL CTA ===== */}
+  <CTABand
+    title="Let's make your next listing the one buyers remember."
+    body="Call or text Mike directly. Most shoots are on the calendar within 48 hours."
+  />
+</Base>
+
+<style>
+  /* ===== HERO ===== */
+  .hero {
+    position: relative;
+    min-height: clamp(640px, 88vh, 940px);
+    display: flex;
+    align-items: center;
+    color: var(--paper);
+    overflow: hidden;
+  }
+  .hero-bg { position: absolute; inset: 0; z-index: -2; }
+  .hero-bg img { width: 100%; height: 100%; object-fit: cover; }
+  .hero-shade {
+    position: absolute; inset: 0; z-index: -1;
+    background:
+      linear-gradient(90deg, rgba(15,14,12,0.88) 0%, rgba(15,14,12,0.62) 50%, rgba(15,14,12,0.35) 100%),
+      linear-gradient(0deg, rgba(15,14,12,0.5) 0%, rgba(15,14,12,0.32) 40%, rgba(15,14,12,0.2) 100%);
+  }
+  /* Eyebrow sits at the very top of the hero, the thinnest-shaded part of the
+     overlay above — brass gold has too little contrast there against bright sky
+     photos, so use paper white (matches the proven-readable title) instead. */
+  .hero .eyebrow { color: var(--paper); opacity: 0.92; text-shadow: 0 1px 3px rgba(15,14,12,0.5); }
+  .hero .eyebrow::before { background: var(--paper); opacity: 0.7; }
+  .hero-inner {
+    display: grid;
+    grid-template-columns: 1.55fr 1fr;
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: center;
+    padding-block: clamp(7rem, 14vh, 10rem) clamp(4rem, 8vh, 6rem);
+    width: 100%;
+  }
+  /* Solid panel behind the hero text instead of relying on the photo gradient —
+     guarantees readable contrast no matter how bright the background photo is. */
+  .hero-text {
+    background: rgba(15, 14, 12, 0.66);
+    backdrop-filter: saturate(140%) blur(6px);
+    -webkit-backdrop-filter: saturate(140%) blur(6px);
+    padding: clamp(1.6rem, 1.2rem + 1.6vw, 2.4rem);
+    border-radius: var(--radius-lg);
+  }
+  .hero-title {
+    font-size: var(--step-6);
+    color: var(--paper);
+    max-width: 16ch;
+  }
+  .hero-lead { color: rgba(247,244,239,0.9); margin-top: 1.4rem; max-width: 50ch; }
+  .hero-lead strong { color: var(--brass-2); font-weight: 600; }
+  .hero-cta { margin-top: 2rem; }
+  .hero .btn.outline { color: var(--paper); border-color: rgba(247,244,239,0.4); }
+  .hero .btn.outline:hover { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+
+  .hero-creds { display: flex; justify-content: flex-end; }
+  .cred-card {
+    background: rgba(247,244,239,0.06);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(247,244,239,0.16);
+    border-radius: var(--radius-lg);
+    padding: clamp(1.4rem, 1rem + 1.5vw, 2rem);
+    max-width: 360px;
+  }
+  .cred-since {
+    font-family: var(--font-display);
+    font-size: var(--step-2);
+    color: var(--paper);
+    line-height: 1.1;
+  }
+  .cred-line { font-size: var(--step--1); color: rgba(247,244,239,0.62); margin-top: 0.3rem; }
+  .cred-list { display: flex; flex-direction: column; gap: 0.85rem; margin-top: 1.4rem; padding-top: 1.4rem; border-top: 1px solid rgba(247,244,239,0.14); }
+  .cred-list li {
+    display: flex; gap: 0.65rem; align-items: flex-start;
+    font-size: 0.86rem; line-height: 1.4;
+    color: rgba(247,244,239,0.88);
+  }
+  .cred-list svg { color: var(--brass-2); flex-shrink: 0; margin-top: 2px; }
+
+  .hero-scroll {
+    position: absolute;
+    bottom: 1.6rem; left: 50%;
+    transform: translateX(-50%);
+    width: 26px; height: 42px;
+    border: 1.5px solid rgba(247,244,239,0.5);
+    border-radius: 14px;
+    display: grid; place-items: start center;
+    padding-top: 8px;
+  }
+  .hero-scroll span {
+    width: 3px; height: 8px;
+    background: var(--brass-2);
+    border-radius: 2px;
+    animation: scroll-bob 1.8s var(--ease) infinite;
+  }
+  @keyframes scroll-bob { 0%,100% { transform: translateY(0); opacity: 1; } 50% { transform: translateY(10px); opacity: 0.3; } }
+
+  /* ===== TRUST ===== */
+  .trust-section { padding-block: clamp(2.5rem, 2rem + 2vw, 3.5rem); }
+
+  /* ===== PORTFOLIO FEATURE ===== */
+  .pf-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    margin-bottom: 2.5rem;
+    flex-wrap: wrap;
+  }
+  .pf-head > div:first-child { max-width: 42ch; flex: 1 1 auto; min-width: 0; }
+  .pf-title { font-size: var(--step-4); margin-top: 0.3rem; line-height: 1.15; }
+  .pf-head .text-link { flex-shrink: 0; white-space: nowrap; }
+  @media (max-width: 560px) {
+    .pf-head { align-items: flex-start; }
+    .pf-head .text-link { margin-top: 0.25rem; }
+  }
+
+  /* ===== WHY ===== */
+  .why-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+  .why-card {
+    display: flex; flex-direction: column; gap: 0.7rem;
+  }
+  .why-icon {
+    width: 52px; height: 52px;
+    display: grid; place-items: center;
+    border: 1px solid var(--line-dark);
+    border-radius: 50%;
+    color: var(--brass-2);
+    margin-bottom: 0.4rem;
+  }
+  .why-card h3 { font-size: var(--step-1); color: var(--paper); }
+  .why-card p { color: rgba(247,244,239,0.7); font-size: var(--step--1); line-height: 1.55; }
+
+  /* ===== ROUTES ===== */
+  .routes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+  }
+
+  /* ===== STAGING TEASER ===== */
+  .st-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.05fr;
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: center;
+  }
+  .st-title { font-size: var(--step-4); margin-top: 0.3rem; }
+  .st-points { display: flex; flex-direction: column; gap: 0.7rem; margin: 1.6rem 0; }
+  .st-points li {
+    display: flex; align-items: center; gap: 0.7rem;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+  }
+  .st-points li::before {
+    content: ""; width: 6px; height: 6px;
+    background: var(--brass); border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ===== PRICING SNAP ===== */
+  .paper-2 { background: var(--paper-2); }
+  .pkg-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    align-items: stretch;
+    margin-top: 2.5rem;
+  }
+
+  /* ===== PROCESS ===== */
+  .proc-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-top: 3rem;
+  }
+  .proc { display: flex; flex-direction: column; gap: 0.7rem; position: relative; }
+  .proc-num {
+    font-family: var(--font-display);
+    font-size: var(--step-4);
+    color: var(--brass-2);
+    opacity: 0.5;
+    line-height: 1;
+  }
+  .proc-title { font-size: var(--step-2); color: var(--paper); }
+  .proc-body { color: rgba(247,244,239,0.7); font-size: var(--step--1); line-height: 1.55; }
+
+  /* ===== TESTIMONIALS ===== */
+  .t-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+  }
+
+  /* ===== AREA ===== */
+  .area-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: center;
+  }
+  .area-title { font-size: var(--step-4); margin-top: 0.3rem; }
+  .area-list { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 1.6rem; }
+  .area-list li {
+    display: flex; align-items: center; gap: 0.7rem;
+    font-size: var(--step--1);
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .area-list svg { color: var(--brass); }
+  .area-stat { display: flex; flex-direction: column; gap: 0.9rem; }
+  .area-img { border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-lift); aspect-ratio: 4/3; }
+  .area-img img { width: 100%; height: 100%; object-fit: cover; }
+  .area-cred { font-size: var(--step--1); color: var(--stone); text-align: center; }
+
+  @media (max-width: 1024px) {
+    .why-grid { grid-template-columns: repeat(2, 1fr); }
+    .proc-grid { grid-template-columns: repeat(2, 1fr); }
+    .proc-grid > .proc:last-child { grid-column: span 2; }
+  }
+  @media (max-width: 880px) {
+    .hero-inner { grid-template-columns: 1fr; padding-block: clamp(6rem, 12vh, 8rem) clamp(3rem, 6vh, 4rem); }
+    .hero-creds { justify-content: flex-start; }
+    .st-grid { grid-template-columns: 1fr; }
+    .st-slider { order: -1; }
+    .pkg-grid { grid-template-columns: 1fr; max-width: 480px; margin-inline: auto; }
+    .area-grid { grid-template-columns: 1fr; }
+    .routes-grid { grid-template-columns: 1fr; }
+    .t-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 560px) {
+    .hero-title { font-size: var(--step-5); }
+    .hero-scroll { display: none; }
+    .why-grid { grid-template-columns: 1fr; }
+    .proc-grid { grid-template-columns: 1fr; }
+    .proc-grid > .proc:last-child { grid-column: span 1; }
+  }
+</style>

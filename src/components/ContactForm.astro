@@ -1,0 +1,185 @@
+---
+import { business } from "../data/site";
+// Form submits to a configurable endpoint (set via env at build, e.g. Formspree).
+// Falls back to a mailto: action with prefilled body if no endpoint is set.
+const FORM_ENDPOINT = import.meta.env.FORM_ENDPOINT ?? "";
+const fallbackMailto = `${business.emailHref}?subject=${encodeURIComponent("New booking request from your website")}`;
+const action = FORM_ENDPOINT || fallbackMailto;
+const method = FORM_ENDPOINT ? "POST" : "GET";
+---
+<form
+  class="cform"
+  action={action}
+  method={method}
+  data-form
+  data-endpoint={FORM_ENDPOINT ? "true" : "false"}
+>
+  <div class="grid2">
+    <label class="field">
+      <span class="label">Name <span class="req">*</span></span>
+      <input type="text" name="name" required autocomplete="name" />
+    </label>
+    <label class="field">
+      <span class="label">Phone</span>
+      <input type="tel" name="phone" autocomplete="tel" />
+    </label>
+  </div>
+
+  <div class="grid2">
+    <label class="field">
+      <span class="label">Email <span class="req">*</span></span>
+      <input type="email" name="email" required autocomplete="email" />
+    </label>
+    <label class="field">
+      <span class="label">Preferred date</span>
+      <input type="date" name="preferred_date" />
+    </label>
+  </div>
+
+  <div class="grid2">
+    <label class="field">
+      <span class="label">Property type</span>
+      <select name="property_type" default="">
+        <option value="">Select…</option>
+        <option>Residential listing</option>
+        <option>Commercial property</option>
+        <option>Vacation rental (Airbnb/Vrbo)</option>
+        <option>New construction / builder</option>
+        <option>As-built / documentation</option>
+        <option>Insurance / Xactimate</option>
+        <option>Other</option>
+      </select>
+    </label>
+    <label class="field">
+      <span class="label">Services needed</span>
+      <select name="services">
+        <option value="">Select…</option>
+        <option>HDR photos</option>
+        <option>Matterport 3D tour</option>
+        <option>Zillow 3D Home tour</option>
+        <option>Drone photos</option>
+        <option>Floor plan</option>
+        <option>Virtual staging</option>
+        <option>Twilight photos</option>
+        <option>Walk-through video</option>
+        <option>Full package (recommend)</option>
+        <option>Not sure yet</option>
+      </select>
+    </label>
+  </div>
+
+  <label class="field">
+    <span class="label">Property address / area</span>
+    <input type="text" name="location" placeholder="e.g. Summerlin, Henderson, specific address" />
+  </label>
+
+  <label class="field">
+    <span class="label">Message</span>
+    <textarea name="message" rows="4" placeholder="Tell me about the property, square footage, and what you're hoping to achieve."></textarea>
+  </label>
+
+  <!-- Honeypot: bots fill this, humans don't -->
+  <input class="hp" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
+  <div class="form-actions">
+    <button type="submit" class="btn brass btn-block">
+      Send request
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+    <p class="form-alt">Prefer to talk? <a href={business.phoneHref}>Call or text {business.phone}</a></p>
+    {!FORM_ENDPOINT && (
+      <p class="form-note">
+        This demo form opens your email app addressed to Mike. The README shows how to wire it to a free form service for live submissions.
+      </p>
+    )}
+  </div>
+</form>
+
+<style>
+  .cform { display: flex; flex-direction: column; gap: 1.1rem; }
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.1rem;
+  }
+  .field { display: flex; flex-direction: column; gap: 0.45rem; }
+  .label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--ink-2);
+  }
+  .req { color: var(--brass); }
+  input, select, textarea {
+    width: 100%;
+    padding: 0.85em 0.95em;
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-sm);
+    font-size: var(--step--1);
+    color: var(--ink);
+    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  }
+  textarea { resize: vertical; min-height: 100px; font-family: inherit; }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--brass);
+    box-shadow: 0 0 0 3px var(--brass-soft);
+  }
+  .hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px; height: 1px;
+    overflow: hidden;
+  }
+
+  .form-actions { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 0.4rem; }
+  .form-alt { text-align: center; font-size: var(--step--1); color: var(--stone); }
+  .form-alt a { color: var(--brass); font-weight: 600; }
+  .form-note {
+    font-size: 0.78rem;
+    color: var(--stone-2);
+    text-align: center;
+    line-height: 1.5;
+    padding: 0.8rem;
+    background: var(--paper-2);
+    border-radius: var(--radius-sm);
+  }
+
+  @media (max-width: 560px) {
+    .grid2 { grid-template-columns: 1fr; gap: 1.1rem; }
+  }
+</style>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>("[data-form]");
+  if (form) {
+    const hasEndpoint = form.dataset.endpoint === "true";
+    form.addEventListener("submit", (e) => {
+      // Honeypot
+      const hp = form.querySelector<HTMLInputElement>('input[name="company"]');
+      if (hp && hp.value) {
+        e.preventDefault();
+        return;
+      }
+      // For mailto fallback, build a prefilled body
+      if (!hasEndpoint) {
+        e.preventDefault();
+        const data = new FormData(form);
+        const body = [
+          `Name: ${data.get("name") ?? ""}`,
+          `Phone: ${data.get("phone") ?? ""}`,
+          `Email: ${data.get("email") ?? ""}`,
+          `Preferred date: ${data.get("preferred_date") ?? ""}`,
+          `Property type: ${data.get("property_type") ?? ""}`,
+          `Services: ${data.get("services") ?? ""}`,
+          `Location: ${data.get("location") ?? ""}`,
+          "",
+          (data.get("message") ?? "").toString(),
+        ].join("\n");
+        const mailto = `${form.action.split("?")[0]}?subject=${encodeURIComponent("New booking request from your website")}&body=${encodeURIComponent(body)}`;
+        window.location.href = mailto;
+      }
+    });
+  }
+</script>

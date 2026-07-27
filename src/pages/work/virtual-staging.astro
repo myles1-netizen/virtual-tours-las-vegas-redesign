@@ -1,0 +1,141 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import BeforeAfterSlider from "../../components/BeforeAfterSlider.astro";
+import CTABand from "../../components/CTABand.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import { stagingPairs, virtualStagingTiers, business } from "../../data/site";
+
+const title = "Virtual Staging Las Vegas — Before & After Gallery | VTLV";
+const description = "See real before/after examples of virtual staging by Mike Madsen. Empty rooms become fully furnished, photorealistic living spaces — faster and cheaper than physical staging. Las Vegas real estate virtual staging.";
+---
+<Base title={title} description={description} heroVariant="dark">
+  <PageHero
+    eyebrow="Virtual staging · Las Vegas"
+    title="Empty rooms, staged in post."
+    lead="Drag any slider to see real Mike-shot before/after examples. Virtual staging lets buyers see a room's potential without the cost and logistics of physical staging, and staged listings photograph better, sell faster, and stand out on MLS."
+    image={asset("/images/portfolio/staging-living-staged.jpg")}
+    imageAlt="Beautifully staged Las Vegas living room after virtual staging"
+  />
+
+  <section class="section">
+    <div class="container">
+      <div class="pairs">
+        {stagingPairs.map((p, i) => (
+          <div class="pair-wrap" data-reveal data-reveal-delay={String((i % 2) + 1)}>
+            <BeforeAfterSlider
+              before={p.before}
+              beforeAlt={p.beforeAlt}
+              after={p.after}
+              afterAlt={p.afterAlt}
+              label={p.label}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section dark vs-why">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Why virtual staging"
+        title="Stage every vacant room for less than the cost of one furnished weekend."
+      />
+      <div class="vs-grid">
+        <article data-reveal data-reveal-delay="1">
+          <h3>Cost-effective</h3>
+          <p>Physical staging runs thousands per room per month. Virtual staging starts at $25/photo, and it's permanent, not rented.</p>
+        </article>
+        <article data-reveal data-reveal-delay="2">
+          <h3>Same-day results</h3>
+          <p>Staged photos come back with your HDR set, usually within 24–48 hours of the shoot. No movers, no waiting.</p>
+        </article>
+        <article data-reveal data-reveal-delay="3">
+          <h3>Style flexibility</h3>
+          <p>Modern, traditional, glam, mid-century — match the staging to the property's buyer. Multiple styles on request.</p>
+        </article>
+        <article data-reveal data-reveal-delay="4">
+          <h3>Works for tours too</h3>
+          <p>Stage still photos for MLS, or stage 360-degree panoramas inside a Matterport 3D walkthrough for full immersion.</p>
+        </article>
+      </div>
+      <div class="vs-pricing" data-reveal>
+        <p class="eyebrow center">Virtual staging pricing</p>
+        <div class="vs-tiers">
+          {virtualStagingTiers.map((t) => (
+            <div class="vs-tier">
+              <span class="vs-item">{t.item}</span>
+              <span class="vs-price">${t.price}</span>
+            </div>
+          ))}
+        </div>
+        <a href={asset("/contact/")} class="btn brass vs-cta">Book virtual staging</a>
+      </div>
+    </div>
+  </section>
+
+  <CTABand
+    title="Want to see your vacant listing staged?"
+    body="Send Mike a photo of the empty room. He'll show you what virtual staging can do before you commit."
+    image={asset("/images/portfolio/staging-bedroom-staged-2.jpg")}
+  />
+</Base>
+
+<style>
+  .pairs {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: clamp(1.5rem, 3vw, 2.5rem) clamp(1.5rem, 3vw, 2.5rem);
+    align-items: start;
+  }
+  .pair-wrap { display: flex; justify-content: center; }
+
+  .vs-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.8rem;
+    margin-top: 2.5rem;
+  }
+  .vs-grid article { display: flex; flex-direction: column; gap: 0.6rem; }
+  .vs-grid h3 { color: var(--paper); font-size: var(--step-1); }
+  .vs-grid p { color: rgba(247,244,239,0.7); font-size: var(--step--1); line-height: 1.5; }
+
+  .vs-pricing {
+    margin-top: 3.5rem;
+    padding-top: 2.5rem;
+    border-top: 1px solid var(--line-dark);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  .vs-tiers {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(1rem, 3vw, 2.5rem);
+  }
+  .vs-tier {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 1.2rem 1.6rem;
+    background: rgba(247,244,239,0.05);
+    border: 1px solid var(--line-dark);
+    border-radius: var(--radius);
+    min-width: 180px;
+  }
+  .vs-item { font-size: var(--step--1); color: rgba(247,244,239,0.75); }
+  .vs-price { font-family: var(--font-display); font-size: var(--step-3); color: var(--brass-2); }
+
+  @media (max-width: 880px) {
+    .pairs { grid-template-columns: 1fr; }
+    .vs-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 520px) {
+    .vs-grid { grid-template-columns: 1fr; }
+  }
+</style>

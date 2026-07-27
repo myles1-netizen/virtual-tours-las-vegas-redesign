@@ -1,0 +1,70 @@
+---
+import { asset } from "../data/site";
+export interface Props {
+  eyebrow?: string;
+  title: string;
+  lead?: string;
+  image?: string;
+  imageAlt?: string;
+  align?: "left" | "center";
+}
+const {
+  eyebrow,
+  title,
+  lead,
+  image = "/images/portfolio/listing-01.jpg",
+  imageAlt = "",
+  align = "left",
+} = Astro.props;
+---
+<section class="phero">
+  <div class="phero-bg">
+    <img src={asset(image)} alt={imageAlt} fetchpriority="high" />
+    <div class="phero-shade"></div>
+  </div>
+  <div class="container phero-inner" data-align={align}>
+    <div class="phero-text">
+      {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+      <h1 class="display phero-title">{title}</h1>
+      {lead && <p class="lead lg">{lead}</p>}
+    </div>
+  </div>
+</section>
+
+<style>
+  .phero {
+    position: relative;
+    min-height: clamp(360px, 50vh, 520px);
+    display: flex;
+    align-items: flex-end;
+    color: var(--paper);
+    overflow: hidden;
+    padding-block: clamp(8rem, 16vh, 11rem) clamp(2.5rem, 5vh, 4rem);
+  }
+  .phero-bg { position: absolute; inset: 0; z-index: -2; }
+  .phero-bg img { width: 100%; height: 100%; object-fit: cover; }
+  .phero-shade {
+    position: absolute; inset: 0; z-index: -1;
+    background:
+      linear-gradient(0deg, rgba(15,14,12,0.85) 0%, rgba(15,14,12,0.4) 55%, rgba(15,14,12,0.6) 100%);
+  }
+  .phero-inner[data-align="center"] { text-align: center; display: flex; justify-content: center; }
+  .phero-inner[data-align="center"] .phero-text { display: flex; flex-direction: column; align-items: center; }
+  .phero-inner[data-align="center"] .lead { margin-inline: auto; }
+  /* Solid panel behind the text instead of relying on the full-bleed photo
+     gradient — guarantees readable contrast no matter how bright, busy or
+     light-colored the background photo is. */
+  .phero-text {
+    max-width: 56ch;
+    background: rgba(15, 14, 12, 0.72);
+    backdrop-filter: saturate(140%) blur(6px);
+    -webkit-backdrop-filter: saturate(140%) blur(6px);
+    padding: clamp(1.3rem, 1rem + 1.2vw, 1.8rem) clamp(1.4rem, 1.1rem + 1.4vw, 2.2rem);
+    border-radius: var(--radius-lg);
+  }
+  .phero .eyebrow { color: var(--brass-2); }
+  .phero .eyebrow::before { background: var(--brass-2); }
+  .phero-title { font-size: var(--step-5); color: var(--paper); margin-top: 0.4rem; }
+  .phero .lead { color: rgba(247,244,239,0.9); margin-top: 1.2rem; }
+  @media (max-width: 600px) { .phero-title { font-size: var(--step-4); } }
+</style>

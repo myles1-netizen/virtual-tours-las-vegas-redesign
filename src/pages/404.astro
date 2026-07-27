@@ -1,0 +1,24 @@
+---
+import { asset } from "../data/site";
+import Base from "../layouts/Base.astro";
+const title = "Page not found — Virtual Tours Las Vegas";
+const description = "That page moved or never existed. Head back to the portfolio or get in touch.";
+---
+<Base title={title} description={description} noindex>
+  <section class="section nf">
+    <div class="container narrow text-center">
+      <p class="eyebrow center">404</p>
+      <h1 class="display nf-title">This shot isn't in the gallery.</h1>
+      <p class="lead" style="margin-inline:auto">The page you're after has moved or never existed. Let's point you somewhere useful.</p>
+      <div class="btn-row" style="justify-content:center; margin-top:2rem">
+        <a href={asset("/")} class="btn brass">Back to home</a>
+        <a href={asset("/work/")} class="btn outline">View the portfolio</a>
+        <a href={asset("/contact/")} class="btn outline">Get in touch</a>
+      </div>
+    </div>
+  </section>
+</Base>
+<style>
+  .nf { min-height: 60vh; display: grid; place-items: center; }
+  .nf-title { font-size: var(--step-5); margin-bottom: 1rem; }
+</style>

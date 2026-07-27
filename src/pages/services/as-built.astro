@@ -1,0 +1,109 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import ServiceBlock from "../../components/ServiceBlock.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import CTABand from "../../components/CTABand.astro";
+import { business } from "../../data/site";
+
+const title = "As-Built Surveys & Construction Documentation Las Vegas | VTLV";
+const description = "Las Vegas as-built surveys, 3D reality capture, construction progress documentation and insurance-ready digital twins by Mike Madsen. Matterport-based measurement, Matterpak BIM exports, and aerial progress imagery for builders, contractors, architects and adjusters.";
+---
+<Base title={title} description={description} heroVariant="dark">
+  <PageHero
+    eyebrow="Builders · developers · docs"
+    title="3D reality capture, without the return site visit."
+    lead="As-built surveys, construction progress documentation, and insurance-ready digital twins. Matterport-based 3D scanning captures precise measurements in a single visit, eliminating the manual measurements and return trips that drag traditional surveys out for weeks."
+    image={asset("/images/portfolio/warehouse-drone-2.jpg")}
+    imageAlt="Industrial property aerial view captured by an FAA-certified drone pilot"
+  />
+
+  <section class="section">
+    <div class="container narrow text-center">
+      <SectionHeader
+        eyebrow="For builders, contractors, architects & adjusters"
+        title="Document it once. Reference it forever."
+        lead="Whether you're remodeling, building new, settling an insurance claim, or surveying an existing structure, a 3D digital twin gives every stakeholder remote access to precise measurements and a complete visual record, captured in hours, not weeks."
+        align="center"
+      />
+    </div>
+  </section>
+
+  <section class="section sm">
+    <div class="container">
+      <div class="blocks">
+        <ServiceBlock
+          image={asset("/images/portfolio/floorplan-combined.jpg")}
+          alt="Combined floor plan with measurements for a multi-story property"
+          title="As-built surveys"
+          body="Schematic floor plans and 3D scans of existing structures: for remodels, tenant improvements, and space planning. Faster and more complete than tape-and-paper surveys, with data you can revisit from anywhere."
+          bullets={["Matterport 3D reality capture", "Schematic floor plans included", "Remote access for the whole team"]}
+        />
+        <ServiceBlock
+          reverse
+          image={asset("/images/portfolio/matterpak-cad.jpg")}
+          alt="CAD file generated from a Matterport 3D scan"
+          title="Matterpak & BIM exports"
+          body="Export scan data as a Matterpak for use in SketchUp, Revit, AutoCAD and other BIM software. Point clouds, colorized 3D models, and reflectance data that drop straight into an architect's existing workflow."
+          bullets={["SketchUp, Revit & AutoCAD compatible", "Point cloud + 3D model exports", "Measurement-accurate"]}
+        />
+        <ServiceBlock
+          image={asset("/images/portfolio/warehouse-drone-1.jpg")}
+          alt="Commercial warehouse documented with aerial drone photography"
+          title="Construction progress documentation"
+          body="Recurring 3D scans at key milestones create a complete visual record of construction progress: useful for disputes, change orders, owner updates, and final delivery documentation."
+          bullets={["Phase-by-phase milestone capture", "Date-stamped visual record", "Aerial progress imagery available"]}
+        />
+        <ServiceBlock
+          reverse
+          image={asset("/images/portfolio/listing-01.jpg")}
+          alt="Aerial drone photo of a two-story Las Vegas commercial office building"
+          title="Insurance & Xactimate-ready documentation"
+          body="Pre-loss and post-loss 3D documentation for adjusters and restoration contractors. Precise measurements, complete visual evidence, and a digital twin you can walk remotely, exactly what's needed for accurate scoping and faster claim resolution."
+          bullets={["Pre-loss & post-loss capture", "Measurement-accurate for scoping", "Adjuster-ready deliverables"]}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="section paper-2">
+    <div class="container narrow">
+      <SectionHeader
+        eyebrow="Trusted on real Las Vegas projects"
+        title="The same technology trusted by IFTI and Adaptive Property Solutions."
+        lead="Mike's as-built and documentation work has supported commercial clients across Las Vegas, including work featured on projects with Independent Floor Testing & Inspection and Adaptive Property Solutions. Custom quotes based on square footage, deliverables and recurrence."
+        align="center"
+      />
+      <div class="cta-box" data-reveal>
+        <p class="eyebrow center">Get a documentation quote</p>
+        <h3 class="display">Tell Mike about the project.</h3>
+        <p class="lead" style="margin-inline:auto">Square footage, project type, deliverables needed, and timeline. Most quotes go out same day.</p>
+        <div class="btn-row" style="justify-content:center; margin-top:1.5rem">
+          <a href={business.phoneHref} class="btn brass">Call {business.phone}</a>
+          <a href={asset("/contact/")} class="btn outline">Request a quote</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <CTABand
+    title="Document your project in 3D."
+    body={`Faster than traditional surveying, more complete than photos alone. Call or text ${business.phone}.`}
+    image={asset("/images/portfolio/matterpak-cad.jpg")}
+  />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .blocks { display: flex; flex-direction: column; gap: clamp(3rem, 6vw, 5rem); }
+  .cta-box {
+    margin-top: 2.5rem;
+    padding: clamp(2rem, 1.5rem + 2vw, 3rem);
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-lg);
+    text-align: center;
+  }
+  .cta-box h3 { font-size: var(--step-3); margin-top: 0.4rem; }
+</style>

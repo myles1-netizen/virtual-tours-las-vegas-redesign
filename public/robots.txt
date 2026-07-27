@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mylesthepro1.github.io/virtual-tours-las-vegas-redesign/sitemap-index.xml

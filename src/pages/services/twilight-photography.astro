@@ -1,0 +1,103 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import ServiceBlock from "../../components/ServiceBlock.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import CTABand from "../../components/CTABand.astro";
+import { business } from "../../data/site";
+
+const title = "Twilight Photography Las Vegas — Blue Hour Listing Shots | VTLV";
+const description = "Twilight and blue-hour real estate photography in Las Vegas. Warm, dramatic exterior shots that stop the scroll on MLS and social. Available as a $100 add-on to any HDR package or as a standalone shoot.";
+---
+<Base title={title} description={description} heroVariant="dark">
+  <PageHero
+    eyebrow="Twilight photography"
+    title="The blue-hour shot that stops the scroll."
+    lead="Twilight exteriors capture the property at blue hour: interior lights glowing warm against a deep dusk sky. It's the single most eye-catching image in a listing gallery, and the one most likely to be the social post that earns the click."
+    image={asset("/images/portfolio/sierra-skye-living.jpg")}
+    imageAlt="Twilight exterior HDR photo of a modern Las Vegas two-story home"
+  />
+
+  <section class="section">
+    <div class="container narrow text-center">
+      <SectionHeader
+        eyebrow="Why twilight"
+        title="Warm glow. Deep sky. Drama."
+        lead="Captured during the narrow window after sunset when the sky turns deep blue, twilight shots show a home at its most inviting: interior lights warm and welcoming against the cool sky. They signal luxury, completeness, and attention to detail."
+        align="center"
+      />
+    </div>
+  </section>
+
+  <section class="section paper-2">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Pricing"
+        title="$100 add-on. Or standalone."
+        lead="Twilight is most often booked as an add-on to a residential HDR shoot, captured the same evening. Standalone twilight shoots are also available for listings that already have daytime photography."
+      />
+      <div class="twilight-pricing">
+        <div class="tp-card" data-reveal>
+          <p class="eyebrow">Add-on</p>
+          <p class="tp-price">$100</p>
+          <p class="tp-desc">Added to a residential HDR shoot. Captured the same evening as your photo set.</p>
+        </div>
+        <div class="tp-card" data-reveal data-reveal-delay="1">
+          <p class="eyebrow">Sky replacement</p>
+          <p class="tp-price">$25</p>
+          <p class="tp-desc">Per image. A budget alternative: digitally replace a blown-out sky with a realistic dusk sky on existing daytime exterior photos.</p>
+        </div>
+        <div class="tp-card" data-reveal data-reveal-delay="2">
+          <p class="eyebrow">Standalone</p>
+          <p class="tp-price">Custom</p>
+          <p class="tp-desc">Twilight-only shoot on a property with existing daytime photography. <a href={asset("/contact/")}>Quote on request</a>.</p>
+        </div>
+      </div>
+      <div class="text-center" style="margin-top:2.5rem">
+        <a href={asset("/contact/")} class="btn brass">Book twilight photography</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ServiceBlock
+        image={asset("/images/portfolio/sierra-skye-kitchen.jpg")}
+        alt="Twilight backyard photo with illuminated pool and patio, HDR real estate photography"
+        title="How it works"
+        body="Mike arrives roughly 30 minutes before sunset, shoots the property through the blue-hour window (about 20–30 minutes), and delivers the same straightened, color-accurate standard as the daytime HDR set. Twilight shots slot into the same MLS gallery, typically delivered within 48 hours."
+        bullets={["~30 min on-site, blue-hour window", "Same 24–48h delivery as HDR", "Same color and edit standard", "Sky replacement also available"]}
+      />
+    </div>
+  </section>
+
+  <CTABand
+    title="Add twilight to your next shoot."
+    body={`$100 add-on to any HDR package. Call or text ${business.phone}.`}
+    image={asset("/images/portfolio/sierra-skye-living.jpg")}
+  />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .twilight-pricing {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+  }
+  .tp-card {
+    padding: clamp(1.5rem, 1.2rem + 1.5vw, 2rem);
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-lg);
+    display: flex; flex-direction: column; gap: 0.6rem;
+  }
+  .tp-card .eyebrow { margin-bottom: 0; }
+  .tp-price { font-family: var(--font-display); font-size: var(--step-4); color: var(--ink); line-height: 1; }
+  .tp-desc { font-size: var(--step--1); color: var(--stone); line-height: 1.5; }
+  .tp-desc a { color: var(--brass); font-weight: 600; }
+
+  @media (max-width: 760px) { .twilight-pricing { grid-template-columns: 1fr; } }
+</style>

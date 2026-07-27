@@ -1,0 +1,305 @@
+---
+import { asset, type Shot } from "../data/site";
+
+export interface Props {
+  shots: Shot[];
+  filters?: boolean;
+  class?: string;
+}
+const { shots, filters = false, class: className = "" } = Astro.props;
+// Pre-resolve every shot src against the deployment base path.
+const resolved = shots.map((s) => ({ ...s, src: asset(s.src) }));
+
+const categories = ["All", "Interior", "Exterior", "Drone", "Staging", "3D Tour", "Commercial", "Floor Plan"];
+const presentCats = categories.filter(
+  (c) => c === "All" || shots.some((s) => s.category === c)
+);
+---
+<div class:list={["gallery-wrap", className]} data-reveal>
+  {filters && presentCats.length > 2 && (
+    <div class="filters" role="tablist" aria-label="Filter portfolio by category">
+      {presentCats.map((cat, i) => (
+        <button
+          class:list={["filter", { active: i === 0 }]}
+          data-filter={cat}
+          role="tab"
+          aria-selected={i === 0 ? "true" : "false"}
+        >
+          {cat}
+        </button>
+      ))}
+    </div>
+  )}
+
+  <div class="gallery" data-gallery>
+    {resolved.map((shot, i) => (
+      <a
+        class:list={["tile", { wide: shot.span }]}
+        href={shot.src}
+        target="_blank"
+        rel="noopener noreferrer"
+        data-category={shot.category}
+        data-index={i}
+        data-lightbox-trigger
+        aria-label={`Open enlarged: ${shot.alt}`}
+      >
+        <img
+          src={shot.src}
+          alt={shot.alt}
+          loading={i < 4 ? "eager" : "lazy"}
+          decoding={i < 4 ? "auto" : "async"}
+          width="800"
+          height="600"
+        />
+        <span class="tile-cat">{shot.category}</span>
+        <span class="tile-zoom" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6M8 11h6"/></svg>
+        </span>
+      </a>
+    ))}
+  </div>
+</div>
+
+<!-- Lightbox: one shared instance per gallery, hidden by default -->
+<div class="lightbox" data-lightbox hidden role="dialog" aria-modal="true" aria-label="Image viewer">
+  <button class="lb-close" data-lb-close aria-label="Close viewer">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+  </button>
+  <button class="lb-nav lb-prev" data-lb-prev aria-label="Previous image">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+  </button>
+  <figure class="lb-figure">
+    <img class="lb-img" data-lb-img alt="" />
+    <figcaption class="lb-cap" data-lb-cap></figcaption>
+  </figure>
+  <button class="lb-nav lb-next" data-lb-next aria-label="Next image">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+  </button>
+</div>
+
+<style>
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 1.8rem;
+  }
+  .filter {
+    padding: 0.5em 1em;
+    font-size: var(--step--1);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    border: 1px solid var(--line-light);
+    border-radius: 999px;
+    color: var(--stone);
+    transition: all 0.25s var(--ease);
+  }
+  .filter:hover { color: var(--ink); border-color: var(--ink); }
+  .filter.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+  }
+  .tile {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius);
+    background: var(--paper-2);
+    aspect-ratio: 4 / 3;
+    cursor: zoom-in;
+    padding: 0;
+    color: inherit;
+    text-decoration: none;
+    display: block;
+  }
+  /* Wide tiles span 2 columns but use a proportionally wider aspect ratio
+     (8:3 instead of 4:3) so they stay the SAME height as normal tiles in the
+     same row, instead of growing 2x taller and leaving gaps next to them. */
+  .tile.wide { grid-column: span 2; aspect-ratio: 8 / 3; }
+  .tile img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s var(--ease);
+  }
+  .tile:hover img { transform: scale(1.04); }
+
+  .tile-cat {
+    position: absolute;
+    top: 0.7rem; left: 0.7rem;
+    background: rgba(15,14,12,0.78);
+    color: var(--paper);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.4em 0.7em;
+    border-radius: 3px;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: all 0.3s var(--ease);
+  }
+  .tile:hover .tile-cat { opacity: 1; transform: none; }
+
+  .tile-zoom {
+    position: absolute;
+    bottom: 0.8rem; right: 0.8rem;
+    width: 38px; height: 38px;
+    display: grid; place-items: center;
+    background: var(--brass);
+    color: #fff;
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.3s var(--ease);
+  }
+  .tile:hover .tile-zoom { opacity: 1; transform: scale(1); }
+
+  /* Lightbox */
+  .lightbox {
+    position: fixed; inset: 0;
+    background: rgba(15,14,12,0.96);
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    padding: clamp(1rem, 3vw, 3rem);
+    animation: lb-fade 0.3s var(--ease);
+  }
+  .lightbox[hidden] { display: none; }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
+
+  .lb-figure {
+    max-width: min(1100px, 92vw);
+    max-height: 86vh;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  .lb-img {
+    max-width: 100%;
+    max-height: 78vh;
+    width: auto;
+    object-fit: contain;
+    border-radius: var(--radius);
+    box-shadow: 0 20px 80px rgba(0,0,0,0.5);
+  }
+  .lb-cap {
+    color: rgba(247,244,239,0.7);
+    font-size: var(--step--1);
+    text-align: center;
+    max-width: 60ch;
+  }
+
+  .lb-close, .lb-nav {
+    position: absolute;
+    color: var(--paper);
+    width: 52px; height: 52px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    transition: background 0.2s var(--ease), transform 0.2s var(--ease);
+  }
+  .lb-close:hover, .lb-nav:hover { background: rgba(247,244,239,0.12); }
+  .lb-close { top: 1.2rem; right: 1.2rem; }
+  .lb-prev { left: clamp(0.5rem, 3vw, 2rem); top: 50%; transform: translateY(-50%); }
+  .lb-next { right: clamp(0.5rem, 3vw, 2rem); top: 50%; transform: translateY(-50%); }
+  .lb-prev:hover { transform: translateY(-50%) translateX(-3px); }
+  .lb-next:hover { transform: translateY(-50%) translateX(3px); }
+
+  @media (max-width: 900px) {
+    .gallery { grid-template-columns: repeat(2, 1fr); }
+    .tile.wide { aspect-ratio: 4 / 3; }
+  }
+  @media (max-width: 520px) {
+    .gallery { grid-template-columns: 1fr; }
+    .tile.wide { grid-column: span 1; aspect-ratio: 4 / 3; }
+    .lb-prev, .lb-next { width: 44px; height: 44px; }
+  }
+</style>
+
+<script>
+  type ShotLite = { src: string; alt: string; category: string };
+
+  function initGallery(root: HTMLElement) {
+    const tiles = Array.from(root.querySelectorAll<HTMLButtonElement>("[data-lightbox-trigger]"));
+    if (!tiles.length) return;
+
+    // Build the shot list (read from tile img src/alt + category)
+    const shots: ShotLite[] = tiles.map((t) => ({
+      src: t.querySelector("img")!.src,
+      alt: t.querySelector("img")!.alt,
+      category: t.dataset.category || "",
+    }));
+
+    const lightbox = root.querySelector<HTMLElement>("[data-lightbox]");
+    const img = lightbox?.querySelector<HTMLImageElement>("[data-lb-img]");
+    const cap = lightbox?.querySelector<HTMLElement>("[data-lb-cap]");
+    const closeBtn = lightbox?.querySelector<HTMLButtonElement>("[data-lb-close]");
+    const prevBtn = lightbox?.querySelector<HTMLButtonElement>("[data-lb-prev]");
+    const nextBtn = lightbox?.querySelector<HTMLButtonElement>("[data-lb-next]");
+
+    let current = 0;
+    const open = (i: number) => {
+      current = i;
+      show();
+      lightbox!.hidden = false;
+      document.body.style.overflow = "hidden";
+      requestAnimationFrame(() => nextBtn?.focus());
+    };
+    const show = () => {
+      const s = shots[current];
+      if (img) {
+        img.src = s.src;
+        img.alt = s.alt;
+      }
+      if (cap) cap.textContent = s.alt;
+    };
+    const close = () => {
+      if (lightbox) lightbox.hidden = true;
+      document.body.style.overflow = "";
+      tiles[current]?.focus();
+    };
+    const next = () => { current = (current + 1) % shots.length; show(); };
+    const prev = () => { current = (current - 1 + shots.length) % shots.length; show(); };
+
+    tiles.forEach((t, i) =>
+      t.addEventListener("click", (e) => {
+        // JS available → prevent the raw-image new-tab fallback and open lightbox instead.
+        e.preventDefault();
+        open(i);
+      })
+    );
+    closeBtn?.addEventListener("click", close);
+    nextBtn?.addEventListener("click", next);
+    prevBtn?.addEventListener("click", prev);
+    lightbox?.addEventListener("click", (e) => {
+      if (e.target === lightbox) close();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (lightbox?.hidden) return;
+      if (e.key === "Escape") close();
+      if (e.key === "ArrowRight") next();
+      if (e.key === "ArrowLeft") prev();
+    });
+
+    // Filtering
+    const filters = root.querySelectorAll<HTMLButtonElement>(".filter");
+    filters.forEach((f) => {
+      f.addEventListener("click", () => {
+        const cat = f.dataset.filter;
+        filters.forEach((x) => {
+          x.classList.toggle("active", x === f);
+          x.setAttribute("aria-selected", x === f ? "true" : "false");
+        });
+        tiles.forEach((t) => {
+          const show = cat === "All" || t.dataset.category === cat;
+          t.style.display = show ? "" : "none";
+        });
+      });
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>(".gallery-wrap").forEach(initGallery);
+</script>

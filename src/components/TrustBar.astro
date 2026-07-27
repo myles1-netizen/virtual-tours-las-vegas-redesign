@@ -1,0 +1,59 @@
+---
+import { clients, asset } from "../data/site";
+---
+<div class="trustbar" data-reveal>
+  <p class="trust-label">Trusted by Las Vegas agents, brokers &amp; brands</p>
+  <div class="logos">
+    {clients.map((c) => (
+      <div class="logo">
+        <img src={asset(c.src)} alt={`${c.name} — Virtual Tours Las Vegas client`} loading="lazy" />
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+  .trustbar { width: 100%; }
+  .trust-label {
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--stone-2);
+    margin-bottom: 1.6rem;
+  }
+  .logos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+    max-width: 980px;
+    margin-inline: auto;
+  }
+  .logo {
+    height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.25rem;
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius);
+    filter: grayscale(1);
+    opacity: 0.8;
+    transition: filter 0.35s var(--ease), opacity 0.35s var(--ease), border-color 0.35s var(--ease);
+  }
+  .logo:hover { filter: grayscale(0); opacity: 1; border-color: var(--brass-soft); }
+  .logo img {
+    max-height: 34px;
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+  @media (max-width: 600px) {
+    .logos { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+    .logo { height: 64px; opacity: 0.85; filter: grayscale(0.3); padding: 0.6rem 1rem; }
+    .logo img { max-height: 28px; }
+  }
+</style>

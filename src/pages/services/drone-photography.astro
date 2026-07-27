@@ -1,0 +1,110 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import ServiceBlock from "../../components/ServiceBlock.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import CTABand from "../../components/CTABand.astro";
+import Gallery from "../../components/Gallery.astro";
+import { portfolio, business } from "../../data/site";
+
+const droneShots = portfolio.filter((s) => s.category === "Drone");
+const neonSkyline = "$250 · 30 HDR photos + 5 drone photos (homes under 3,000 sq ft)";
+
+const title = "Drone Photography Las Vegas — FAA Part 107 Aerial | VTLV";
+const description = "FAA Part 107 certified drone photography in Las Vegas. Aerial imagery showing lot size, setting and proximity to amenities — airspace-approved near McCarran/Harry Reid airport. Residential and commercial aerial photography.";
+---
+<Base title={title} description={description} heroVariant="dark">
+  <PageHero
+    eyebrow="Drone photography"
+    title="Show the lot, the view and the setting."
+    lead="FAA Part 107 certified aerial photography. Drone shots show lot size, orientation and proximity to amenities in a way ground photography can't. Mike handles airspace approvals near Las Vegas airports. Agents flying their own drones near the airport risk steep FAA penalties."
+    image={asset("/images/portfolio/drone-aerial.jpg")}
+    imageAlt="Aerial drone photo of a Las Vegas property and surrounding neighborhood"
+  />
+
+  <section class="section">
+    <div class="container narrow text-center">
+      <SectionHeader
+        eyebrow="Why drone"
+        title="Aerial context sells the location."
+        lead="For listings with a pool, a view, acreage, or proximity to the Strip, a drone shot is often the image that earns the click. For commercial properties, aerial imagery documents site layout, parking and infrastructure in a single frame."
+        align="center"
+      />
+    </div>
+  </section>
+
+  <section class="section sm">
+    <div class="container">
+      <Gallery shots={droneShots} />
+    </div>
+  </section>
+
+  <section class="section paper-2">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Pricing"
+        title="The Neon Skyline package includes drone."
+        lead="Standalone drone available on request. The Neon Skyline residential package bundles 30 HDR photos with 5 drone shots, the easiest way to add aerial to a listing."
+      />
+      <div class="neon-card" data-reveal>
+        <div>
+          <p class="eyebrow">Residential drone package</p>
+          <h3 class="display">Neon Skyline</h3>
+          <p class="neon-price">$250</p>
+          <ul class="neon-includes" role="list">
+            <li><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>30 HDR photos</li>
+            <li><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>5 drone photos</li>
+            <li><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>FAA Part 107 pilot</li>
+            <li><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>MLS slideshow</li>
+          </ul>
+          <p class="neon-note">Homes 3,000 sq ft or less (incl. garage). Weather-dependent: wind, rain or airspace closures may require a revisit or partial refund.</p>
+        </div>
+        <div class="neon-cta">
+          <a href={asset("/contact/")} class="btn brass btn-block">Book Neon Skyline</a>
+          <a href={asset("/pricing/")} class="text-link" style="justify-content:center">See all pricing →</a>
+        </div>
+      </div>
+
+      <ServiceBlock
+        reverse
+        image={asset("/images/portfolio/warehouse-drone-2.jpg")}
+        alt="Industrial property aerial view by an FAA-certified drone pilot"
+        title="Commercial drone & insurance"
+        body="Commercial-grade aerial for site documentation, marketing, and insurance scope. Mike's Part 107 credentials and experience securing airspace approvals near Las Vegas airports make him a safe choice for commercial and industrial work."
+        bullets={["FAA Part 107 certified", "Airspace approval near McCarran/Harry Reid", "Site layout, parking and infrastructure"]}
+      />
+    </div>
+  </section>
+
+  <CTABand
+    title="Add aerial to your next shoot."
+    body={`FAA-certified, airspace-approved. Call or text ${business.phone}.`}
+    image={asset("/images/portfolio/drone-aerial.jpg")}
+  />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .neon-card {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: center;
+    background: var(--dark);
+    color: var(--paper);
+    border-radius: var(--radius-lg);
+    padding: clamp(1.6rem, 1.2rem + 1.5vw, 2.4rem);
+    margin-block: 2.5rem 3rem;
+  }
+  .neon-card .eyebrow { color: var(--brass-2); }
+  .neon-card h3 { color: var(--paper); font-size: var(--step-3); margin-top: 0.4rem; }
+  .neon-price { font-family: var(--font-display); font-size: var(--step-5); color: var(--brass-2); margin-top: 0.5rem; }
+  .neon-includes { display: flex; flex-direction: column; gap: 0.55rem; margin: 1.3rem 0; }
+  .neon-includes li { display: flex; align-items: flex-start; gap: 0.6rem; font-size: var(--step--1); color: rgba(247,244,239,0.85); }
+  .neon-includes svg { color: var(--brass-2); flex-shrink: 0; margin-top: 3px; }
+  .neon-note { font-size: 0.78rem; color: rgba(247,244,239,0.55); }
+  .neon-cta { display: flex; flex-direction: column; gap: 1rem; }
+
+  @media (max-width: 760px) { .neon-card { grid-template-columns: 1fr; } }
+</style>

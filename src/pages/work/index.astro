@@ -1,0 +1,44 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import Gallery from "../../components/Gallery.astro";
+import CTABand from "../../components/CTABand.astro";
+import { portfolio, business } from "../../data/site";
+
+const title = "Portfolio — Las Vegas Real Estate Photography & 3D Tours";
+const description = "Selected Las Vegas real estate photography by Mike Madsen: HDR interiors, drone, virtual staging, Matterport 3D tours, commercial, and floor plans. Filter by category and view full-screen.";
+---
+<Base title={title} description={description} heroVariant="dark">
+  <PageHero
+    eyebrow="Selected work"
+    title="A Las Vegas photographer's portfolio."
+    lead="HDR interiors, aerial drone, virtual staging, Matterport 3D and commercial work, all shot by Mike Madsen across the Las Vegas Valley. Filter by category and click any image to view full-screen."
+    image={asset("/images/portfolio/listing-01.jpg")}
+    imageAlt="Spacious Las Vegas living room with mountain views, professionally photographed"
+  />
+
+  <section class="section">
+    <div class="container">
+      <Gallery shots={portfolio} filters={true} />
+    </div>
+  </section>
+
+  <section class="section sm paper-2">
+    <div class="container narrow text-center">
+      <p class="eyebrow center">Need to see more?</p>
+      <h2 class="display" style="font-size:var(--step-3); margin-bottom:1rem">Mike's shot thousands of properties.</h2>
+      <p class="lead" style="margin-inline:auto; margin-bottom:1.5rem">From one-bedroom condos to mansions with indoor basketball gyms. Request a specific type of sample, or book a walkthrough of recent work.</p>
+      <div class="btn-row" style="justify-content:center">
+        <a href={business.phoneHref} class="btn brass">Call {business.phone}</a>
+        <a href={asset("/contact/")} class="btn outline">Request samples</a>
+      </div>
+    </div>
+  </section>
+
+  <CTABand />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+</style>

@@ -1,0 +1,38 @@
+---
+import Base from "../layouts/Base.astro";
+import { business } from "../data/site";
+const title = "Terms — Virtual Tours Las Vegas";
+const description = "Terms information for the Virtual Tours Las Vegas redesign concept.";
+---
+<Base title={title} description={description} heroVariant="light">
+  <section class="section">
+    <div class="container narrow legal">
+      <p class="eyebrow">Legal</p>
+      <h1 class="display legal-title">Terms</h1>
+      <p class="legal-note">This page covers the redesign concept site. Mike's production site has its own terms.</p>
+
+      <h2>Concept site</h2>
+      <p>This is a non-commercial <strong>redesign concept</strong> built to demonstrate what {business.name}'s online presence could look like. It is not the production website, does not represent a binding offer to provide services, and does not process transactions.</p>
+
+      <h2>Pricing &amp; services</h2>
+      <p>Any pricing, packages or service descriptions shown reflect what was published on the existing {business.name} website at the time this concept was built (audited July 2026). Pricing and availability are subject to change; confirm current rates directly with {business.owner} at {business.phone} before booking.</p>
+
+      <h2>Imagery</h2>
+      <p>All photographs are the work of {business.owner}, sourced from the existing {business.name} website for this demonstration. They are shown to illustrate the design only and are not licensed for re-use from this concept site.</p>
+
+      <h2>Booking &amp; cancellations</h2>
+      <p>The cancellation policy reflected in the FAQ — a $35 trip fee for cancellations inside 24 hours or unprepared properties — is based on the existing site's published terms and is shown here for demonstration. Confirm the current policy with Mike at booking.</p>
+
+      <h2>Contact</h2>
+      <p>Questions can be directed to {business.email} or {business.phone}.</p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .legal-title { font-size: var(--step-5); margin-block: 0.5rem 0.4rem; }
+  .legal-note { color: var(--stone-2); font-size: var(--step--1); margin-bottom: 2.5rem; font-style: italic; }
+  .legal h2 { font-family: var(--font-body); font-size: 0.78rem; font-weight: 700; letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--brass); margin-top: 2rem; margin-bottom: 0.6rem; }
+  .legal p { color: var(--stone); line-height: 1.65; margin-bottom: 0.5rem; }
+  .legal strong { color: var(--ink); }
+</style>

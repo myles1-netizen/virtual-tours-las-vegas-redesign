@@ -1,0 +1,157 @@
+---
+import { business, nav, asset } from "../data/site";
+
+const year = new Date().getFullYear();
+const serviceLinks = [
+  { label: "Residential", href: "/services/residential/" },
+  { label: "Commercial", href: "/services/commercial/" },
+  { label: "Vacation Rentals", href: "/services/vacation-rentals/" },
+  { label: "3D & Virtual Tours", href: "/services/3d-tours/" },
+  { label: "As-Built & Documentation", href: "/services/as-built/" },
+];
+---
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-cta">
+      <div>
+        <p class="eyebrow">Ready when you are</p>
+        <h2 class="display">Let's get your listing shot.</h2>
+      </div>
+      <div class="cta-row">
+        <a href={business.phoneHref} class="btn brass">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          Call {business.phone}
+        </a>
+        <a href={asset("/contact/")} class="btn outline">Book online</a>
+      </div>
+    </div>
+
+    <hr class="divider footer-divider" />
+
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="brand-row">
+          <img class="brand-logo" src={asset("/images/logo-white.png")} alt={`${business.name}`} width="220" height="75" />
+        </div>
+        <p class="footer-tag">
+          Mike Madsen, full-service Las Vegas real estate photographer &amp; 3D virtual tour provider, working the valley since {business.since}.
+        </p>
+        <p class="footer-area">{business.serviceArea.join(" · ")}</p>
+      </div>
+
+      <nav class="footer-col" aria-label="Pages">
+        <h3>Site</h3>
+        {nav.map((n) => <a href={asset(n.href)}>{n.label}</a>)}
+      </nav>
+
+      <nav class="footer-col" aria-label="Services">
+        <h3>Services</h3>
+        {serviceLinks.map((n) => <a href={asset(n.href)}>{n.label}</a>)}
+      </nav>
+
+      <div class="footer-col">
+        <h3>Contact</h3>
+        <a href={business.phoneHref} class="phone-link">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <span class="num">{business.phone}</span>
+        </a>
+        <a href={business.emailHref}>{business.email}</a>
+        <a href={asset("/faq/")}>FAQ</a>
+        <p class="footer-hours">Mon–Sat, 8a–6p PT</p>
+      </div>
+    </div>
+
+    <hr class="divider footer-divider" />
+
+    <div class="footer-bottom">
+      <p>© {year} {business.name}. A redesign concept, not the production site.</p>
+      <div class="footer-legal">
+        <a href={asset("/privacy/")}>Privacy</a>
+        <a href={asset("/terms/")}>Terms</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background: var(--dark);
+    color: var(--paper);
+    padding-block: clamp(3.5rem, 2.5rem + 4vw, 5.5rem) 2rem;
+  }
+  .footer-cta {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+  .footer-cta .display { font-size: var(--step-4); color: var(--paper); margin-top: 0.3rem; }
+  .cta-row { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+  .site-footer .btn.outline { color: var(--paper); border-color: var(--line-dark); }
+  .site-footer .btn.outline:hover { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+
+  .footer-divider { margin-block: clamp(2rem, 1.5rem + 2vw, 3rem); background: var(--line-dark); }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr 1fr 1.1fr;
+    gap: 2.5rem;
+  }
+  .brand-row { display: flex; align-items: center; gap: 0.7rem; }
+  .brand-logo { height: 60px; width: auto; }
+  .footer-tag {
+    margin-top: 1.1rem;
+    color: rgba(247,244,239,0.68);
+    max-width: 36ch;
+    line-height: 1.55;
+  }
+  .footer-area {
+    margin-top: 0.7rem;
+    font-size: var(--step--1);
+    color: var(--brass-2);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  .footer-col { display: flex; flex-direction: column; gap: 0.65rem; }
+  .footer-col h3 {
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--brass-2);
+    margin-bottom: 0.4rem;
+  }
+  .footer-col a {
+    color: rgba(247,244,239,0.78);
+    font-size: var(--step--1);
+    transition: color 0.2s var(--ease);
+    width: fit-content;
+  }
+  .footer-col a:hover { color: var(--paper); }
+  .footer-hours { color: rgba(247,244,239,0.55); font-size: var(--step--1); margin-top: 0.3rem; }
+  .site-footer .phone-link .num { color: var(--paper); }
+
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: var(--step--1);
+    color: rgba(247,244,239,0.5);
+  }
+  .footer-legal { display: flex; gap: 1.2rem; }
+  .footer-legal a:hover { color: var(--paper); }
+
+  @media (max-width: 880px) {
+    .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .footer-brand { grid-column: 1 / -1; }
+  }
+  @media (max-width: 520px) {
+    .footer-grid { grid-template-columns: 1fr; }
+    .footer-cta { flex-direction: column; align-items: flex-start; }
+  }
+</style>

@@ -1,0 +1,146 @@
+---
+import "../styles/global.css";
+import SiteHeader from "../components/SiteHeader.astro";
+import SiteFooter from "../components/SiteFooter.astro";
+import { business, asset } from "../data/site";
+
+export interface Props {
+  title: string;
+  description: string;
+  /** OG image path (absolute from site root, before base path resolution) */
+  image?: string;
+  /** mark the page's body so header knows it's a dark-hero context */
+  heroVariant?: "dark" | "light";
+  noindex?: boolean;
+}
+
+const { title, description, image = "/images/portfolio/sierra-skye-living.jpg", heroVariant = "light", noindex = false } = Astro.props;
+
+const site = Astro.site?.toString().replace(/\/$/, "") ?? "https://mylesthepro1.github.io";
+const base = Astro.site?.toString().replace(/\/$/, "") ?? "";
+const canonical = new URL(Astro.url.pathname, base).toString();
+// OG image needs a fully-qualified URL including the deployment base path.
+const ogImage = new URL(asset(image), base).toString();
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": ["LocalBusiness", "ProfessionalService", "Photographer"],
+  "@id": `${base}/#business`,
+  name: business.name,
+  description:
+    "Las Vegas real estate photographer Mike Madsen — HDR photography, Matterport 3D virtual tours, Zillow 3D Home, drone, floor plans and virtual staging. Serving Las Vegas, Henderson and the greater Las Vegas Valley.",
+  url: base,
+  telephone: business.phone,
+  email: business.email,
+  image: ogImage,
+  priceRange: "$$",
+  founder: { "@type": "Person", name: business.owner, jobTitle: "Real Estate Photographer" },
+  areaServed: business.serviceArea.map((a) => ({ "@type": "City", name: a })),
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Las Vegas",
+    addressRegion: "NV",
+    addressCountry: "US",
+  },
+  openingHoursSpecification: {
+    "@type": "OpeningHoursSpecification",
+    dayOfWeek: ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
+    opens: "08:00",
+    closes: "18:00",
+  },
+  sameAs: [business.social.facebook],
+};
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {/* Security headers via meta (GitHub Pages can't set HTTP response headers directly). */}
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://formspree.io; form-action 'self' https://formspree.io mailto:; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:site_name" content={business.name} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="theme-color" content="#1a1814" />
+
+    <link rel="icon" type="image/svg+xml" href={asset("/favicon.svg")} />
+    <link rel="apple-touch-icon" href={asset("/apple-touch-icon.png")} />
+
+    {/* Progressive enhancement flag: set BEFORE first paint so reveal-elements
+        start hidden only when JS is actually available. No-JS = fully visible. */}
+    <script is:inline set:html="document.documentElement.dataset.js=''" />
+
+    <!-- Fonts: Fraunces (display serif) + Inter (body). Two families, subset, display=swap for fast LCP. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap"
+    />
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  </head>
+  <body data-hero={heroVariant}>
+    <a href="#main" class="skip-link">Skip to content</a>
+    <SiteHeader />
+    <main id="main">
+      <slot />
+    </main>
+    <SiteFooter />
+
+    <script>
+      // Scroll reveal — progressive, respects reduced motion
+      const els = document.querySelectorAll("[data-reveal]");
+      if (els.length && "IntersectionObserver" in window) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (e.isIntersecting) {
+                e.target.classList.add("is-visible");
+                io.unobserve(e.target);
+              }
+            }
+          },
+          { rootMargin: "0px 0px -10% 0px", threshold: 0.08 }
+        );
+        els.forEach((el) => io.observe(el));
+      } else {
+        els.forEach((el) => el.classList.add("is-visible"));
+      }
+    </script>
+
+    <style>
+      .skip-link {
+        position: absolute;
+        left: 1rem;
+        top: -100px;
+        background: var(--ink);
+        color: var(--paper);
+        padding: 0.7em 1.1em;
+        border-radius: 4px;
+        z-index: 200;
+        font-size: var(--step--1);
+        font-weight: 600;
+        transition: top 0.2s var(--ease);
+      }
+      .skip-link:focus { top: 1rem; }
+
+      /* Header is position:fixed (solid, always on top). Light-hero pages have no
+         hero image reserving space behind it, so push content down to clear it. */
+      :global(body[data-hero="light"]) main { padding-top: clamp(100px, 14vh, 124px); }
+    </style>
+  </body>
+</html>

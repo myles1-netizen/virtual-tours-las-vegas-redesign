@@ -1,0 +1,38 @@
+---
+import Base from "../layouts/Base.astro";
+import { business } from "../data/site";
+const title = "Privacy — Virtual Tours Las Vegas";
+const description = "Privacy information for the Virtual Tours Las Vegas redesign concept.";
+---
+<Base title={title} description={description} heroVariant="light">
+  <section class="section">
+    <div class="container narrow legal">
+      <p class="eyebrow">Legal</p>
+      <h1 class="display legal-title">Privacy</h1>
+      <p class="legal-note">This page covers the redesign concept site. Mike's production site has its own privacy policy.</p>
+
+      <h2>What this is</h2>
+      <p>This is a non-commercial redesign concept for <strong>{business.name}</strong>, built as a demonstration. It is not the production website and does not process payments or live transactions.</p>
+
+      <h2>Information you submit</h2>
+      <p>The contact form on this site, in its current demo state, opens your email client addressed to {business.email}. No data is transmitted to or stored on this site's servers. If the form is later connected to a service such as Formspree (see the README), that provider's privacy policy and terms will apply to any submission.</p>
+
+      <h2>Analytics</h2>
+      <p>This concept site does not run analytics, advertising trackers, or third-party cookies.</p>
+
+      <h2>Photography &amp; imagery</h2>
+      <p>All photographs shown are the work of {business.owner} and were sourced from the existing {business.name} website for the purpose of this redesign demonstration. Imagery is shown to illustrate the design and is not licensed for re-use from this concept site.</p>
+
+      <h2>Contact</h2>
+      <p>Questions about this concept can be directed to {business.email} or {business.phone}.</p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .legal-title { font-size: var(--step-5); margin-block: 0.5rem 0.4rem; }
+  .legal-note { color: var(--stone-2); font-size: var(--step--1); margin-bottom: 2.5rem; font-style: italic; }
+  .legal h2 { font-family: var(--font-body); font-size: 0.78rem; font-weight: 700; letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--brass); margin-top: 2rem; margin-bottom: 0.6rem; }
+  .legal p { color: var(--stone); line-height: 1.65; margin-bottom: 0.5rem; }
+  .legal strong { color: var(--ink); }
+</style>

@@ -1,0 +1,100 @@
+---
+import { business, asset } from "../data/site";
+export interface Props {
+  title?: string;
+  body?: string;
+  variant?: "dark" | "image";
+  image?: string;
+}
+const {
+  title = "Let's get your listing shot.",
+  body = "Call or text Mike directly. Most shoots are booked within 48 hours. Serving Las Vegas, Henderson & the greater valley.",
+  variant = "image",
+  image = "/images/portfolio/listing-01.jpg",
+} = Astro.props;
+---
+<section class:list={["cta-band", `v-${variant}`]} data-reveal>
+  {variant === "image" && (
+    <img class="cta-bg" src={asset(image)} alt="" loading="lazy" aria-hidden="true" />
+  )}
+  <div class="cta-overlay"></div>
+  <div class="container cta-inner">
+    <div class="cta-text">
+      <p class="eyebrow center">Book your shoot</p>
+      <h2 class="display cta-title">{title}</h2>
+      <p class="cta-body">{body}</p>
+    </div>
+    <div class="cta-actions">
+      <a href={business.phoneHref} class="btn brass">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Call {business.phone}
+      </a>
+      <a href={business.smsHref} class="btn outline">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Text Mike
+      </a>
+      <a href={asset("/contact/")} class="text-link">or book online →</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta-band {
+    position: relative;
+    padding-block: clamp(4rem, 3rem + 5vw, 6.5rem);
+    color: var(--paper);
+    overflow: hidden;
+  }
+  .cta-bg {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: -2;
+  }
+  .cta-overlay {
+    position: absolute; inset: 0;
+    z-index: -1;
+  }
+  .v-image .cta-overlay {
+    background: linear-gradient(90deg, rgba(15,14,12,0.92) 0%, rgba(15,14,12,0.78) 55%, rgba(15,14,12,0.55) 100%);
+  }
+  .v-dark { background: var(--dark); }
+  .v-dark .cta-overlay { display: none; }
+
+  .cta-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: clamp(2rem, 5vw, 4rem);
+    flex-wrap: wrap;
+  }
+  .cta-text { max-width: 32rem; }
+  .cta-title {
+    font-size: var(--step-5);
+    color: var(--paper);
+    margin-top: 0.4rem;
+  }
+  .cta-body {
+    margin-top: 1.1rem;
+    color: rgba(247,244,239,0.78);
+    font-size: var(--step-1);
+    line-height: 1.5;
+  }
+  .cta-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.9rem;
+    min-width: min(280px, 80vw);
+  }
+  .cta-actions .btn { justify-content: center; }
+  /* CTABand is always a dark background (photo overlay or solid dark) — the
+     global .btn.outline defaults to dark ink text, invisible here. */
+  .cta-actions .btn.outline { --btn-fg: var(--paper); border-color: rgba(247,244,239,0.4); }
+  .cta-actions .btn.outline:hover { --btn-bg: var(--paper); --btn-fg: var(--ink); border-color: var(--paper); }
+  .cta-actions .text-link { color: var(--brass-2); align-self: center; margin-top: 0.3rem; font-weight: 700; }
+
+  @media (max-width: 760px) {
+    .cta-actions { width: 100%; }
+  }
+</style>

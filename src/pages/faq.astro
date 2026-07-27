@@ -1,0 +1,59 @@
+---
+import { asset } from "../data/site";
+import Base from "../layouts/Base.astro";
+import PageHero from "../components/PageHero.astro";
+import FAQAccordion from "../components/FAQAccordion.astro";
+import CTABand from "../components/CTABand.astro";
+import { faqs, business } from "../data/site";
+
+const title = "FAQ — Las Vegas Real Estate Photography & 3D Tours | VTLV";
+const description = "Answers to common questions about Las Vegas real estate photography, Matterport 3D tours, Zillow 3D Home, drone, floor plans and as-built surveys with Mike Madsen / Virtual Tours Las Vegas.";
+
+// FAQPage schema — helps search + AI answer engines surface these answers directly.
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+---
+<Base title={title} description={description} heroVariant="dark">
+  <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
+  <PageHero
+    eyebrow="FAQ"
+    title="Good questions, straight answers."
+    lead="The most common things Las Vegas agents, hosts and builders ask before booking. Don't see yours? Mike's a phone call away."
+    image={asset("/images/portfolio/mattertag.jpg")}
+    imageAlt="Mattertag info hotspot embedded in a Matterport 3D tour"
+  />
+
+  <section class="section">
+    <div class="container narrow">
+      <FAQAccordion />
+      <div class="still-q" data-reveal>
+        <p class="eyebrow center">Still have a question?</p>
+        <h2 class="display">Mike's a phone call away.</h2>
+        <p class="lead" style="margin-inline:auto">No phone tree, no account rep. Just the photographer.</p>
+        <div class="btn-row" style="justify-content:center; margin-top:1.5rem">
+          <a href={business.phoneHref} class="btn brass">Call {business.phone}</a>
+          <a href={asset("/contact/")} class="btn outline">Send a message</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <CTABand />
+</Base>
+
+<style>
+  .still-q {
+    margin-top: clamp(3rem, 5vw, 4rem);
+    padding-top: clamp(2.5rem, 4vw, 3.5rem);
+    border-top: 1px solid var(--line-light);
+    text-align: center;
+  }
+  .still-q h2 { font-size: var(--step-3); margin-top: 0.4rem; }
+</style>

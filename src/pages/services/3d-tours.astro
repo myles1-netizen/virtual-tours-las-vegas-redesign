@@ -1,0 +1,108 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import ServiceBlock from "../../components/ServiceBlock.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import CTABand from "../../components/CTABand.astro";
+import PriceTable from "../../components/PriceTable.astro";
+import { matterportTiers, matterportIncludes, zillowTiers, business } from "../../data/site";
+
+const title = "Matterport & Zillow 3D Virtual Tours Las Vegas | VTLV";
+const description = "Las Vegas Matterport 3D virtual tours and Zillow 3D Home tours by Mike Madsen — the brand's namesake service. Dollhouse, floor plan and measurement views, with free hosting and MLS embed links. Book a 3D tour.";
+---
+<Base title={title} description={description} heroVariant="dark">
+  <PageHero
+    eyebrow="3D & virtual tours · the namesake"
+    title="Walk the property. From anywhere."
+    lead="Matterport 3D and Zillow 3D Home tours: the immersive, walk-through experience that pre-qualifies buyers before they tour in person. The brand is called Virtual Tours Las Vegas for a reason: this is the flagship service."
+    image={asset("/images/portfolio/matterport-360.jpg")}
+    imageAlt="360-degree virtual tour panorama of a Las Vegas listing"
+  />
+
+  <section class="section">
+    <div class="container narrow text-center">
+      <SectionHeader
+        eyebrow="Why a real 3D tour"
+        title="Not a slideshow. A walkthrough."
+        lead="Traditional 'virtual tours' are just 2D photo galleries dressed up to look panoramic. You can't actually move through the space. A true Matterport 3D tour stitches up to ~200 photo spheres into a navigable model with dollhouse, floor plan and measurement views. It's an entirely different experience, viewable in VR."
+        align="center"
+      />
+    </div>
+  </section>
+
+  <section class="section sm">
+    <div class="container">
+      <div class="blocks">
+        <ServiceBlock
+          image={asset("/images/portfolio/matterport-360.jpg")}
+          alt="360-degree virtual tour panorama of a Las Vegas listing"
+          title="Matterport Premier 3D tours"
+          body="The industry-standard 3D walkthrough. Dollhouse view, floor plan view, measurement tools, Mattertag info hotspots, guided tours and VR support. Comes with two MLS landing-page links: one branded, one unbranded."
+          bullets={matterportIncludes}
+        />
+        <ServiceBlock
+          reverse
+          image={asset("/images/portfolio/matterport-measurements.jpg")}
+          alt="Matterport measurement tool showing precise room dimensions"
+          title="Measurement tools & Mattertags"
+          body="Buyers can measure walls, doors and fixtures right inside the tour. Add Mattertags to highlight features, embed video, link to docs, or annotate rooms. The measurement data also exports as a Matterpak for BIM and CAD workflows."
+          bullets={["Point-and-click measurements in-browser", "Mattertag info hotspots", "Matterpak export for architects & engineers"]}
+        />
+        <ServiceBlock
+          image={asset("/images/portfolio/360-tiny-planet.jpg")}
+          alt="Tiny-planet 360 panorama from a Las Vegas Matterport virtual tour"
+          title="Zillow 3D Home tours"
+          body="Free-hosted 3D tour that lives on Zillow, and lifts your listing higher in Zillow search results. Optional Zillow floor plan integration makes your listing stand out in the map view. A high-value, low-cost add-on to any HDR shoot."
+          bullets={["Free hosting forever on Zillow", "Boosts Zillow search ranking", "Optional Zillow floor plan integration"]}
+        />
+        <ServiceBlock
+          reverse
+          image={asset("/images/portfolio/360-tiny-planet.jpg")}
+          alt="Tiny-planet 360 panorama from a Las Vegas virtual tour"
+          title="Express & premium 360 panoramas"
+          body="When a full Matterport is more than you need, DSLR-stitched 360 panoramas deliver immersive imagery at three quality and price tiers: from rapid Express 360s for small spaces to high-resolution Premium 8-shot stitches for the highest detail."
+          bullets={["Three tiers from Express to Premium", "Google Street View publishing", "Standalone or add-on to HDR"]}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="section paper-2">
+    <div class="container">
+      <SectionHeader
+        eyebrow="3D tour pricing"
+        title="Real, published 3D pricing."
+        lead="Two MLS landing-page links included with every Matterport tour. Free hosting for 6 months, then $10/month per model, billed in 6-month intervals, cancel any time."
+        align="center"
+      />
+      <div class="ptables">
+        <PriceTable title="Matterport Premier 3D" tiers={matterportTiers} note="Includes 2 MLS links + 6 months hosting" />
+        <PriceTable title="Zillow 3D Home" tiers={zillowTiers} note="Free hosting on Zillow, boosts search ranking" />
+      </div>
+      <p class="text-center muted" style="margin-top:2rem">
+        <a href={asset("/pricing/")} class="text-link">See full pricing &amp; add-ons →</a>
+      </p>
+    </div>
+  </section>
+
+  <CTABand
+    title="Book a 3D tour of your listing."
+    body={`The most immersive way to show a property online. Call or text ${business.phone}.`}
+    image={asset("/images/portfolio/matterport-360.jpg")}
+  />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .blocks { display: flex; flex-direction: column; gap: clamp(3rem, 6vw, 5rem); }
+  .ptables {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+    max-width: 800px;
+    margin-inline: auto;
+  }
+  @media (max-width: 720px) { .ptables { grid-template-columns: 1fr; } }
+</style>

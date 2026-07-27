@@ -1,0 +1,103 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import ServiceCard from "../../components/ServiceCard.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import CTABand from "../../components/CTABand.astro";
+import FAQAccordion from "../../components/FAQAccordion.astro";
+import { serviceBuyers } from "../../data/site";
+
+const title = "Real Estate Photography Services — Las Vegas | Virtual Tours Las Vegas";
+const description = "Residential, commercial, vacation rental and builder real estate photography services in Las Vegas. HDR photos, Matterport 3D tours, Zillow 3D Home, drone, floor plans, virtual staging, as-built surveys and construction documentation.";
+---
+<Base title={title} description={description} heroVariant="dark">
+  <PageHero
+    eyebrow="Services"
+    title="Photography & 3D for every kind of property."
+    lead="Pick the property type and add the services you need. Residential listings, commercial space, vacation rentals or new construction: Mike shoots it all, with the same photographer from booking to delivery."
+    image={asset("/images/portfolio/sierra-skye-kitchen.jpg")}
+    imageAlt="Modern Las Vegas kitchen photographed for a residential listing"
+  />
+
+  <section class="section">
+    <div class="container">
+      <div class="routes-grid">
+        {serviceBuyers.map((b, i) => <ServiceCard b={b} index={i} />)}
+      </div>
+    </div>
+  </section>
+
+  <section class="section paper-2">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Add-ons & individual pricing"
+        title="Everything you can add to a shoot."
+        lead="All of these can be booked as add-ons to a package, or standalone. Combine HDR + a 3D tour + drone + a floor plan for the complete listing media set."
+      />
+      <div class="addons">
+        <a class="addon-link" href={asset("/services/hdr-photography/")} data-reveal><h3>HDR Photography</h3><p>High dynamic range stills with clean windows, true colors and real shadow detail. The foundation of every MLS listing.</p><span class="text-link">View HDR →</span></a>
+        <a class="addon-link" href={asset("/services/3d-tours/")} data-reveal data-reveal-delay="1"><h3>Matterport 3D</h3><p>Walk-through 3D model with dollhouse, floor plan and measurement views. The most immersive way to show a property online.</p><span class="text-link">View 3D tours →</span></a>
+        <a class="addon-link" href={asset("/services/3d-tours/")} data-reveal data-reveal-delay="2"><h3>Zillow 3D Home</h3><p>Free-hosted 3D tour that ranks your listing higher in Zillow search. Includes optional Zillow floor plan integration.</p><span class="text-link">View Zillow 3D →</span></a>
+        <a class="addon-link" href={asset("/services/drone-photography/")} data-reveal data-reveal-delay="1"><h3>Drone Photography</h3><p>FAA Part 107 aerial imagery showing lot size, setting and proximity to amenities. Airspace-approved near Las Vegas airports.</p><span class="text-link">View drone →</span></a>
+        <a class="addon-link" href={asset("/services/floor-plans/")} data-reveal data-reveal-delay="2"><h3>Floor Plans</h3><p>Schematic 2D plans, colored living spaces, 3D floor plans and CAD files. Buyers retain listings with floor plans longer.</p><span class="text-link">View floor plans →</span></a>
+        <a class="addon-link" href={asset("/services/virtual-staging/")} data-reveal data-reveal-delay="3"><h3>Virtual Staging</h3><p>Fill vacant rooms with photoreal furniture. $25/photo. See the <a href={asset("/work/virtual-staging/")}>before &amp; after gallery</a>.</p><span class="text-link">View staging →</span></a>
+        <a class="addon-link" href={asset("/services/twilight-photography/")} data-reveal data-reveal-delay="2"><h3>Twilight Photography</h3><p>Blue-hour exterior shots: the warm, dramatic look that stops the scroll on MLS and social.</p><span class="text-link">View twilight →</span></a>
+        <a class="addon-link" href={asset("/services/3d-tours/")} data-reveal data-reveal-delay="3"><h3>Walk-Through Video</h3><p>Continuous video walkthrough, Zillow-ready or stand-alone, with optional YouTube export.</p><span class="text-link">View video →</span></a>
+        <a class="addon-link" href={asset("/services/google-business-view/")} data-reveal data-reveal-delay="4"><h3>Google Business View</h3><p>360 virtual tours published to your Google Business profile and Street View. Boosts local discoverability.</p><span class="text-link">View Google →</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container narrow">
+      <SectionHeader
+        eyebrow="Common questions"
+        title="Before you book."
+        align="center"
+      />
+      <FAQAccordion limit={4} />
+      <p class="text-center muted" style="margin-top:1.5rem"><a href={asset("/faq/")} class="text-link">All FAQs →</a></p>
+    </div>
+  </section>
+
+  <CTABand />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .routes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+  .addons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+  }
+  .addon-link {
+    padding: clamp(1.3rem, 1rem + 1vw, 1.8rem);
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-lg);
+    display: flex; flex-direction: column; gap: 0.5rem;
+    transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.3s var(--ease);
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .addon-link:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); border-color: transparent; }
+  .addon-link h3 { font-size: var(--step-1); }
+  .addon-link p { font-size: var(--step--1); color: var(--stone); line-height: 1.5; flex-grow: 1; }
+  .addon-link a { color: var(--brass); font-weight: 600; }
+  .addon-link .text-link { margin-top: 0.3rem; flex-grow: 0; }
+
+  @media (max-width: 880px) {
+    .routes-grid { grid-template-columns: 1fr; }
+    .addons { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .addons { grid-template-columns: 1fr; }
+  }
+</style>

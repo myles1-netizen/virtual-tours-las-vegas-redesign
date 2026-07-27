@@ -1,0 +1,120 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import ServiceBlock from "../../components/ServiceBlock.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import PriceTable from "../../components/PriceTable.astro";
+import CTABand from "../../components/CTABand.astro";
+import Gallery from "../../components/Gallery.astro";
+import { hdrTiers, hdrAddOns, portfolio, business } from "../../data/site";
+
+const interiorShots = portfolio.filter((s) => s.category === "Interior").slice(0, 8);
+
+const title = "HDR Real Estate Photography Las Vegas | VTLV";
+const description = "Professional HDR real estate photography in Las Vegas. High dynamic range photos with clean windows, true colors and real shadow detail — MLS-ready and delivered in 24–48 hours. Pricing from $110.";
+---
+<Base title={title} description={description} heroVariant="dark">
+  <PageHero
+    eyebrow="HDR photography"
+    title="HDR photos that make a listing click."
+    lead="High Dynamic Range photography straightens walls, keeps windows from blowing out, and shows true colors. It's the foundation of every MLS listing, and the single highest-ROI line item on a real estate shoot."
+    image={asset("/images/portfolio/sierra-skye-living.jpg")}
+    imageAlt="Sunlit Las Vegas living room captured with professional HDR real estate photography"
+  />
+
+  <section class="section">
+    <div class="container narrow text-center">
+      <SectionHeader
+        eyebrow="Why HDR"
+        title="The difference between a showing and a scroll-past."
+        lead="Lazy cell-phone shots with crooked walls, people in mirrors and blown-out windows cost showings. Mike shoots every property on a mirrorless DSLR and processes each image by hand to MLS standards."
+        align="center"
+      />
+    </div>
+  </section>
+
+  <section class="section sm">
+    <div class="container">
+      <Gallery shots={interiorShots} />
+    </div>
+  </section>
+
+  <section class="section paper-2">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Pricing"
+        title="Real HDR pricing. No quote-and-wait."
+        lead="Volume pricing kicks in as you add more photos. Free MLS slideshow with every package. Rush next-morning delivery available."
+      />
+      <div class="pricing-row">
+        <PriceTable title="HDR photography" tiers={hdrTiers} />
+        <div class="addons-card">
+          <h3>Add-ons</h3>
+          <ul role="list">
+            {hdrAddOns.map((a) => <li>{a}</li>)}
+          </ul>
+          <p class="ao-note">All HDR packages ship with a free MLS-ready slideshow.</p>
+        </div>
+      </div>
+      <div class="text-center" style="margin-top:2.5rem">
+        <a href={asset("/contact/")} class="btn brass">Book HDR photography</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <ServiceBlock
+        image={asset("/images/portfolio/sierra-skye-kitchen.jpg")}
+        alt="Modern Las Vegas kitchen with island, HDR real estate photo"
+        title="What you get"
+        body="Every HDR shoot delivers straightened, color-accurate, exposure-blended stills in MLS-ready format via cloud delivery. Branded and unbranded versions on request. Licensing is for use until the property sells, with extended licensing available for long-term advertising."
+        bullets={["10 to 90+ photos per shoot", "24–48 hour standard delivery", "Free MLS slideshow export", "Optional twilight, drone and 3D add-ons"]}
+      />
+    </div>
+  </section>
+
+  <CTABand
+    title="Book your HDR shoot."
+    body={`Most residential shoots are on the calendar within 48 hours. Call or text ${business.phone}.`}
+    image={asset("/images/portfolio/listing-01.jpg")}
+  />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .pricing-row {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+    align-items: start;
+  }
+  .addons-card {
+    padding: clamp(1.4rem, 1rem + 1.5vw, 2rem);
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--radius-lg);
+  }
+  .addons-card h3 {
+    font-family: var(--font-body);
+    font-size: 0.72rem; font-weight: 700;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--brass);
+    margin-bottom: 1rem;
+  }
+  .addons-card ul { display: flex; flex-direction: column; gap: 0.55rem; }
+  .addons-card li {
+    font-size: var(--step--1);
+    color: var(--ink-2);
+    padding-left: 1rem;
+    position: relative;
+    line-height: 1.4;
+  }
+  .addons-card li::before { content: "·"; position: absolute; left: 0; color: var(--brass); font-weight: 700; }
+  .ao-note { margin-top: 1rem; font-size: 0.82rem; color: var(--stone); padding-top: 0.8rem; border-top: 1px dashed var(--line-light); }
+
+  @media (max-width: 880px) { .pricing-row { grid-template-columns: 1fr; } }
+</style>
