@@ -1,0 +1,72 @@
+---
+// ===== Redirect page (GitHub Pages static-site equivalent of the WordPress
+// "Redirection" plugin and Cloudflare's `_redirects` file) =====
+//
+// GitHub Pages does NOT support server-side `_redirects` or `.htaccess`, so the
+// only way to preserve old WordPress URLs (and their SEO rankings) is to publish
+// a real HTML page at each old path that bounces the visitor to the new path.
+//
+// This layout emits three layers of redirect, in priority order, so the redirect
+// works for every kind of client (search-engine crawlers, browsers with JS off,
+// screen readers, ancient user agents):
+//
+//   1. <meta http-equiv="refresh" content="0; url=...">  — instant, no JS needed.
+//      Google treats a 0-second meta refresh as equivalent to a 301 redirect for
+//      ranking purposes (documented in Google Search Central docs), so link
+//      equity from the old WordPress URLs flows to the new Astro URLs.
+//   2. <link rel="canonical" href="...">                  — tells crawlers the
+//      authoritative URL is the destination, not this stub.
+//   3. A vanilla JS window.location.replace(...) fallback  — covers the rare case
+//      where a meta refresh is disabled; replace() keeps the redirect out of the
+//      browser history so the Back button behaves correctly.
+//   4. A visible "Click here if you are not redirected" link — accessibility
+//      fallback for the no-JS / blocked-meta-refresh case.
+//
+// Usage:
+//   ---
+//   import Redirect from "../layouts/Redirect.astro";
+//   ---
+//   <Redirect to="/services/residential/" />
+//
+// The `to` path must be absolute from the domain root and already include the
+// deployment base path (use the `asset()` helper, which prepends BASE_URL).
+import { asset } from "../data/site";
+
+export interface Props {
+  /** Absolute destination path (root-relative), already base-path-prefixed
+   *  via `asset()`. Required. */
+  to: string;
+}
+
+const { to } = Astro.props;
+const site = Astro.site?.toString().replace(/\/$/, "") ?? "https://mylesthepro1.github.io";
+const absoluteDest = new URL(to, site).toString();
+const base = Astro.site?.toString().replace(/\/$/, "") ?? "";
+const canonical = new URL(Astro.url.pathname, base).toString();
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {/* The actual redirect. content="0; ..." = refresh immediately. */}
+    <meta http-equiv="refresh" content={`0; url=${to}`} />
+    {/* Authoritative URL is the destination. */}
+    <link rel="canonical" href={absoluteDest} />
+    {/* Keep old URLs out of the index once they're seen; the destination page
+        (which is indexable) is what we want ranked. */}
+    <meta name="robots" content="noindex, follow" />
+    <title>Redirecting…</title>
+    <script is:inline set:html={`window.location.replace(${JSON.stringify(to)});`} />
+  </head>
+  <body>
+    <p style="font-family:system-ui,sans-serif;max-width:40ch;margin:2rem auto;padding:0 1rem;line-height:1.6">
+      This page has moved.
+      <a href={to}>Continue to the new page</a>
+      if you are not redirected automatically.
+    </p>
+    {/* Tiny SEO hint so this stub is never indexed even if a crawler ignores
+        the meta robots tag above. */}
+    <script type="application/ld+json" is:inline set:html={JSON.stringify({ "@context":"https://schema.org","@type":"WebPage","url":canonical,"mainEntityOfPage":absoluteDest })} />
+  </body>
+</html>

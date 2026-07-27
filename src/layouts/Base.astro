@@ -226,9 +226,11 @@ const csp = cspOverride ?? DEFAULT_CSP;
     <script is:inline set:html="document.documentElement.dataset.js=''" />
 
     {/* Theme bootstrap — runs before first paint to prevent FOUC.
-        Priority: saved preference > system preference > light.
-        Sets data-theme on <html> so the dark token block applies immediately. */}
-    <script is:inline set:html={`(function(){try{var s=localStorage.getItem('theme');var d=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;var t=s||(d?'dark':'light');document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='light';}})();`} />
+        Priority: saved preference > light. Light is the site default (the
+        professional photographer look), independent of the OS preference, so
+        first-time visitors always land on the bright cream paper theme. Dark
+        mode is one toggle away and persists once chosen. */}
+    <script is:inline set:html={`(function(){try{var s=localStorage.getItem('theme');var t=(s==='dark'||s==='light')?s:'light';document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='light';}})();`} />
 
     {/* Fonts: Fraunces (display serif) + Inter (body). Preload the critical
         stylesheet so font CSS is in flight early; the onload swap turns the
@@ -285,8 +287,8 @@ const csp = cspOverride ?? DEFAULT_CSP;
       }
 
       // Keep the <meta name="theme-color"> in sync with the active theme so
-      // mobile browser chrome matches the page. Also follow the OS preference
-      // live when the user hasn't explicitly chosen a theme.
+      // mobile browser chrome matches the page. The site defaults to light
+      // regardless of OS preference; the visitor's explicit toggle persists.
       const themeMeta = document.querySelector('meta[name="theme-color"]');
       const THEME_COLORS = { light: "#f7f4ef", dark: "#0f0e0c" };
       const syncMeta = () => {
@@ -294,17 +296,6 @@ const csp = cspOverride ?? DEFAULT_CSP;
         if (themeMeta) themeMeta.setAttribute("content", THEME_COLORS[t]);
       };
       syncMeta();
-      const mql = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
-      if (mql) {
-        const onSys = (e) => {
-          if (!localStorage.getItem("theme")) {
-            document.documentElement.dataset.theme = e.matches ? "dark" : "light";
-            syncMeta();
-          }
-        };
-        if (mql.addEventListener) mql.addEventListener("change", onSys);
-        else if (mql.addListener) mql.addListener(onSys);
-      }
       // Re-sync after the toggle in the header runs (it dispatches this event).
       document.addEventListener("themechange", syncMeta);
     </script>
