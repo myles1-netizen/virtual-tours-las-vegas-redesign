@@ -1,0 +1,101 @@
+---
+import { asset } from "../../data/site";
+import Base from "../../layouts/Base.astro";
+import PageHero from "../../components/PageHero.astro";
+import ServiceBlock from "../../components/ServiceBlock.astro";
+import SectionHeader from "../../components/SectionHeader.astro";
+import CTABand from "../../components/CTABand.astro";
+import PriceTable from "../../components/PriceTable.astro";
+import ServiceSchema from "../../components/ServiceSchema.astro";
+import { videoTiers, business } from "../../data/site";
+
+const title = "Walk-Through Video Tours Las Vegas";
+const description =
+  "Las Vegas cinematic walk-through video tours for real estate listings — stand-alone walk-through, Zillow walk-through add-on, 30-second social media reel, and commercial walk-through. From $75. Book a walk-through video.";
+---
+
+<Base title={title} description={description} heroVariant="dark">
+  <ServiceSchema
+    slot="head"
+    name="Walk-Through Video Tours"
+    description="Cinematic walk-through video tours for Las Vegas real estate listings: stand-alone walk-through, Zillow walk-through add-on, 30-second social media reel and commercial walk-through video. From $75."
+    serviceType="Walk-Through Video"
+    startingPrice={75}
+  />
+  <PageHero
+    eyebrow="Walk-through video · cinematic listing video"
+    title="Walk-through video tours of your Las Vegas listing."
+    lead="A cinematic walk-through video moves a buyer through the home the way a private showing does — sweeping, stabilized, and edited to music. Perfect for social, MLS, and out-of-area buyers who want the feel of a property before they book a flight."
+    image={asset("/images/portfolio/listing-01.jpg")}
+    imageAlt="Cinematic interior shot from a Las Vegas walk-through video tour"
+  />
+
+  <section class="section">
+    <div class="container narrow text-center">
+      <SectionHeader
+        eyebrow="Why video"
+        title="Show the flow a photo can't."
+        lead="Photos capture rooms. Video captures the way rooms connect — the flow from kitchen to great room, the way light moves down a hallway, the moment the back yard reveals itself. For social media and out-of-area buyers, a polished walk-through video is often the asset that earns the showing."
+        align="center"
+      />
+    </div>
+  </section>
+
+  <section class="section sm">
+    <div class="container">
+      <div class="blocks">
+        <ServiceBlock
+          image={asset("/images/portfolio/listing-01.jpg")}
+          alt="Stabilized interior shot from a Las Vegas cinematic walk-through video"
+          title="Cinematic stand-alone walk-through"
+          body="A full cinematic walk-through of the property, shot on a gimbal-stabilized rig with smooth transitions between rooms, professionally edited and set to licensed music. Delivered as an MLS-ready video file and a web embed link."
+          bullets={["Gimbal-stabilized footage", "Professionally edited with licensed music", "MLS-ready file + web embed"]}
+        />
+        <ServiceBlock
+          reverse
+          image={asset("/images/portfolio/listing-02.jpg")}
+          alt="Vertical social media reel framing of a Las Vegas listing"
+          title="30-second social media reel (9:16)"
+          body="A short, punchy vertical reel cut for Instagram Reels, TikTok and YouTube Shorts. Designed to be shared by the agent and stop the scroll — fast cuts, trending music, and the property's best moments front-loaded."
+          bullets={["Vertical 9:16 format", "Cut for Reels, TikTok & Shorts", "Trending-music edit"]}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="section paper-2">
+    <div class="container">
+      <SectionHeader
+        eyebrow="Walk-through video pricing"
+        title="Real, published video pricing."
+        lead="Four tiers from a Zillow walk-through add-on up to a full commercial walk-through. Add a walk-through to any HDR or Matterport shoot on the same property."
+        align="center"
+      />
+      <div class="ptables">
+        <PriceTable title="Walk-through video" tiers={videoTiers} note="Add to any HDR or Matterport shoot on the same property" />
+      </div>
+      <p class="text-center" style="margin-top:2.5rem">
+        <a href={asset("/contact/")} class="btn brass">Book a Walk-Through Video</a>
+      </p>
+    </div>
+  </section>
+
+  <CTABand
+    title="Add a walk-through video to your shoot."
+    body={`From a $75 Zillow add-on to a full cinematic tour. Call or text ${business.phone}.`}
+    image={asset("/images/portfolio/listing-01.jpg")}
+  />
+</Base>
+
+<style>
+  .paper-2 { background: var(--paper-2); }
+  .blocks { display: flex; flex-direction: column; gap: clamp(3rem, 6vw, 5rem); }
+  .ptables {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+    max-width: 640px;
+    margin-inline: auto;
+  }
+</style>

@@ -7,11 +7,16 @@ export interface Props {
   body: string;
   bullets?: string[];
   reverse?: boolean;
+  /** Constrain the image to a smaller max-width inside its frame. Use this when
+      the source image is low-resolution (e.g. a small schematic) so it isn't
+      upscaled and blurred by object-fit: cover. The image sits on a neutral
+      background at its natural size instead of being stretched. */
+  imgConstrain?: boolean;
 }
-const { image, alt, title, body, bullets = [], reverse = false } = Astro.props;
+const { image, alt, title, body, bullets = [], reverse = false, imgConstrain = false } = Astro.props;
 ---
 <article class="sblock" data-reverse={reverse ? "true" : "false"} data-reveal>
-  <div class="sblock-img">
+  <div class:list={["sblock-img", { "sblock-img--constrain": imgConstrain }]}>
     {/* The feature image is click-to-enlarge via the global lightbox.
         data-lightbox-src/full alt let the viewer show the full image with a
         caption, without leaving the page. */}
@@ -58,6 +63,28 @@ const { image, alt, title, body, bullets = [], reverse = false } = Astro.props;
     overflow: hidden;
     aspect-ratio: 4/3;
     box-shadow: var(--shadow-card);
+  }
+  /* Low-res source images: instead of letting object-fit: cover stretch and
+     blur a small schematic, center it on a neutral panel at a smaller display
+     size so it reads crisp. The aspect-ratio frame is preserved so the layout
+     doesn't jump. */
+  .sblock-img--constrain {
+    background: var(--paper-2);
+    display: grid;
+    place-items: center;
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+  }
+  .sblock-img--constrain .sblock-img-btn {
+    width: auto;
+    max-width: 360px;
+    height: auto;
+    margin-inline: auto;
+  }
+  .sblock-img--constrain .sblock-img-btn img {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    border-radius: var(--radius);
   }
   /* Click-to-enlarge: the image is a full-size button so the whole frame is
      the tap target, with a brass zoom badge that appears on hover. */

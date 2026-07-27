@@ -40,6 +40,26 @@ export const business = {
   social: settings.social,
 };
 
+// Map each service-area city to its dedicated location landing page. The
+// /locations/ data covers the surrounding cities; Las Vegas itself and the
+// broader Clark County don't have their own /locations/<slug>/ pages, so both
+// resolve to the /neighborhoods/ hub. Used by the footer, contact page and
+// anywhere the service-area cities are listed so every city name is a link.
+export const cityLinks: Record<string, string> = {
+  "Las Vegas": "/neighborhoods/",
+  "Henderson": "/locations/henderson/",
+  "Summerlin": "/locations/summerlin/",
+  "North Las Vegas": "/locations/north-las-vegas/",
+  "Boulder City": "/locations/boulder-city/",
+  "Clark County": "/neighborhoods/",
+};
+
+// Convenience: the service-area cities paired with their location-page href,
+// so components can render them as links without duplicating the mapping.
+export const serviceAreaLinks: { name: string; href: string }[] = business.serviceArea.map(
+  (city) => ({ name: city, href: cityLinks[city] ?? "/neighborhoods/" })
+);
+
 export const nav = [
   { label: "Work", href: "/work/" },
   { label: "Services", href: "/services/" },

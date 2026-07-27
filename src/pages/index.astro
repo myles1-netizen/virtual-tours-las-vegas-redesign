@@ -235,10 +235,10 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
           <h2 class="display area-title">Proudly local to Las Vegas.</h2>
           <p class="lead">Centrally located about three miles east of the Strip. I shoot across the entire Las Vegas Valley, from Summerlin and Henderson to North Las Vegas and beyond.</p>
           <ul class="area-list" role="list">
-            {business.serviceArea.map((a) => (
+            {serviceAreaLinks.map((c) => (
               <li>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                {a}
+                <a href={asset(c.href)}>{c.name}</a>
               </li>
             ))}
           </ul>

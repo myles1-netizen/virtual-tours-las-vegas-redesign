@@ -8,6 +8,12 @@ import { business } from "../data/site";
 // can show inline success/error states.
 const FORMSUBMIT_ENDPOINT = "https://formsubmit.co/ajax/virtualtourslasvegas@gmail.com";
 
+// Standard HTML POST endpoint (NOT the AJAX variant). Used by the <noscript>
+// fallback form so visitors with JavaScript disabled (or a blocker that kills
+// fetch/AJAX) can still submit via a normal browser POST. Formsubmit shows a
+// thank-you page after a successful POST.
+const FORMSUBMIT_POST_ENDPOINT = "https://formsubmit.co/virtualtourslasvegas@gmail.com";
+
 // mailto: fallback used if the fetch fails (offline, network blocked, etc.) or
 // when a visitor's browser refuses the cross-origin POST. Builds a rich body.
 const MAILTO_FALLBACK = business.emailHref;
@@ -28,7 +34,7 @@ const serviceOptions: string[] = [
 ---
 
 <form
-  class="cform"
+  class="cform cform--js"
   data-form
   data-endpoint={FORMSUBMIT_ENDPOINT}
   data-mailto={MAILTO_FALLBACK}
@@ -166,8 +172,117 @@ const serviceOptions: string[] = [
   </div>
 </form>
 
+{/* ===== No-JavaScript fallback =====
+    The AJAX form above only works with JS (it has no action/method — the submit
+    handler intercepts and POSTs via fetch). When JS is disabled, or a tracker
+    blocker kills the fetch, this standard HTML POST form takes over: it submits
+    to Formsubmit's non-AJAX endpoint, which forwards the submission to Mike's
+    inbox and shows a thank-you page. The AJAX form is hidden via CSS when JS is
+    off, so visitors only ever see one usable form. */}
+<noscript>
+  <form
+    class="cform cform--nojs"
+    method="POST"
+    action={FORMSUBMIT_POST_ENDPOINT}
+  >
+    <div class="grid2">
+      <label class="field">
+        <span class="label">Name <span class="req">*</span></span>
+        <input type="text" name="name" required autocomplete="name" />
+      </label>
+      <label class="field">
+        <span class="label">Phone</span>
+        <input type="tel" name="phone" autocomplete="tel" />
+      </label>
+    </div>
+
+    <div class="grid2">
+      <label class="field">
+        <span class="label">Email <span class="req">*</span></span>
+        <input type="email" name="email" required autocomplete="email" />
+      </label>
+      <label class="field">
+        <span class="label">Preferred date</span>
+        <input type="date" name="preferred_date" />
+      </label>
+    </div>
+
+    <div class="field">
+      <span class="label">Property type</span>
+      <select name="property_type">
+        <option value="">Select…</option>
+        <option>Residential listing</option>
+        <option>Commercial property</option>
+        <option>Vacation rental (Airbnb/Vrbo)</option>
+        <option>New construction / builder</option>
+        <option>As-built / documentation</option>
+        <option>Insurance / Xactimate</option>
+        <option>Land / lot</option>
+        <option>Other</option>
+      </select>
+    </div>
+
+    <fieldset class="field services-field">
+      <legend class="label">Services needed</legend>
+      <p class="services-hint">Check all that apply.</p>
+      <div class="services-checks">
+        {serviceOptions.map((s) => (
+          <label class="svc-check">
+            <input type="checkbox" name="services" value={s} />
+            <span class="svc-check-box" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            <span class="svc-check-label">{s}</span>
+          </label>
+        ))}
+        <label class="svc-check svc-check--other">
+          <input type="checkbox" name="services" value="Other" />
+          <span class="svc-check-box" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+          <span class="svc-check-label">Other</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <label class="field">
+      <span class="label">Property address / area</span>
+      <input type="text" name="location" placeholder="e.g. Summerlin, Henderson, specific address" />
+    </label>
+
+    <label class="field">
+      <span class="label">Message</span>
+      <textarea name="message" rows="4" placeholder="Tell me about the property, square footage, and what you're hoping to achieve."></textarea>
+    </label>
+
+    {/* Honeypot + Formsubmit control fields (same as the AJAX form). */}
+    <div class="hp-wrap" aria-hidden="true">
+      <label for="company-hp-nojs">Company (leave blank)</label>
+      <input class="hp" id="company-hp-nojs" type="text" name="_honey" tabindex="-1" autocomplete="off" />
+    </div>
+    <input type="hidden" name="_subject" value="New booking request from your website" />
+    <input type="hidden" name="_template" value="table" />
+    <input type="hidden" name="_captcha" value="false" />
+
+    <div class="form-actions">
+      <button type="submit" class="btn brass btn-block">Send request</button>
+      <p class="form-alt">Prefer to talk? <a href={business.phoneHref}>Call or text {business.phone}</a></p>
+      <p class="form-note">
+        Your message goes straight to my inbox. No middleman sees it.
+      </p>
+    </div>
+  </form>
+</noscript>
+
 <style>
   .cform { display: flex; flex-direction: column; gap: 1.1rem; }
+  /* Progressive enhancement: the AJAX form (.cform--js) has no action/method
+     and only works when JS is available. When JS is OFF (no html[data-js] flag,
+     set by Base.astro before paint), hide it so visitors only see the working
+     <noscript> HTML POST form. When JS is ON, the <noscript> form is naturally
+     absent from the DOM, so only the AJAX form shows. */
+  .cform--js { display: none; }
+  html[data-js] .cform--js { display: flex; flex-direction: column; gap: 1.1rem; }
   .grid2 {
     display: grid;
     grid-template-columns: 1fr 1fr;

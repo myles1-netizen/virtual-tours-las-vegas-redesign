@@ -6,6 +6,7 @@ import ContactForm from "../components/ContactForm.astro";
 import FAQAccordion from "../components/FAQAccordion.astro";
 import SectionHeader from "../components/SectionHeader.astro";
 import { business } from "../data/site";
+import { serviceAreaLinks } from "../data/site";
 
 const title = "Book a Shoot — Las Vegas Real Estate Photography | VTLV";
 const description = "Book a Las Vegas real estate photography shoot with Mike Madsen. Call or text (702) 527-2732, or send a booking request. Residential, commercial, vacation rentals, 3D tours, drone, floor plans. 24–48 hour delivery.";
@@ -38,7 +39,7 @@ const description = "Book a Las Vegas real estate photography shoot with Mike Ma
             </a>
             <hr class="divider" style="margin-block:1.4rem" />
             <ul class="opt-facts" role="list">
-              <li><span>Service area</span><strong>{business.serviceArea.join(" · ")}</strong></li>
+              <li><span>Service area</span><strong>{serviceAreaLinks.map((c, i) => (<>{i > 0 && " · "}<a href={asset(c.href)}>{c.name}</a></>))}</strong></li>
               <li><span>Based</span><strong>{business.areaNote}</strong></li>
               <li><span>Hours</span><strong>Mon–Sat, 8a–6p PT</strong></li>
               <li><span>Turnaround</span><strong>{business.turnaround}</strong></li>

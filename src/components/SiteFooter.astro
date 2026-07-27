@@ -1,5 +1,5 @@
 ---
-import { business, nav, asset } from "../data/site";
+import { business, nav, asset, serviceAreaLinks } from "../data/site";
 
 const year = new Date().getFullYear();
 const serviceLinks = [
@@ -36,7 +36,14 @@ const serviceLinks = [
         <p class="footer-tag">
           Mike Madsen, full-service Las Vegas real estate photographer &amp; 3D virtual tour provider, working the valley since {business.since}.
         </p>
-        <p class="footer-area">{business.serviceArea.join(" · ")}</p>
+        <p class="footer-area">
+          {serviceAreaLinks.map((c, i) => (
+            <>
+              {i > 0 && <span class="area-sep" aria-hidden="true"> · </span>}
+              <a href={asset(c.href)}>{c.name}</a>
+            </>
+          ))}
+        </p>
       </div>
 
       <nav class="footer-col" aria-label="Pages">
@@ -112,7 +119,16 @@ const serviceLinks = [
     color: var(--brass-2);
     font-weight: 600;
     letter-spacing: 0.04em;
+    line-height: 1.6;
   }
+  .footer-area a {
+    color: var(--brass-2);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s var(--ease);
+  }
+  .footer-area a:hover { border-bottom-color: var(--brass-2); }
+  .area-sep { color: rgba(201,165,114,0.55); }
 
   .footer-col { display: flex; flex-direction: column; gap: 0.65rem; }
   .footer-col h3 {
