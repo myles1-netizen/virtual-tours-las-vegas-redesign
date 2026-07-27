@@ -22,14 +22,16 @@
 
 import { seoCatalog } from "../data/seo-catalog";
 
-// Default site password (overridable with ADMIN_PASSWORD at build time).
-// Only a SHA-256 hash is ever shipped to the browser.
-const SITE_PASSWORD = process.env.ADMIN_PASSWORD || "VTLV-admin-2026";
+// Admin credentials. Username + password gate.
+// Only SHA-256 hashes are ever shipped to the browser — never the plaintext.
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "VTLV";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "Gfs**kU$x2bAc$P8";
 async function sha256(s) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
-const passwordHash = await sha256(SITE_PASSWORD);
+const usernameHash = await sha256(ADMIN_USERNAME);
+const passwordHash = await sha256(ADMIN_PASSWORD);
 
 // Page list for the Pages + SEO sections. Comes from the hand-maintained
 // SEO catalog so the admin matches what Google actually sees.
@@ -55,9 +57,8 @@ const focusByPath = Object.fromEntries(
 const REPO = "MylesThePro1/virtual-tours-las-vegas-redesign";
 const BRANCH = "main";
 
-// Asset base path (GitHub Pages project site). Mirrors astro.config.mjs.
-const isDev = import.meta.env.DEV;
-const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
+// Asset base path. Cloudflare serves from root; GitHub Pages uses subpath.
+const BASE = "/";
 ---
 
 <!doctype html>
@@ -856,13 +857,17 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         <form class="login-body" id="login-form">
           <div class="login-error" id="login-error"></div>
           <div class="field">
+            <label for="li-user">Username</label>
+            <input type="text" id="li-user" autocomplete="username" required />
+          </div>
+          <div class="field">
+            <label for="li-pass">Password</label>
+            <input type="password" id="li-pass" autocomplete="current-password" required />
+          </div>
+          <div class="field">
             <label for="li-token">GitHub Token</label>
             <input type="password" id="li-token" autocomplete="off" placeholder="github_pat_..." required />
             <div class="hint">A fine-grained PAT with <b>Contents: Read &amp; Write</b> on this repo.</div>
-          </div>
-          <div class="field">
-            <label for="li-pass">Site Password</label>
-            <input type="password" id="li-pass" autocomplete="off" required />
           </div>
           <label class="row-check">
             <input type="checkbox" id="li-remember" checked />
@@ -942,7 +947,7 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
     <div id="loading"><div style="text-align:center"><div class="spinner"></div><div class="loading-label" id="loading-label">Working…</div></div></div>
 
     <!-- ===================== SCRIPT ===================== -->
-    <script is:inline define:vars={{ passwordHash, pages, REPO, BRANCH, BASE, focusByPath }}>
+    <script is:inline define:vars={{ usernameHash, passwordHash, pages, REPO, BRANCH, BASE, focusByPath }}>
       "use strict";
       // ============================================================
       //  Config & state
@@ -1133,17 +1138,20 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
         return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
       }
 
-      async function attemptLogin(tok, pass, remember) {
+      async function attemptLogin(tok, user, pass, remember) {
         showLoading("Verifying credentials…");
         try {
+          const uHash = await sha256Hex(user);
+          if (uHash !== usernameHash) throw new Error("Invalid username.");
           const hash = await sha256Hex(pass);
-          if (hash !== passwordHash) throw new Error("Wrong site password. Check the credentials you were given.");
-          const user = await verifyToken(tok);
+          if (hash !== passwordHash) throw new Error("Wrong password.");
+          const ghUser = await verifyToken(tok);
 
           const store = remember ? localStorage : sessionStorage;
           store[LS.token] = tok;
           store[LS.pass] = pass;
-          store[LS.user] = JSON.stringify({ login: user.login, name: user.name || user.login, avatar: user.avatar_url });
+          store[LS.username] = user;
+          store[LS.user] = JSON.stringify({ login: ghUser.login, name: ghUser.name || ghUser.login, avatar: ghUser.avatar_url });
           if (remember) localStorage[LS.remember] = "1"; else localStorage.removeItem(LS.remember);
 
           hideLoading();
@@ -4726,11 +4734,12 @@ const BASE = isDev ? "/" : "/virtual-tours-las-vegas-redesign/";
       // ============================================================
       $("#login-form").addEventListener("submit", (e) => {
         e.preventDefault();
+        const user = $("#li-user").value.trim();
         const tok = $("#li-token").value.trim();
         const pass = $("#li-pass").value;
         const remember = $("#li-remember").checked;
-        if (!tok || !pass) return;
-        attemptLogin(tok, pass, remember);
+        if (!user || !tok || !pass) return;
+        attemptLogin(tok, user, pass, remember);
       });
 
       $("#menu-toggle").addEventListener("click", () => {

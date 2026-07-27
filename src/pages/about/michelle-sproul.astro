@@ -5,7 +5,7 @@ import PageHero from "../../components/PageHero.astro";
 import SectionHeader from "../../components/SectionHeader.astro";
 import TrustBar from "../../components/TrustBar.astro";
 import CTABand from "../../components/CTABand.astro";
-import { business } from "../../data/site";
+import { business, serviceAreaLinks } from "../../data/site";
 
 const title = "Michelle Sproul — Licensed Las Vegas Realtor & Co-Founder | VTLV";
 const description = "Michelle Sproul is a licensed Nevada real estate agent who co-founded Virtual Tours Las Vegas with her husband Mike Madsen in 2010. A Realtor with deep Las Vegas market knowledge, she helps keep the business rooted in what agents and sellers actually need.";
@@ -86,7 +86,7 @@ const description = "Michelle Sproul is a licensed Nevada real estate agent who 
               <li><span>License</span><strong>Nevada real estate</strong></li>
               <li><span>Business since</span><strong>{business.since}</strong></li>
               <li><span>Based in</span><strong>{business.areaNote}</strong></li>
-              <li><span>Serves</span><strong>{business.serviceArea.join(" · ")}</strong></li>
+              <li><span>Serves</span><strong>{serviceAreaLinks.map((c, i) => (<>{i > 0 && " · "}<a href={asset(c.href)}>{c.name}</a></>))}</strong></li>
             </ul>
           </div>
         </aside>
