@@ -1,0 +1,21 @@
+[
+  { "src": "/images/portfolio/sierra-skye-living.jpg", "alt": "Twilight exterior HDR photo of a modern Las Vegas two-story home", "category": "Exterior", "span": true },
+  { "src": "/images/portfolio/sierra-skye-kitchen.jpg", "alt": "Twilight backyard photo with illuminated pool and patio, HDR real estate photography", "category": "Exterior" },
+  { "src": "/images/portfolio/spitze-interior.jpg", "alt": "Las Vegas Strip skyline view captured from a property's upper level at dusk", "category": "Exterior" },
+  { "src": "/images/portfolio/listing-01.jpg", "alt": "Aerial drone photo of a two-story Las Vegas commercial office building", "category": "Drone" },
+  { "src": "/images/portfolio/badura.jpg", "alt": "Community pool and clubhouse amenity photo for a Las Vegas property", "category": "Exterior" },
+  { "src": "/images/portfolio/bonanza.jpg", "alt": "Black-and-white schematic floor plan with room dimensions for a Las Vegas property", "category": "Floor Plan" },
+  { "src": "/images/portfolio/brooklyn-1.jpg", "alt": "Well-lit residential interior photographed for a property listing", "category": "Interior" },
+  { "src": "/images/portfolio/brooklyn-2.jpg", "alt": "Bright room with natural light, captured by a Las Vegas real estate photographer", "category": "Interior" },
+  { "src": "/images/portfolio/drone-aerial.jpg", "alt": "Aerial drone photo of a Las Vegas backyard with pool and spa", "category": "Drone", "span": true },
+  { "src": "/images/portfolio/warehouse-drone-1.jpg", "alt": "Commercial warehouse documented with aerial drone photography", "category": "Drone" },
+  { "src": "/images/portfolio/warehouse-drone-2.jpg", "alt": "Industrial property aerial view captured by an FAA-certified drone pilot", "category": "Drone" },
+  { "src": "/images/portfolio/matterport-360.jpg", "alt": "360-degree virtual tour panorama of a Las Vegas listing", "category": "3D Tour", "matterportId": "SxL3C8ha5hb" },
+  { "src": "/images/portfolio/360-tiny-planet.jpg", "alt": "Tiny-planet 360 panorama from a Las Vegas Matterport virtual tour", "category": "3D Tour" },
+  { "src": "/images/portfolio/matterport-measurements.jpg", "alt": "Matterport measurement tool showing precise room dimensions", "category": "3D Tour" },
+  { "src": "/images/portfolio/mattertag.jpg", "alt": "Mattertag info hotspot embedded in a Matterport 3D tour", "category": "3D Tour" },
+  { "src": "/images/portfolio/matterpak-cad.jpg", "alt": "CAD file generated from a Matterport 3D scan for architects and engineers", "category": "Commercial" },
+  { "src": "/images/portfolio/floorplan-bw.jpg", "alt": "Black and white schematic floor plan for a Las Vegas listing", "category": "Floor Plan" },
+  { "src": "/images/portfolio/floorplan-combined.jpg", "alt": "Combined floor plan with measurements for a multi-story property", "category": "Floor Plan" },
+  { "src": "/images/portfolio/floorplan-3d.jpg", "alt": "Stylized 3D floor plan rendering showing furnished living spaces", "category": "Floor Plan" }
+]

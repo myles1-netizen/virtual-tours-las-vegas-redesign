@@ -12,9 +12,13 @@ export interface Props {
   /** mark the page's body so header knows it's a dark-hero context */
   heroVariant?: "dark" | "light";
   noindex?: boolean;
+  /** Optional full CSP string override. When set, replaces the default public-site
+      CSP entirely (used by the /admin CMS page, which needs a Decap-friendly policy).
+      If omitted, the strict default policy below is used. */
+  cspOverride?: string;
 }
 
-const { title, description, image = "/images/portfolio/sierra-skye-living.jpg", heroVariant = "light", noindex = false } = Astro.props;
+const { title, description, image = "/images/portfolio/sierra-skye-living.jpg", heroVariant = "light", noindex = false, cspOverride } = Astro.props;
 
 const site = Astro.site?.toString().replace(/\/$/, "") ?? "https://mylesthepro1.github.io";
 const base = Astro.site?.toString().replace(/\/$/, "") ?? "";
@@ -146,14 +150,45 @@ const jsonLd = {
 // Compress JSON-LD output (drop insignificant whitespace) — these blocks are
 // large and inline; minifying saves bytes on every page.
 const json = (o: object) => JSON.stringify(o);
+
+// ----- Content Security Policy -----
+// Strict by default. Allows only the resources the public site actually uses:
+//   - script-src 'self' 'unsafe-inline'        (inline theme/JSON-LD scripts; Astro's processing needs 'unsafe-inline' for now)
+//   - Turnstile widget host (spam protection)
+//   - Cal.com frames (future booking widget) and its script host
+//   - Google Fonts, Formspree, and Matterport embeds already in use elsewhere
+// The /admin CMS page passes `cspOverride` because Decap needs a broader policy.
+const DEFAULT_CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://app.cal.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "img-src 'self' data: https:",
+  // Matterport 3D embeds load from my.matterport.com (already used by MatterportEmbed/Popup).
+  "frame-src https://*.cal.com https://my.matterport.com",
+  "connect-src 'self' https://formspree.io",
+  // form-action covers Formspree POST + the mailto: fallback.
+  "form-action 'self' https://formspree.io mailto:",
+  // frame-ancestors 'none' = clickjacking protection (also enforced via X-Frame-Options below).
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "upgrade-insecure-requests",
+].join("; ");
+const csp = cspOverride ?? DEFAULT_CSP;
 ---
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    {/* Security headers via meta (GitHub Pages can't set HTTP response headers directly). */}
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://formspree.io; form-action 'self' https://formspree.io mailto:; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests" />
+    {/* Security headers via meta (GitHub Pages can't set HTTP response headers directly,
+        so the most critical ones are duplicated here). On Cloudflare Pages these same
+        headers can additionally be enforced via the dashboard / _headers file. */}
+    <meta http-equiv="Content-Security-Policy" content={csp} />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>{seoTitle}</title>
     <meta name="description" content={seoDescription} />

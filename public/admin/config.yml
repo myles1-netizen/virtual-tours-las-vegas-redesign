@@ -1,0 +1,368 @@
+# =============================================================================
+# Decap CMS configuration — Virtual Tours Las Vegas
+# =============================================================================
+# This file drives the admin editor at /admin (see src/pages/admin.astro).
+# It is shipped as a static asset (public/admin/config.yml).
+#
+# AUTHENTICATION
+# ---------------
+# Two supported paths (see handoff/05-EDITING-SYSTEM-REQUIREMENTS.md):
+#
+#   1. GitHub PKCE (default below). Simplest while still on GitHub Pages.
+#      Create a GitHub OAuth App (Authorization callback URL = the deployed
+#      /admin URL) and set the Client ID in the DECAP_APP_ID build env var
+#      (admin.astro injects it at runtime so the secret stays out of the repo).
+#      No client secret is needed for PKCE.
+#
+#   2. Cloudflare Access + OAuth proxy (recommended for production). Put
+#      Cloudflare Access in front of /admin so Mike logs in with email (no
+#      GitHub account), and run a small Cloudflare Worker implementing the
+#      Decap "github-oauth-provider" proxy. Then set:
+#          backend.name: github
+#          backend.auth_type: implicit
+#          backend.app_id: <proxy client id>
+#          backend.base_url: <worker url>   (set via DECAP_BASE_URL env var)
+#          backend.api_root: <proxy api>    (set via DECAP_API_ROOT env var)
+#      admin.astro applies these overrides at load time.
+#
+# MEDIA
+# -----
+# Uploaded images go to public/images/uploads/ and are served from /images/uploads/.
+# Use the same /images/... paths the existing portfolio uses so the asset()
+# base-path helper still resolves them under GitHub Pages.
+# =============================================================================
+
+# Publish mode lets the editor stage multiple edits as one commit. Affects UX
+# only — set to "editorial_workflow" for draft/review/publish states, or
+# "simple" (the default) for direct commits. Simple is friendlier for a solo
+# owner who is also the reviewer.
+publish_mode: simple
+
+# Show previews of edited Markdown/JSON content. Can be disabled per-collection
+# with `preview: false` if a layout can't render standalone.
+show_preview_links: false
+
+# ---- Backend (see AUTHENTICATION note above) ----
+backend:
+  name: github
+  repo: MylesThePro1/virtual-tours-las-vegas-redesign
+  branch: main
+  auth_type: pkce
+  app_id: "" # Injected at runtime from DECAP_APP_ID env var (see admin.astro)
+  # base_url / api_root are also injectable for the Cloudflare-Access proxy path.
+
+# ---- Media library ----
+media_folder: "public/images/uploads"
+public_path: "/images/uploads"
+# Existing site images live under public/images/...; allow picking those too
+# by also exposing the full images tree via the media library.
+media_folder_relative: true
+
+# ---- Site-wide collections ----
+collections:
+  # ===========================================================================
+  # 1. Site settings — business name, phone, email, service area, social
+  #     Single JSON file: src/data/cms/settings.json (re-exported by site.ts)
+  # ===========================================================================
+  - name: "siteSettings"
+    label: "Site Settings"
+    label_singular: "Site Settings"
+    description: "Business name, contact details, service area and social links shown across the site."
+    delete: false
+    editor:
+      preview: false
+    files:
+      - file: "src/data/cms/settings.json"
+        name: "settings"
+        label: "Business information"
+        fields:
+          - { label: "Business name", name: "name", widget: "string" }
+          - { label: "Short name", name: "shortName", widget: "string" }
+          - { label: "Owner", name: "owner", widget: "string" }
+          - { label: "Phone (display)", name: "phone", widget: "string" }
+          - { label: "Phone link", name: "phoneHref", widget: "string", hint: "tel: link, e.g. tel:+17025272732" }
+          - { label: "SMS link", name: "smsHref", widget: "string", hint: "sms: link, e.g. sms:+17025272732" }
+          - { label: "Email", name: "email", widget: "string" }
+          - { label: "Email link", name: "emailHref", widget: "string", hint: "mailto: link" }
+          - { label: "Year founded", name: "since", widget: "number", value_type: "int" }
+          - { label: "In real estate since", name: "realEstateSince", widget: "number", value_type: "int" }
+          - label: "Service area"
+            name: "serviceArea"
+            widget: "list"
+            min: 1
+            field: { label: "City / area", name: "area", widget: "string" }
+            hint: "Listed on the contact page and in local-business SEO schema."
+          - { label: "Location note", name: "areaNote", widget: "string" }
+          - { label: "Website URL", name: "url", widget: "string" }
+          - { label: "Turnaround time", name: "turnaround", widget: "string" }
+          - label: "Social links"
+            name: "social"
+            widget: "object"
+            fields:
+              - { label: "Facebook", name: "facebook", widget: "string" }
+              - { label: "Instagram", name: "instagram", widget: "string" }
+              - { label: "YouTube", name: "youtube", widget: "string" }
+
+  # ===========================================================================
+  # 2. Pricing — all packages, add-ons, Matterport tiers (one JSON file)
+  # ===========================================================================
+  - name: "pricing"
+    label: "Pricing"
+    label_singular: "Pricing"
+    description: "Every price on the pricing page: packages, HDR, Matterport, floor plans, staging, video, Zillow, commercial and the Google package."
+    delete: false
+    editor:
+      preview: false
+    files:
+      - file: "src/data/cms/pricing.json"
+        name: "pricing"
+        label: "All pricing"
+        fields:
+          # --- Vegas packages ---
+          - label: "Vegas packages"
+            name: "vegasPackages"
+            widget: "list"
+            label_singular: "package"
+            summary: "{{fields.name}} — ${{fields.price}}"
+            fields:
+              - { label: "Name", name: "name", widget: "string" }
+              - { label: "Tag / badge", name: "tag", widget: "string" }
+              - { label: "Price ($)", name: "price", widget: "number", value_type: "int" }
+              - { label: "Blurb", name: "blurb", widget: "text" }
+              - label: "What's included"
+                name: "includes"
+                widget: "list"
+                field: { label: "Item", name: "item", widget: "string" }
+              - { label: "Featured?", name: "featured", widget: "boolean", default: false }
+              - { label: "Size note", name: "sizeNote", widget: "string", required: false }
+
+          # --- HDR ---
+          - label: "HDR photography tiers"
+            name: "hdrTiers"
+            widget: "list"
+            fields:
+              - { label: "Label", name: "count", widget: "string" }
+              - { label: "Price ($)", name: "price", widget: "number", value_type: "int" }
+          - label: "HDR add-ons"
+            name: "hdrAddOns"
+            widget: "list"
+            field: { label: "Add-on", name: "addon", widget: "string" }
+
+          # --- Matterport ---
+          - label: "Matterport tiers"
+            name: "matterportTiers"
+            widget: "list"
+            fields:
+              - { label: "Size", name: "size", widget: "string" }
+              - { label: "Price ($)", name: "price", widget: "number", value_type: "int" }
+
+          # --- Floor plans ---
+          - label: "Floor plan tiers"
+            name: "floorPlanTiers"
+            widget: "list"
+            fields:
+              - { label: "Size", name: "size", widget: "string" }
+              - { label: "Price ($)", name: "price", widget: "number", value_type: "int", required: false }
+              - { label: "Note", name: "note", widget: "string", required: false }
+          - label: "Floor plan add-ons"
+            name: "floorPlanAddOns"
+            widget: "list"
+            field: { label: "Add-on", name: "addon", widget: "string" }
+
+          # --- Virtual staging ---
+          - label: "Virtual staging tiers"
+            name: "virtualStagingTiers"
+            widget: "list"
+            fields:
+              - { label: "Item", name: "item", widget: "string" }
+              - { label: "Price ($)", name: "price", widget: "number", value_type: "int" }
+
+          # --- Video ---
+          - label: "Video tiers"
+            name: "videoTiers"
+            widget: "list"
+            fields:
+              - { label: "Item", name: "item", widget: "string" }
+              - { label: "Price ($)", name: "price", widget: "number", value_type: "int" }
+
+          # --- Zillow ---
+          - label: "Zillow tiers"
+            name: "zillowTiers"
+            widget: "list"
+            fields:
+              - { label: "Item", name: "item", widget: "string" }
+              - { label: "Price ($)", name: "price", widget: "number", value_type: "int" }
+
+          # --- Commercial ---
+          - label: "Commercial HDR"
+            name: "commercialHdr"
+            widget: "list"
+            fields:
+              - { label: "Count", name: "count", widget: "string" }
+              - { label: "Price ($)", name: "price", widget: "number", value_type: "int" }
+          - label: "Commercial panoramas — premium"
+            name: "commercialPanoramas.premium"
+            widget: "list"
+            required: false
+            fields:
+              - { label: "Count", name: "count", widget: "string" }
+              - { label: "Price ($)", name: "price", widget: "number", value_type: "int" }
+          - label: "Commercial panoramas — express"
+            name: "commercialPanoramas.express"
+            widget: "list"
+            required: false
+            fields:
+              - { label: "Count", name: "count", widget: "string" }
+              - { label: "Price ($)", name: "price", widget: "number", value_type: "int" }
+
+          # --- Google package ---
+          - label: "Google Business package"
+            name: "googlePackage"
+            widget: "object"
+            fields:
+              - { label: "Name", name: "name", widget: "string" }
+              - { label: "Price ($)", name: "price", widget: "number", value_type: "int" }
+              - label: "Includes"
+                name: "includes"
+                widget: "list"
+                field: { label: "Item", name: "item", widget: "string" }
+              - { label: "Note", name: "note", widget: "string" }
+
+  # ===========================================================================
+  # 3. Testimonials — add / edit / remove / reorder
+  # ===========================================================================
+  - name: "testimonials"
+    label: "Testimonials"
+    label_singular: "Testimonial"
+    description: "Client quotes shown on the home and contact pages. Reorder to control display order."
+    delete: false
+    editor:
+      preview: false
+    files:
+      - file: "src/data/cms/testimonials.json"
+        name: "testimonials"
+        label: "Testimonials"
+        fields:
+          - label: "Testimonials"
+            name: "list"
+            widget: "list"
+            label_singular: "testimonial"
+            summary: "{{fields.name}} — {{fields.context}}"
+            fields:
+              - { label: "Quote", name: "quote", widget: "text" }
+              - { label: "Client name", name: "name", widget: "string" }
+              - { label: "Context", name: "context", widget: "string", hint: "e.g. 'Matterport client'" }
+              - { label: "Avatar", name: "avatar", widget: "image", required: false, hint: "Path under /images/, e.g. /images/team/ramon-wu.png" }
+
+  # ===========================================================================
+  # 4. Portfolio — images with categories (and optional Matterport tour ID)
+  # ===========================================================================
+  - name: "portfolio"
+    label: "Portfolio"
+    label_singular: "Portfolio image"
+    description: "Images in the Work gallery. Reorder to control display order; set a category to drive the filter."
+    delete: false
+    editor:
+      preview: false
+    files:
+      - file: "src/data/cms/portfolio.json"
+        name: "portfolio"
+        label: "Portfolio"
+        fields:
+          - label: "Images"
+            name: "list"
+            widget: "list"
+            label_singular: "image"
+            summary: "{{fields.alt}}"
+            fields:
+              - { label: "Image", name: "src", widget: "image", hint: "Upload or pick from /images/" }
+              - { label: "Alt text", name: "alt", widget: "string", hint: "Describe what the photo shows for accessibility & SEO." }
+              - label: "Category"
+                name: "category"
+                widget: "select"
+                options: ["Interior", "Exterior", "Drone", "Staging", "3D Tour", "Commercial", "Floor Plan"]
+              - { label: "Wide tile?", name: "span", widget: "boolean", default: false, required: false }
+              - { label: "Matterport model ID", name: "matterportId", widget: "string", required: false, hint: "Optional. Adds a 'View 3D Tour' button to the lightbox." }
+
+  # ===========================================================================
+  # 5. FAQ — add / edit / remove / reorder
+  # ===========================================================================
+  - name: "faq"
+    label: "FAQ"
+    label_singular: "FAQ entry"
+    description: "Questions & answers shown on the FAQ and contact pages. Reorder to control display order."
+    delete: false
+    editor:
+      preview: false
+    files:
+      - file: "src/data/cms/faq.json"
+        name: "faq"
+        label: "FAQ entries"
+        fields:
+          - label: "Questions"
+            name: "list"
+            widget: "list"
+            label_singular: "question"
+            summary: "{{fields.q}}"
+            fields:
+              - { label: "Question", name: "q", widget: "string" }
+              - { label: "Answer", name: "a", widget: "text" }
+
+  # ===========================================================================
+  # 6. Services — per-service SEO title, description & service-type fields.
+  #    Each service page is an Astro file in src/pages/services. Decap edits a
+  #    JSON sidecar per service (src/data/cms/services/<slug>.json) so the
+  #    owner can change the SEO title/description and headline copy without
+  #    touching the .astro layout. The page reads its sidecar at build time.
+  # ===========================================================================
+  - name: "services"
+    label: "Services"
+    label_singular: "Service page"
+    description: "Per-service SEO title, description and hero copy. The page layout is fixed; edit the words here."
+    folder: "src/data/cms/services"
+    create: false
+    delete: false
+    extension: "json"
+    format: "json"
+    summary: "{{title}}"
+    editor:
+      preview: false
+    fields:
+      - { label: "SEO title", name: "title", widget: "string", hint: "Shows in the browser tab and Google. Keep under 60 characters." }
+      - { label: "SEO description", name: "description", widget: "text", hint: "Shows in search results. Keep under 160 characters." }
+      - { label: "Hero eyebrow", name: "eyebrow", widget: "string", required: false }
+      - { label: "Hero headline", name: "headline", widget: "string", required: false }
+      - { label: "Hero lead", name: "lead", widget: "text", required: false }
+
+  # ===========================================================================
+  # 7. Blog — Markdown posts with frontmatter. Full create/edit/delete/reorder.
+  # ===========================================================================
+  - name: "blog"
+    label: "Blog"
+    label_singular: "Blog post"
+    description: "Write articles in Markdown. Set Draft to hide a post until it's ready."
+    folder: "src/content/blog"
+    create: true
+    delete: true
+    extension: "md"
+    format: "frontmatter"
+    summary: "{{title}} ({{publishDate}})"
+    slug: "{{slug}}"
+    fields:
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Description", name: "description", widget: "text", hint: "Short summary for SEO and the blog index. Keep under 160 characters." }
+      - { label: "Publish date", name: "publishDate", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false }
+      - { label: "Author", name: "author", widget: "string", default: "Mike Madsen" }
+      - label: "Category"
+        name: "category"
+        widget: "select"
+        default: "real-estate-photography-tips"
+        options:
+          - { label: "Real Estate Photography Tips", value: "real-estate-photography-tips" }
+          - { label: "Las Vegas Market", value: "las-vegas-market" }
+          - { label: "Virtual Tours", value: "virtual-tours" }
+          - { label: "Drone Photography", value: "drone-photography" }
+      - { label: "Draft?", name: "draft", widget: "boolean", default: true, hint: "Drafts are excluded from the live blog index." }
+      - { label: "Hero image", name: "heroImage", widget: "image", required: false, hint: "Path under /images/" }
+      - { label: "Hero alt text", name: "heroAlt", widget: "string", required: false }
+      - { label: "Body", name: "body", widget: "markdown" }

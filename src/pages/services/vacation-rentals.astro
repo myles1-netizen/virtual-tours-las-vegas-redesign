@@ -7,9 +7,14 @@ import SectionHeader from "../../components/SectionHeader.astro";
 import CTABand from "../../components/CTABand.astro";
 import ServiceSchema from "../../components/ServiceSchema.astro";
 import { business } from "../../data/site";
+import meta from "../../data/cms/services/vacation-rentals.json";
 
-const title = "Vacation Rental Photography Las Vegas — Airbnb & Vrbo | VTLV";
-const description = "Las Vegas vacation rental photography for Airbnb and Vrbo hosts. Listing photography, Matterport 3D tours, floor plans, drone and amenity photos — the imagery that earns more bookings at higher nightly rates.";
+const title = meta.title || "Vacation Rental Photography Las Vegas — Airbnb & Vrbo | VTLV";
+const description = meta.description || "Las Vegas vacation rental photography for Airbnb and Vrbo hosts. Listing photography, Matterport 3D tours, floor plans, drone and amenity photos — the imagery that earns more bookings at higher nightly rates.";
+
+const heroEyebrow = meta.eyebrow || "";
+const heroTitle = meta.headline || "";
+const heroLead = meta.lead || "";
 ---
 <Base title={title} description={description} heroVariant="dark">
   <ServiceSchema
@@ -19,9 +24,9 @@ const description = "Las Vegas vacation rental photography for Airbnb and Vrbo h
     serviceType="Vacation Rental Photography"
   />
   <PageHero
-    eyebrow="Vacation rentals"
-    title="Listings that earn the booking."
-    lead="Airbnb's own research shows professionally photographed listings earn measurably more than amateur ones. Mike shoots vacation rentals with the same care as a luxury listing, because to a guest scrolling at midnight, that's exactly what your property is."
+    eyebrow={heroEyebrow}
+    title={heroTitle}
+    lead={heroLead}
     image={asset("/images/portfolio/badura.jpg")}
     imageAlt="Community pool and clubhouse amenity photo for a Las Vegas property"
   />

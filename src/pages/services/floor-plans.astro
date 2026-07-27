@@ -9,11 +9,16 @@ import CTABand from "../../components/CTABand.astro";
 import Gallery from "../../components/Gallery.astro";
 import ServiceSchema from "../../components/ServiceSchema.astro";
 import { floorPlanTiers, floorPlanAddOns, portfolio, business } from "../../data/site";
+import meta from "../../data/cms/services/floor-plans.json";
 
 const floorShots = portfolio.filter((s) => s.category === "Floor Plan");
 
-const title = "Floor Plans Las Vegas — Schematic, 3D & CAD | VTLV";
-const description = "Las Vegas real estate floor plans — schematic 2D, colored living spaces, 3D floor plans and CAD files. Buyers retain listings with floor plans longer. 48-hour turnaround, PDF delivery. Pricing from $120.";
+const title = meta.title || "Floor Plans Las Vegas — Schematic, 3D & CAD | VTLV";
+const description = meta.description || "Las Vegas real estate floor plans — schematic 2D, colored living spaces, 3D floor plans and CAD files. Buyers retain listings with floor plans longer. 48-hour turnaround, PDF delivery. Pricing from $120.";
+
+const heroEyebrow = meta.eyebrow || "";
+const heroTitle = meta.headline || "";
+const heroLead = meta.lead || "";
 ---
 <Base title={title} description={description} heroVariant="dark">
   <ServiceSchema
@@ -24,9 +29,9 @@ const description = "Las Vegas real estate floor plans — schematic 2D, colored
     startingPrice={120}
   />
   <PageHero
-    eyebrow="Floor plans"
-    title="Help buyers remember the layout."
-    lead="Floor plans help buyers map out the home, remember the layout, and imagine where their furniture will go. Listings with floor plans hold buyer attention longer, and most short-term rental platforms require a posted floor plan showing exits."
+    eyebrow={heroEyebrow}
+    title={heroTitle}
+    lead={heroLead}
     image={asset("/images/portfolio/floorplan-combined.jpg")}
     imageAlt="Combined floor plan with measurements for a multi-story Las Vegas property"
   />

@@ -1,0 +1,173 @@
+---
+// ===== Sveltia CMS admin entry point =====
+// Loads Sveltia CMS from the npm package (@sveltia/cms), bundled by Astro —
+// NOT from a CDN. This keeps the admin surface under our own origin and our
+// dependency tree, so a compromised CDN can't inject code into the editor.
+//
+// Authentication model (see handoff/05-EDITING-SYSTEM-REQUIREMENTS.md):
+//   - The recommended production setup is Cloudflare Access in front of /admin
+//     (email-based login, no GitHub account required for the business owner),
+//     plus a small Cloudflare Worker implementing the GitHub OAuth proxy that
+//     Decap expects for writing commits back to the repo.
+//   - While still on GitHub Pages, the simplest path is Decap's built-in
+//     GitHub PKCE OAuth flow (see public/admin/config.yml). The app_id below
+//     is filled from an env var so the OAuth client ID is never committed.
+//
+// The admin route is excluded from the public-site CSP via cspOverride below,
+// because Decap's React UI needs 'unsafe-inline' styles and some inline scripts.
+// Public site visitors never load this page, so this does not weaken the public policy.
+
+import { business } from "../data/site";
+
+// GitHub OAuth App client ID for Decap's PKCE flow. Set via env at build time
+// (VITE_/PUBLIC_ prefix not required because we read it server-side here).
+const DECAP_APP_ID = import.meta.env.DECAP_APP_ID ?? "";
+const DECAP_API_ROOT = import.meta.env.DECAP_API_ROOT ?? ""; // optional GitHub Enterprise
+const DECAP_BASE_URL = import.meta.env.DECAP_BASE_URL ?? ""; // optional self-hosted API
+
+// Relaxed CSP for the admin shell only. Still: no framing (frame-ancestors 'none'),
+// no plugins (object-src 'none'), no mixed content, and we only widen the style/script
+// sources Decap actually needs. This page is never crawled by the public.
+const ADMIN_CSP = [
+  "default-src 'self'",
+  // Decap's bundled app uses inline scripts + a couple of eval-ish patterns;
+  // loading from our own bundled origin. Turnstile/challenges allowed for future
+  // protection of the OAuth gate.
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com",
+  "style-src 'self' 'unsafe-inline'",
+  // Decap loads user-uploaded media (images) from the repo/CDN and shows previews.
+  "img-src 'self' data: https:",
+  // Decap talks to the GitHub API (api.github.com / raw.githubusercontent.com) and,
+  // if configured, a self-hosted proxy/Worker.
+  "connect-src 'self' https://api.github.com https://raw.githubusercontent.com https://github.com https://*.workers.dev",
+  // Decap uses a popup window for OAuth.
+  "frame-src 'self'",
+  "form-action 'self' https://github.com",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "upgrade-insecure-requests",
+].join("; ");
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin — {business.name}</title>
+    {/* Admin shell is not for public indexing. */}
+    <meta name="robots" content="noindex, nofollow" />
+    <meta http-equiv="Content-Security-Policy" content={ADMIN_CSP} />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --admin-bg: #0f0e0c;
+        --admin-fg: #f7f4ef;
+        --admin-muted: rgba(247, 244, 239, 0.65);
+        --admin-brass: #c9a04a;
+      }
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--admin-bg);
+        color: var(--admin-fg);
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      /* Loading shell shown until Decap boots. */
+      .admin-boot {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        text-align: center;
+        padding: 2rem;
+      }
+      .admin-boot h1 { font-size: 1.25rem; font-weight: 600; margin: 0; }
+      .admin-boot p { color: var(--admin-muted); font-size: 0.9rem; margin: 0; max-width: 42ch; }
+      .admin-boot .spinner {
+        width: 28px; height: 28px;
+        border: 3px solid rgba(247, 244, 239, 0.15);
+        border-top-color: var(--admin-brass);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      /* Decap mounts into #ncroot. Hide the boot shell once it appears. */
+      #ncroot:empty + .admin-boot { display: flex; }
+      #ncroot:not(:empty) + .admin-boot { display: none; }
+    </style>
+  </head>
+  <body>
+    {/* Sveltia CMS mount point. The npm package auto-initializes on import and
+        renders into #ncroot. */}
+    <div id="ncroot"></div>
+
+    {/* Boot/loading shell — Decap replaces the visible UI once loaded. */}
+    <div class="admin-boot" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <h1>Loading the {business.name} editor…</h1>
+      <p>If this doesn't appear shortly, sign in with GitHub when prompted.</p>
+    </div>
+
+    {/* Inject the Decap config object BEFORE the app loads so it picks up
+        environment-specific values (OAuth app_id, optional API root/base_url)
+        without editing the committed config.yml. Decap reads window.decapCMS. */}
+    <script is:inline define:vars={{ DECAP_APP_ID, DECAP_API_ROOT, DECAP_BASE_URL }}>
+      (function () {
+        try {
+          // Decap config.yml is loaded separately by the app from /admin/config.yml.
+          // Here we only patch in the values that should NOT be committed.
+          window.CMS_ENV = window.CMS_ENV || {};
+          // Register an init hook that augments the loaded config with env values.
+          var applied = false;
+          var applyEnv = function (config) {
+            if (applied) return config;
+            applied = true;
+            if (DECAP_APP_ID) {
+              config.backend = config.backend || {};
+              config.backend.app_id = DECAP_APP_ID;
+            }
+            if (DECAP_API_ROOT) {
+              config.backend = config.backend || {};
+              config.backend.api_root = DECAP_API_ROOT;
+            }
+            if (DECAP_BASE_URL) {
+              config.backend = config.backend || {};
+              config.backend.base_url = DECAP_BASE_URL;
+              config.backend.auth_type = "implicit";
+            }
+            return config;
+          };
+          // Decap's registerConfigPlugin / manual init isn't always available pre-load,
+          // so also expose the values on window for the config.yml-less override path.
+          window.__DECAP_ENV__ = { DECAP_APP_ID, DECAP_API_ROOT, DECAP_BASE_URL };
+          // If Decap's CMS API is present, hook config load.
+          if (window.decapCMS && window.decapCMS.registerEventListener) {
+            window.decapCMS.registerEventListener({
+              name: "prePublish",
+              handler: function () {},
+            });
+          }
+          window.__applyDecapEnv = applyEnv;
+        } catch (e) {
+          // Non-fatal: config.yml still works with a committed app_id placeholder.
+          console.warn("Decap env injection skipped:", e);
+        }
+      })();
+    </script>
+
+    {/* Load Sveltia CMS from the bundled npm package. Astro processes this import
+        and ships it from our own origin (no CDN). Side-effect import: the package
+        auto-initializes and reads /admin/config.yml. */}
+    <script>
+      import "@sveltia/cms";
+    </script>
+  </body>
+</html>

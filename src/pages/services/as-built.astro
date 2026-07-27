@@ -7,9 +7,14 @@ import SectionHeader from "../../components/SectionHeader.astro";
 import CTABand from "../../components/CTABand.astro";
 import ServiceSchema from "../../components/ServiceSchema.astro";
 import { business } from "../../data/site";
+import meta from "../../data/cms/services/as-built.json";
 
-const title = "As-Built Surveys & Construction Documentation Las Vegas | VTLV";
-const description = "Las Vegas as-built surveys, 3D reality capture, construction progress documentation and insurance-ready digital twins by Mike Madsen. Matterport-based measurement, Matterpak BIM exports, and aerial progress imagery for builders, contractors, architects and adjusters.";
+const title = meta.title || "As-Built Surveys & Construction Documentation Las Vegas | VTLV";
+const description = meta.description || "Las Vegas as-built surveys, 3D reality capture, construction progress documentation and insurance-ready digital twins by Mike Madsen. Matterport-based measurement, Matterpak BIM exports, and aerial progress imagery for builders, contractors, architects and adjusters.";
+
+const heroEyebrow = meta.eyebrow || "";
+const heroTitle = meta.headline || "";
+const heroLead = meta.lead || "";
 ---
 <Base title={title} description={description} heroVariant="dark">
   <ServiceSchema
@@ -19,9 +24,9 @@ const description = "Las Vegas as-built surveys, 3D reality capture, constructio
     serviceType="As-Built Survey"
   />
   <PageHero
-    eyebrow="Builders · developers · docs"
-    title="3D reality capture, without the return site visit."
-    lead="As-built surveys, construction progress documentation, and insurance-ready digital twins. Matterport-based 3D scanning captures precise measurements in a single visit, eliminating the manual measurements and return trips that drag traditional surveys out for weeks."
+    eyebrow={heroEyebrow}
+    title={heroTitle}
+    lead={heroLead}
     image={asset("/images/portfolio/warehouse-drone-2.jpg")}
     imageAlt="Industrial property aerial view captured by an FAA-certified drone pilot"
   />

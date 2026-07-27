@@ -7,9 +7,14 @@ import SectionHeader from "../../components/SectionHeader.astro";
 import CTABand from "../../components/CTABand.astro";
 import ServiceSchema from "../../components/ServiceSchema.astro";
 import { stagingPairs, virtualStagingTiers, business } from "../../data/site";
+import meta from "../../data/cms/services/virtual-staging.json";
 
-const title = "Virtual Staging Las Vegas — Empty Rooms Furnished | VTLV";
-const description = "Las Vegas virtual staging by Mike Madsen. Empty rooms become fully furnished, photorealistic living spaces — faster and cheaper than physical staging. $25/photo. See real before/after examples.";
+const title = meta.title || "Virtual Staging Las Vegas — Empty Rooms Furnished | VTLV";
+const description = meta.description || "Las Vegas virtual staging by Mike Madsen. Empty rooms become fully furnished, photorealistic living spaces — faster and cheaper than physical staging. $25/photo. See real before/after examples.";
+
+const heroEyebrow = meta.eyebrow || "";
+const heroTitle = meta.headline || "";
+const heroLead = meta.lead || "";
 ---
 <Base title={title} description={description} heroVariant="dark">
   <ServiceSchema
@@ -20,9 +25,9 @@ const description = "Las Vegas virtual staging by Mike Madsen. Empty rooms becom
     startingPrice={25}
   />
   <PageHero
-    eyebrow="Virtual staging"
-    title="Stage vacant rooms in post."
-    lead="Virtual staging fills vacant rooms with realistic, properly-scaled furniture, letting buyers see the potential without the cost of physical staging. $25/photo, delivered with your HDR set in 24–48 hours."
+    eyebrow={heroEyebrow}
+    title={heroTitle}
+    lead={heroLead}
     image={asset("/images/portfolio/staging-living-staged.jpg")}
     imageAlt="Las Vegas living room after virtual staging with realistic furniture"
   />

@@ -7,9 +7,14 @@ import SectionHeader from "../../components/SectionHeader.astro";
 import CTABand from "../../components/CTABand.astro";
 import ServiceSchema from "../../components/ServiceSchema.astro";
 import { business } from "../../data/site";
+import meta from "../../data/cms/services/twilight-photography.json";
 
-const title = "Twilight Photography Las Vegas — Blue Hour Listing Shots | VTLV";
-const description = "Twilight and blue-hour real estate photography in Las Vegas. Warm, dramatic exterior shots that stop the scroll on MLS and social. Available as a $100 add-on to any HDR package or as a standalone shoot.";
+const title = meta.title || "Twilight Photography Las Vegas — Blue Hour Listing Shots | VTLV";
+const description = meta.description || "Twilight and blue-hour real estate photography in Las Vegas. Warm, dramatic exterior shots that stop the scroll on MLS and social. Available as a $100 add-on to any HDR package or as a standalone shoot.";
+
+const heroEyebrow = meta.eyebrow || "";
+const heroTitle = meta.headline || "";
+const heroLead = meta.lead || "";
 ---
 <Base title={title} description={description} heroVariant="dark">
   <ServiceSchema
@@ -20,9 +25,9 @@ const description = "Twilight and blue-hour real estate photography in Las Vegas
     startingPrice={100}
   />
   <PageHero
-    eyebrow="Twilight photography"
-    title="The blue-hour shot that stops the scroll."
-    lead="Twilight exteriors capture the property at blue hour: interior lights glowing warm against a deep dusk sky. It's the single most eye-catching image in a listing gallery, and the one most likely to be the social post that earns the click."
+    eyebrow={heroEyebrow}
+    title={heroTitle}
+    lead={heroLead}
     image={asset("/images/portfolio/sierra-skye-living.jpg")}
     imageAlt="Twilight exterior HDR photo of a modern Las Vegas two-story home"
   />

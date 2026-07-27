@@ -7,9 +7,14 @@ import SectionHeader from "../../components/SectionHeader.astro";
 import CTABand from "../../components/CTABand.astro";
 import ServiceSchema from "../../components/ServiceSchema.astro";
 import { googlePackage, commercialPanoramas, business } from "../../data/site";
+import meta from "../../data/cms/services/google-business-view.json";
 
-const title = "Google Business View & Street View 360 Las Vegas | VTLV";
-const description = "Google Trusted Photographer in Las Vegas. 360 virtual tours published directly to your Google Business profile and Google Maps — boosting local discoverability for restaurants, retail, salons and venues. Get Me On Google package from $500.";
+const title = meta.title || "Google Business View & Street View 360 Las Vegas | VTLV";
+const description = meta.description || "Google Trusted Photographer in Las Vegas. 360 virtual tours published directly to your Google Business profile and Google Maps — boosting local discoverability for restaurants, retail, salons and venues. Get Me On Google package from $500.";
+
+const heroEyebrow = meta.eyebrow || "";
+const heroTitle = meta.headline || "";
+const heroLead = meta.lead || "";
 ---
 <Base title={title} description={description} heroVariant="dark">
   <ServiceSchema
@@ -20,9 +25,9 @@ const description = "Google Trusted Photographer in Las Vegas. 360 virtual tours
     startingPrice={500}
   />
   <PageHero
-    eyebrow="Google Business View"
-    title="Show up on Google Maps with a 360 tour."
-    lead="As a Google Trusted Photographer, Mike can publish a 360 virtual tour directly to your Google Business profile and Street View. It's one of the highest-ROI local discoverability moves available. Every business that shows up in Maps search benefits."
+    eyebrow={heroEyebrow}
+    title={heroTitle}
+    lead={heroLead}
     image={asset("/images/portfolio/matterport-360.jpg")}
     imageAlt="360-degree virtual tour panorama ready to publish to Google Business View"
   />

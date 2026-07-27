@@ -10,9 +10,14 @@ import ServiceSchema from "../../components/ServiceSchema.astro";
 import MatterportEmbed from "../../components/MatterportEmbed.astro";
 import MatterportPopup from "../../components/MatterportPopup.astro";
 import { matterportTiers, matterportIncludes, zillowTiers, business } from "../../data/site";
+import meta from "../../data/cms/services/3d-tours.json";
 
-const title = "Matterport & Zillow 3D Virtual Tours Las Vegas | VTLV";
-const description = "Las Vegas Matterport 3D virtual tours and Zillow 3D Home tours by Mike Madsen — the brand's namesake service. Dollhouse, floor plan and measurement views, with free hosting and MLS embed links. Book a 3D tour.";
+const title = meta.title || "Matterport & Zillow 3D Virtual Tours Las Vegas | VTLV";
+const description = meta.description || "Las Vegas Matterport 3D virtual tours and Zillow 3D Home tours by Mike Madsen — the brand's namesake service. Dollhouse, floor plan and measurement views, with free hosting and MLS embed links. Book a 3D tour.";
+
+const heroEyebrow = meta.eyebrow || "";
+const heroTitle = meta.headline || "";
+const heroLead = meta.lead || "";
 ---
 <Base title={title} description={description} heroVariant="dark">
   <ServiceSchema
@@ -23,9 +28,9 @@ const description = "Las Vegas Matterport 3D virtual tours and Zillow 3D Home to
     startingPrice={225}
   />
   <PageHero
-    eyebrow="3D & virtual tours · the namesake"
-    title="Walk the property. From anywhere."
-    lead="Matterport 3D and Zillow 3D Home tours: the immersive, walk-through experience that pre-qualifies buyers before they tour in person. The brand is called Virtual Tours Las Vegas for a reason: this is the flagship service."
+    eyebrow={heroEyebrow}
+    title={heroTitle}
+    lead={heroLead}
     image={asset("/images/portfolio/matterport-360.jpg")}
     imageAlt="360-degree virtual tour panorama of a Las Vegas listing"
   />

@@ -1,0 +1,28 @@
+{
+  "name": "Virtual Tours Las Vegas",
+  "shortName": "VTLV",
+  "owner": "Mike Madsen",
+  "phone": "(702) 527-2732",
+  "phoneHref": "tel:+17025272732",
+  "smsHref": "sms:+17025272732",
+  "email": "VirtualToursLasVegas@gmail.com",
+  "emailHref": "mailto:VirtualToursLasVegas@gmail.com",
+  "since": 2010,
+  "realEstateSince": 2006,
+  "serviceArea": [
+    "Las Vegas",
+    "Henderson",
+    "Summerlin",
+    "North Las Vegas",
+    "Boulder City",
+    "Clark County"
+  ],
+  "areaNote": "Centrally located ~3 miles east of the Strip",
+  "url": "https://virtualtourslasvegas.com",
+  "turnaround": "24–48 hours",
+  "social": {
+    "facebook": "https://www.facebook.com/Virtualtourslasvegas/",
+    "instagram": "https://www.instagram.com/",
+    "youtube": "https://www.youtube.com/"
+  }
+}

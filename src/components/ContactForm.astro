@@ -1,11 +1,39 @@
 ---
-import { business } from "../data/site";
+import { business, serviceBuyers, tourServices } from "../data/site";
 // Form submits to a configurable endpoint (set via env at build, e.g. Formspree).
 // Falls back to a mailto: action with prefilled body if no endpoint is set.
 const FORM_ENDPOINT = import.meta.env.FORM_ENDPOINT ?? "";
 const fallbackMailto = `${business.emailHref}?subject=${encodeURIComponent("New booking request from your website")}`;
 const action = FORM_ENDPOINT || fallbackMailto;
 const method = FORM_ENDPOINT ? "POST" : "GET";
+
+// Cloudflare Turnstile site key. Set via env (TURNSTILE_SITE_KEY) at build time.
+// When empty, the widget is omitted (e.g. local dev) — the form still works.
+const TURNSTILE_SITE_KEY = import.meta.env.TURNSTILE_SITE_KEY ?? "";
+const turnstileEnabled = TURNSTILE_SITE_KEY.length > 0;
+
+// Build the service-type dropdown from the canonical service data in site.ts so
+// it never drifts from what the pricing/services pages actually offer. Add the
+// "add-on" services (HDR, drone, etc.) that aren't separate buyer pages.
+const serviceOptions: string[] = [
+  ...serviceBuyers.map((b) => b.label),
+  ...tourServices.map((t) => t.name),
+  "HDR photos",
+  "Drone photos",
+  "Floor plan",
+  "Virtual staging",
+  "Twilight photos",
+  "Walk-through video",
+  "Full package (recommend)",
+  "Not sure yet",
+];
+
+// Formspree honors a hidden _subject field and a number of built-in integrations.
+// To enable server-side Turnstile verification through Formspree, enable the
+// "Cloudflare Turnstile" integration in the Formspree dashboard and paste the
+// same site key + secret there. Formspree then verifies the token automatically
+// before accepting the submission. See:
+// https://help.formspree.io/hc/en-us/articles/10303580764947-Cloudflare-Turnstile
 ---
 <form
   class="cform"
@@ -13,11 +41,14 @@ const method = FORM_ENDPOINT ? "POST" : "GET";
   method={method}
   data-form
   data-endpoint={FORM_ENDPOINT ? "true" : "false"}
+  data-turnstile={turnstileEnabled ? "true" : "false"}
+  novalidate
 >
   <div class="grid2">
     <label class="field">
       <span class="label">Name <span class="req">*</span></span>
-      <input type="text" name="name" required autocomplete="name" />
+      <input type="text" name="name" required autocomplete="name" aria-required="true" />
+      <span class="field-error" data-error-for="name"></span>
     </label>
     <label class="field">
       <span class="label">Phone</span>
@@ -28,7 +59,8 @@ const method = FORM_ENDPOINT ? "POST" : "GET";
   <div class="grid2">
     <label class="field">
       <span class="label">Email <span class="req">*</span></span>
-      <input type="email" name="email" required autocomplete="email" />
+      <input type="email" name="email" required autocomplete="email" aria-required="true" />
+      <span class="field-error" data-error-for="email"></span>
     </label>
     <label class="field">
       <span class="label">Preferred date</span>
@@ -39,7 +71,7 @@ const method = FORM_ENDPOINT ? "POST" : "GET";
   <div class="grid2">
     <label class="field">
       <span class="label">Property type</span>
-      <select name="property_type" default="">
+      <select name="property_type">
         <option value="">Select…</option>
         <option>Residential listing</option>
         <option>Commercial property</option>
@@ -51,19 +83,10 @@ const method = FORM_ENDPOINT ? "POST" : "GET";
       </select>
     </label>
     <label class="field">
-      <span class="label">Services needed</span>
+      <span class="label">Service type</span>
       <select name="services">
         <option value="">Select…</option>
-        <option>HDR photos</option>
-        <option>Matterport 3D tour</option>
-        <option>Zillow 3D Home tour</option>
-        <option>Drone photos</option>
-        <option>Floor plan</option>
-        <option>Virtual staging</option>
-        <option>Twilight photos</option>
-        <option>Walk-through video</option>
-        <option>Full package (recommend)</option>
-        <option>Not sure yet</option>
+        {serviceOptions.map((s) => <option value={s}>{s}</option>)}
       </select>
     </label>
   </div>
@@ -78,14 +101,46 @@ const method = FORM_ENDPOINT ? "POST" : "GET";
     <textarea name="message" rows="4" placeholder="Tell me about the property, square footage, and what you're hoping to achieve."></textarea>
   </label>
 
-  <!-- Honeypot: bots fill this, humans don't -->
-  <input class="hp" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" />
+  {/* Cloudflare Turnstile — privacy-friendly spam protection (no reCAPTCHA).
+      The site key is injected at build via env. Renders nothing if the key
+      is absent, so local dev still works. Server-side verification is handled
+      by Formspree's built-in Turnstile integration (see note above). */}
+  {turnstileEnabled && (
+    <div class="cf-turnstile" data-sitekey={TURNSTILE_SITE_KEY} data-theme="auto"></div>
+  )}
+
+  {/* Honeypot: bots fill this, humans don't. Visually hidden AND off-screen so
+      screen readers + browsers ignore it, but bots scraping field names don't. */}
+  <div class="hp-wrap" aria-hidden="true">
+    <label for="company-hp">Company (leave blank)</label>
+    <input
+      class="hp"
+      id="company-hp"
+      type="text"
+      name="company"
+      tabindex="-1"
+      autocomplete="off"
+      aria-hidden="true"
+    />
+  </div>
+
+  {/* Optional: Formspree custom subject line (ignored by mailto fallback). */}
+  <input type="hidden" name="_subject" value="New booking request from your website" />
 
   <div class="form-actions">
-    <button type="submit" class="btn brass btn-block">
-      Send request
+    <button type="submit" class="btn brass btn-block" data-submit>
+      <span class="submit-label">Send request</span>
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
     </button>
+
+    {/* Status messages — toggled by the submit handler below. */}
+    <p class="form-status form-status--success" data-status="success" role="status" hidden>
+      <strong>Thanks — your request is in.</strong> Mike usually replies the same day. If it's urgent, call or text.
+    </p>
+    <p class="form-status form-status--error" data-status="error" role="alert" hidden>
+      Something went wrong sending your request. Please try again, or <a href={business.phoneHref}>call {business.phone}</a> directly.
+    </p>
+
     <p class="form-alt">Prefer to talk? <a href={business.phoneHref}>Call or text {business.phone}</a></p>
     {!FORM_ENDPOINT && (
       <p class="form-note">
@@ -126,12 +181,33 @@ const method = FORM_ENDPOINT ? "POST" : "GET";
     border-color: var(--brass);
     box-shadow: 0 0 0 3px var(--brass-soft);
   }
-  .hp {
-    position: absolute;
-    left: -9999px;
+  /* Invalid field highlight (set by the JS validator) */
+  input[aria-invalid="true"],
+  select[aria-invalid="true"],
+  textarea[aria-invalid="true"] {
+    border-color: #c0392b;
+    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.15);
+  }
+  .field-error {
+    font-size: 0.75rem;
+    color: #c0392b;
+    min-height: 0;
+  }
+  .field-error:not(:empty) { margin-top: 0.15rem; }
+
+  /* Turnstile widget — let it size itself, center it. */
+  .cf-turnstile { display: flex; justify-content: center; }
+
+  /* Honeypot: visually + accessibly hidden, but present in the DOM so bots
+     that fill all inputs still trip it. */
+  .hp-wrap {
+    position: absolute !important;
+    left: -9999px !important;
+    top: -9999px !important;
     width: 1px; height: 1px;
     overflow: hidden;
   }
+  .hp { width: 1px; height: 1px; }
 
   .form-actions { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 0.4rem; }
   .form-alt { text-align: center; font-size: var(--step--1); color: var(--stone); }
@@ -146,15 +222,104 @@ const method = FORM_ENDPOINT ? "POST" : "GET";
     border-radius: var(--radius-sm);
   }
 
+  .form-status {
+    font-size: var(--step--1);
+    line-height: 1.5;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+  }
+  .form-status a { font-weight: 600; }
+  .form-status--success {
+    color: #1e6b3a;
+    background: rgba(46, 160, 67, 0.1);
+    border-color: rgba(46, 160, 67, 0.3);
+  }
+  .form-status--success a { color: #1e6b3a; }
+  .form-status--error {
+    color: #a02817;
+    background: rgba(192, 57, 43, 0.08);
+    border-color: rgba(192, 57, 43, 0.3);
+  }
+  .form-status--error a { color: #a02817; }
+
+  /* When submitting, show a "Sending…" state and disable the button. */
+  .cform[data-busy="true"] [data-submit] {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  .cform[data-busy="true"] .submit-label::after {
+    content: "…";
+  }
+
   @media (max-width: 560px) {
     .grid2 { grid-template-columns: 1fr; gap: 1.1rem; }
   }
 </style>
 
+{/* Cloudflare Turnstile loader. async + defer so it never blocks the page.
+    Only emitted when a site key is configured. CSP allows this host. */}
+{turnstileEnabled && (
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer is:inline></script>
+)}
+
 <script>
   const form = document.querySelector<HTMLFormElement>("[data-form]");
   if (form) {
     const hasEndpoint = form.dataset.endpoint === "true";
+    const hasTurnstile = form.dataset.turnstile === "true";
+    const successEl = form.querySelector<HTMLElement>('[data-status="success"]');
+    const errorEl = form.querySelector<HTMLElement>('[data-status="error"]');
+    const submitBtn = form.querySelector<HTMLButtonElement>("[data-submit]");
+
+    const showStatus = (which: "success" | "error") => {
+      successEl?.setAttribute("hidden", "");
+      errorEl?.setAttribute("hidden", "");
+      const el = which === "success" ? successEl : errorEl;
+      el?.removeAttribute("hidden");
+      el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    };
+
+    const clearErrors = () => {
+      form.querySelectorAll<HTMLElement>("[aria-invalid]").forEach((el) => {
+        el.removeAttribute("aria-invalid");
+      });
+      form.querySelectorAll<HTMLElement>(".field-error").forEach((el) => {
+        el.textContent = "";
+      });
+    };
+
+    const setFieldError = (name: string, msg: string) => {
+      const input = form.querySelector<HTMLElement>(`[name="${name}"]`);
+      const err = form.querySelector<HTMLElement>(`[data-error-for="${name}"]`);
+      if (input) input.setAttribute("aria-invalid", "true");
+      if (err) err.textContent = msg;
+    };
+
+    // Lightweight client-side validation. Real validation also happens
+    // server-side (Formspree); this just catches empty required fields and
+    // malformed emails before the round-trip.
+    const validate = (): boolean => {
+      clearErrors();
+      let ok = true;
+      const name = form.querySelector<HTMLInputElement>('[name="name"]');
+      const email = form.querySelector<HTMLInputElement>('[name="email"]');
+      if (name && !name.value.trim()) {
+        setFieldError("name", "Please enter your name.");
+        ok = false;
+      }
+      if (email) {
+        const v = email.value.trim();
+        if (!v) {
+          setFieldError("email", "Please enter your email.");
+          ok = false;
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+          setFieldError("email", "That email address doesn't look right.");
+          ok = false;
+        }
+      }
+      return ok;
+    };
 
     // ---- Pre-fill from query params (?package=, ?total=, ?items=) ----
     // Lets the price calculator (and pricing cards) carry the visitor's
@@ -166,7 +331,6 @@ const method = FORM_ENDPOINT ? "POST" : "GET";
       const total = params.get("total");
       const items = params.get("items");
       if (pkg || total || items) {
-        // Map known package slugs to human-readable names for the message.
         const pkgNames: Record<string, string> = {
           glitz: "Glitz & Glam",
           city: "City Never Sleeps",
@@ -178,21 +342,17 @@ const method = FORM_ENDPOINT ? "POST" : "GET";
         if (items) lines.push("Selected: " + items);
         if (total) lines.push(`Estimated total from calculator: $${total}`);
 
-        // If the services <select> has a matching option, set it.
         const servicesSelect = form.querySelector<HTMLSelectElement>('select[name="services"]');
         if (servicesSelect) {
-          if (pkg === "custom") {
-            // "Full package (recommend)" is the closest match for a custom build.
-            const opt = Array.from(servicesSelect.options).find((o) => o.value === "Full package (recommend)");
-            if (opt) servicesSelect.value = opt.value;
-          } else if (pkg === "neon") {
-            const opt = Array.from(servicesSelect.options).find((o) => o.value === "Drone photos");
-            if (opt) servicesSelect.value = opt.value;
-          } else if (pkg === "city") {
-            const opt = Array.from(servicesSelect.options).find((o) => o.value === "Matterport 3D tour");
-            if (opt) servicesSelect.value = opt.value;
-          } else if (pkg === "glitz") {
-            const opt = Array.from(servicesSelect.options).find((o) => o.value === "HDR photos");
+          const map: Record<string, string> = {
+            glitz: "HDR photos",
+            city: "Matterport 3D",
+            neon: "Drone photos",
+            custom: "Full package (recommend)",
+          };
+          const target = pkg ? map[pkg] : "";
+          if (target) {
+            const opt = Array.from(servicesSelect.options).find((o) => o.value === target);
             if (opt) servicesSelect.value = opt.value;
           }
         }
@@ -200,7 +360,6 @@ const method = FORM_ENDPOINT ? "POST" : "GET";
         const msg = form.querySelector<HTMLTextAreaElement>('textarea[name="message"]');
         if (msg && lines.length) {
           msg.value = lines.join("\n") + "\n\n";
-          // Focus the first empty required field so the visitor can keep typing.
           msg.focus();
           msg.setSelectionRange(msg.value.length, msg.value.length);
         }
@@ -209,14 +368,21 @@ const method = FORM_ENDPOINT ? "POST" : "GET";
       // Query-param prefill is a nice-to-have; never block form submission.
     }
 
-    form.addEventListener("submit", (e) => {
-      // Honeypot
+    form.addEventListener("submit", async (e) => {
+      // Honeypot — if filled, silently drop the submission.
       const hp = form.querySelector<HTMLInputElement>('input[name="company"]');
       if (hp && hp.value) {
         e.preventDefault();
         return;
       }
-      // For mailto fallback, build a prefilled body
+
+      if (!validate()) {
+        e.preventDefault();
+        return;
+      }
+
+      // mailto fallback path: build a prefilled body and hand off to the
+      // visitor's email client.
       if (!hasEndpoint) {
         e.preventDefault();
         const data = new FormData(form);
@@ -233,6 +399,38 @@ const method = FORM_ENDPOINT ? "POST" : "GET";
         ].join("\n");
         const mailto = `${form.action.split("?")[0]}?subject=${encodeURIComponent("New booking request from your website")}&body=${encodeURIComponent(body)}`;
         window.location.href = mailto;
+        return;
+      }
+
+      // Live submission to Formspree (or other endpoint) via fetch, so we can
+      // show inline success/error states instead of redirecting away.
+      e.preventDefault();
+      form.dataset.busy = "true";
+      submitBtn?.setAttribute("aria-busy", "true");
+
+      // Turnstile token is submitted automatically as part of the form data
+      // because the widget renders a hidden <input name="cf-turnstile-response">.
+      try {
+        const res = await fetch(form.action, {
+          method: "POST",
+          headers: { Accept: "application/json" },
+          body: new FormData(form),
+        });
+        if (res.ok) {
+          showStatus("success");
+          form.reset();
+          // Reset Turnstile so a second submission gets a fresh token.
+          if (hasTurnstile && (window as any).turnstile) {
+            (window as any).turnstile.reset();
+          }
+        } else {
+          showStatus("error");
+        }
+      } catch {
+        showStatus("error");
+      } finally {
+        form.dataset.busy = "false";
+        submitBtn?.removeAttribute("aria-busy");
       }
     });
   }

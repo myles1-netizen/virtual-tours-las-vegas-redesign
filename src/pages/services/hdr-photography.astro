@@ -9,11 +9,16 @@ import CTABand from "../../components/CTABand.astro";
 import Gallery from "../../components/Gallery.astro";
 import ServiceSchema from "../../components/ServiceSchema.astro";
 import { hdrTiers, hdrAddOns, portfolio, business } from "../../data/site";
+// CMS-editable SEO + hero copy (src/data/cms/services/hdr-photography.json).
+import meta from "../../data/cms/services/hdr-photography.json";
 
 const interiorShots = portfolio.filter((s) => s.category === "Interior").slice(0, 8);
 
-const title = "HDR Real Estate Photography Las Vegas | VTLV";
-const description = "Professional HDR real estate photography in Las Vegas. High dynamic range photos with clean windows, true colors and real shadow detail — MLS-ready and delivered in 24–48 hours. Pricing from $110.";
+const title = meta.title || "HDR Real Estate Photography Las Vegas | VTLV";
+const description = meta.description || "Professional HDR real estate photography in Las Vegas. High dynamic range photos with clean windows, true colors and real shadow detail — MLS-ready and delivered in 24–48 hours. Pricing from $110.";
+const heroEyebrow = meta.eyebrow || "HDR photography";
+const heroTitle = meta.headline || "HDR photos that make a listing click.";
+const heroLead = meta.lead || "High Dynamic Range photography straightens walls, keeps windows from blowing out, and shows true colors. It's the foundation of every MLS listing, and the single highest-ROI line item on a real estate shoot.";
 ---
 <Base title={title} description={description} heroVariant="dark">
   <ServiceSchema
@@ -24,9 +29,9 @@ const description = "Professional HDR real estate photography in Las Vegas. High
     startingPrice={110}
   />
   <PageHero
-    eyebrow="HDR photography"
-    title="HDR photos that make a listing click."
-    lead="High Dynamic Range photography straightens walls, keeps windows from blowing out, and shows true colors. It's the foundation of every MLS listing, and the single highest-ROI line item on a real estate shoot."
+    eyebrow={heroEyebrow}
+    title={heroTitle}
+    lead={heroLead}
     image={asset("/images/portfolio/sierra-skye-living.jpg")}
     imageAlt="Sunlit Las Vegas living room captured with professional HDR real estate photography"
   />

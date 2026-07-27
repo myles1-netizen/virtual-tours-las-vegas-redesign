@@ -8,12 +8,17 @@ import CTABand from "../../components/CTABand.astro";
 import Gallery from "../../components/Gallery.astro";
 import ServiceSchema from "../../components/ServiceSchema.astro";
 import { portfolio, business } from "../../data/site";
+import meta from "../../data/cms/services/drone-photography.json";
 
 const droneShots = portfolio.filter((s) => s.category === "Drone");
 const neonSkyline = "$250 · 30 HDR photos + 5 drone photos (homes under 3,000 sq ft)";
 
-const title = "Drone Photography Las Vegas — FAA Part 107 Aerial | VTLV";
-const description = "FAA Part 107 certified drone photography in Las Vegas. Aerial imagery showing lot size, setting and proximity to amenities — airspace-approved near McCarran/Harry Reid airport. Residential and commercial aerial photography.";
+const title = meta.title || "Drone Photography Las Vegas — FAA Part 107 Aerial | VTLV";
+const description = meta.description || "FAA Part 107 certified drone photography in Las Vegas. Aerial imagery showing lot size, setting and proximity to amenities — airspace-approved near McCarran/Harry Reid airport. Residential and commercial aerial photography.";
+
+const heroEyebrow = meta.eyebrow || "";
+const heroTitle = meta.headline || "";
+const heroLead = meta.lead || "";
 ---
 <Base title={title} description={description} heroVariant="dark">
   <ServiceSchema
@@ -23,9 +28,9 @@ const description = "FAA Part 107 certified drone photography in Las Vegas. Aeri
     serviceType="Drone Photography"
   />
   <PageHero
-    eyebrow="Drone photography"
-    title="Show the lot, the view and the setting."
-    lead="FAA Part 107 certified aerial photography. Drone shots show lot size, orientation and proximity to amenities in a way ground photography can't. Mike handles airspace approvals near Las Vegas airports. Agents flying their own drones near the airport risk steep FAA penalties."
+    eyebrow={heroEyebrow}
+    title={heroTitle}
+    lead={heroLead}
     image={asset("/images/portfolio/drone-aerial.jpg")}
     imageAlt="Aerial drone photo of a Las Vegas property and surrounding neighborhood"
   />

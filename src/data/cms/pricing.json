@@ -1,0 +1,124 @@
+{
+  "vegasPackages": [
+    {
+      "name": "Glitz & Glam",
+      "tag": "Best value starter",
+      "price": 200,
+      "blurb": "The essentials for a listing under 3,000 sq ft: photos, a Zillow 3D tour and a floor plan.",
+      "includes": [
+        "30 HDR photos",
+        "Zillow 3D Home Tour (up to 15 panoramas)",
+        "Zillow floor plan integration",
+        "Basic floor plan",
+        "Free slideshow for MLS"
+      ],
+      "sizeNote": "Homes under 3,000 sq ft · +$50 over 3,000 sq ft · Residential resale only"
+    },
+    {
+      "name": "City Never Sleeps",
+      "tag": "Most popular",
+      "price": 400,
+      "blurb": "The full immersive package: Matterport 3D walkthrough with 6 months of free hosting.",
+      "includes": [
+        "30 HDR photos",
+        "Matterport Virtual Tour",
+        "6 months free hosting",
+        "Schematic floor plan",
+        "Up to 5 exterior 360 panoramas"
+      ],
+      "featured": true,
+      "sizeNote": "Homes under 3,000 sq ft · +$100 over 3,000 sq ft · Residential resale only"
+    },
+    {
+      "name": "Neon Skyline",
+      "tag": "Aerial included",
+      "price": 250,
+      "blurb": "HDR photography paired with five drone shots for the listing that needs to show scale and setting.",
+      "includes": [
+        "30 HDR photos",
+        "5 drone photos",
+        "FAA Part 107 pilot",
+        "MLS slideshow"
+      ],
+      "sizeNote": "3,000 sq ft or less (incl. garage) · Weather-dependent · Residential resale only"
+    }
+  ],
+  "hdrTiers": [
+    { "count": "10 HDR photos", "price": 110 },
+    { "count": "11–30 photos", "price": 135 },
+    { "count": "31–50 photos", "price": 150 },
+    { "count": "51–70 photos", "price": 185 },
+    { "count": "71–90 photos", "price": 220 }
+  ],
+  "hdrAddOns": [
+    "Extra HDR photo — +$5 / photo",
+    "5 more HDR photos — +$20",
+    "Rush delivery (next morning) — +$40",
+    "Twilight shooting — +$100",
+    "Sky replacement (3 images) — +$25",
+    "Virtual staging (1 photo) — +$25",
+    "Slideshow exported to video — +$10"
+  ],
+  "matterportTiers": [
+    { "size": "Up to 1,500 sq ft", "price": 225 },
+    { "size": "Up to 2,000 sq ft", "price": 245 },
+    { "size": "Up to 3,000 sq ft", "price": 275 },
+    { "size": "Up to 4,000 sq ft", "price": 350 },
+    { "size": "Each additional 1,000 sq ft", "price": 55 }
+  ],
+  "floorPlanTiers": [
+    { "size": "Single story, up to 2,500 sq ft", "price": 120 },
+    { "size": "Two story, up to 2,500 sq ft", "price": 130 },
+    { "size": "Single story, 3,000–5,000 sq ft", "price": 160 },
+    { "size": "Two story, 3,000–5,000 sq ft", "price": 175 },
+    { "size": "Over 5,000 sq ft", "price": null, "note": "Custom quote" }
+  ],
+  "floorPlanAddOns": [
+    "Colored living spaces — +$25",
+    "CAD file — +$40",
+    "3D floor plan — +$80",
+    "Video rendering — +$125"
+  ],
+  "virtualStagingTiers": [
+    { "item": "Per photo (landscape or portrait)", "price": 25 },
+    { "item": "Panoramic 360", "price": 30 },
+    { "item": "3D floor plan", "price": 25 }
+  ],
+  "videoTiers": [
+    { "item": "Walk-through video (stand-alone)", "price": 129 },
+    { "item": "Zillow walk-through video (add-on)", "price": 75 },
+    { "item": "30-second social media reel (9:16)", "price": 350 },
+    { "item": "Walk-through video, commercial (stand-alone)", "price": 750 }
+  ],
+  "zillowTiers": [
+    { "item": "Zillow 3D Home (add-on, 10–12 360s)", "price": 50 },
+    { "item": "Zillow floor plan (add-on)", "price": 25 }
+  ],
+  "commercialHdr": [
+    { "count": "5 HDR photos", "price": 210 },
+    { "count": "10 photos", "price": 420 },
+    { "count": "15 photos", "price": 630 },
+    { "count": "20 photos", "price": 840 }
+  ],
+  "commercialPanoramas": {
+    "premium": [
+      { "count": "5 DSLR/HDR 360s", "price": 100 },
+      { "count": "10 DSLR/HDR 360s", "price": 180 },
+      { "count": "20 DSLR/HDR 360s", "price": 325 }
+    ],
+    "express": [
+      { "count": "1–15 HDR 360s", "price": 100 },
+      { "count": "15–30 HDR 360s", "price": 130 }
+    ]
+  },
+  "googlePackage": {
+    "name": "“Get Me On Google” Arrangement",
+    "price": 500,
+    "includes": [
+      "10 HDR photos",
+      "Express 360 virtual tour (up to 15 panoramas)",
+      "Posted to your Google Business profile"
+    ],
+    "note": "Businesses under 5,000 sq ft · +$50 over 5,000 sq ft"
+  }
+}
