@@ -207,10 +207,14 @@ const DEFAULT_CSP = [
 const csp = cspOverride ?? DEFAULT_CSP;
 ---
 <!doctype html>
-<html lang="en">
+<html lang="en" translate="no">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {/* Force English only: block browser auto-translation (Chrome, Edge, etc.)
+        and tell Google the page should not be translated. */}
+    <meta name="google" content="notranslate" />
+    <meta http-equiv="Content-Language" content="en" />
     {/* Security headers via meta (GitHub Pages can't set HTTP response headers directly,
         so the most critical ones are duplicated here). On Cloudflare Pages these same
         headers can additionally be enforced via the dashboard / _headers file. */}

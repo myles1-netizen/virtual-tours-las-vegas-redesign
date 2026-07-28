@@ -1,0 +1,13 @@
+# Cloudflare Pages headers — applied to every response.
+# https://developers.cloudflare.com/pages/configuration/headers/
+
+/*
+  # Force English only — the server itself declares the language, which
+  # stops browsers from offering to translate the page.
+  Content-Language: en
+  # Security headers (these are stronger than <meta http-equiv> tags and
+  # work even on browsers that ignore meta CSP).
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
