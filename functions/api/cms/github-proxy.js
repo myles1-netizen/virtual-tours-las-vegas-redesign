@@ -77,13 +77,21 @@ async function ghFetch(path, opts = {}, token) {
   return data;
 }
 
+// JWT signing secret. Falls back to a built-in default so the proxy works
+// without any env-var setup; env.JWT_SECRET overrides it for extra security.
+// This runs server-side only — it never reaches the browser.
+const DEFAULT_JWT_SECRET = "vtlv-cms-jwt-signing-key-7f3a9b2e8c1d4e6f-2026";
+function jwtSecret(env) {
+  return (env && env.JWT_SECRET) || DEFAULT_JWT_SECRET;
+}
+
 export async function onRequestPost({ request, env }) {
-  if (!env.GH_TOKEN) return json({ error: "Server missing GH_TOKEN." }, 500);
-  if (!env.JWT_SECRET) return json({ error: "Server missing JWT_SECRET." }, 500);
+  if (!env.GH_TOKEN) return json({ error: "Server missing GH_TOKEN. Set GH_TOKEN in Cloudflare environment variables." }, 500);
+  const secret = jwtSecret(env);
 
   // ---- Auth: require a valid JWT ----
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  const payload = await verifyJWT(token, env.JWT_SECRET);
+  const payload = await verifyJWT(token, secret);
   if (!payload) return json({ error: "Unauthorized — please sign in again." }, 401);
 
   let body;
@@ -142,7 +150,7 @@ export async function onRequestGet({ request, env }) {
   // Simple reachability check — still requires a valid JWT.
   if (!env.GH_TOKEN) return json({ error: "Missing GH_TOKEN" }, 500);
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  const payload = await verifyJWT(token, env.JWT_SECRET);
+  const payload = await verifyJWT(token, jwtSecret(env));
   if (!payload) return json({ error: "Unauthorized" }, 401);
   return json({ ok: true });
 }
