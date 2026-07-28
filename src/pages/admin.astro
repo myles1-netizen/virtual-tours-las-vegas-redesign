@@ -1235,12 +1235,21 @@ const focusByPath = Object.fromEntries(
           stats.appendChild(statCard(portfolioCount, "Portfolio items"));
           stats.appendChild(statCard(faqCount, "FAQ entries"));
 
-          // Health check — test the actual GitHub connection. The error
-          // message distinguishes between "GH_TOKEN not set" (server returns
-          // a specific message), "token expired/invalid" (GitHub 401), and
-          // other errors.
+          // Health check — first ping the unauthenticated diagnostic endpoint
+          // to see the proxy's config, then test the actual GitHub connection.
           const hl = $("#health-list");
           hl.innerHTML = "";
+
+          // Step 1: Ping (no auth needed — shows proxy config)
+          let pingInfo = null;
+          try {
+            const pingRes = await fetch("/api/cms/ping");
+            pingInfo = await pingRes.json();
+          } catch (e) {
+            pingInfo = { ok: false, error: e.message };
+          }
+
+          // Step 2: Test actual GitHub connection
           let healthResult;
           try {
             await checkRepo();
@@ -1260,6 +1269,29 @@ const focusByPath = Object.fromEntries(
             }
           }
           hl.appendChild(healthRow({ name: "Connection", ...healthResult }));
+
+          // Show ping diagnostic info (proxy config, env vars, repo name)
+          if (pingInfo && pingInfo.config) {
+            const c = pingInfo.config;
+            const cfgRow = el("div", { class: "list-item", style: "align-items:flex-start" });
+            const detail = el("div", { class: "list-main" });
+            detail.appendChild(el("div", { class: "t", text: "Proxy configuration" }));
+            detail.appendChild(el("div", { class: "s", style: "line-height:1.6",
+              html: `Repo: <b>${c.repo}</b> ${c.isFork ? "(fork ✓)" : "(upstream — set GH_REPO for fork)"}<br>GH_TOKEN: ${c.hasToken ? "✓ set" : "✗ NOT SET"}<br>JWT_SECRET: ${c.hasJwtSecret ? "✓ set" : "using default"}<br>CMS_USERNAME: ${c.hasUsername ? "✓ set" : "using default"}<br>CMS_PASSWORD: ${c.hasPassword ? "✓ set" : "using default"}`
+            }));
+            cfgRow.appendChild(el("span", { class: "badge badge-blue", text: "Info" }));
+            cfgRow.appendChild(detail);
+            hl.appendChild(cfgRow);
+          } else if (pingInfo && !pingInfo.ok) {
+            // Ping itself failed — the proxy isn't running at all
+            const cfgRow = el("div", { class: "list-item", style: "align-items:flex-start" });
+            cfgRow.appendChild(el("span", { class: "badge badge-red", text: "Proxy down" }));
+            cfgRow.appendChild(el("div", { class: "list-main" },
+              el("div", { class: "t", text: "CMS proxy is not responding" }),
+              el("div", { class: "s", text: pingInfo.error || "The /api/cms/ping endpoint returned an error. Make sure the functions/ directory is deployed." })
+            ));
+            hl.appendChild(cfgRow);
+          }
 
           // If connection failed, show the error in Recent Activity too.
           if (!healthResult.ok) {

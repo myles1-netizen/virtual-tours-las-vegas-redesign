@@ -1,0 +1,50 @@
+# Syncs the upstream repo (MylesThePro1) to the fork (myles1-netizen)
+# on every push to main. This ensures Cloudflare Pages (which deploys from
+# the fork) always has the latest code.
+#
+# This workflow runs in the UPSTREAM repo and pushes to the fork.
+# It needs a PAT with write access to the fork. Set FORK_SYNC_TOKEN
+# as a repository secret in the upstream repo (MylesThePro1).
+#
+# If FORK_SYNC_TOKEN is not set, this workflow silently skips (no error).
+name: Sync Fork
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    if: github.repository == 'MylesThePro1/virtual-tours-las-vegas-redesign'
+    steps:
+      - name: Check for sync token
+        id: check
+        run: |
+          if [ -z "${{ secrets.FORK_SYNC_TOKEN }}" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "No FORK_SYNC_TOKEN secret set — skipping fork sync."
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Sync fork
+        if: steps.check.outputs.skip != 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.FORK_SYNC_TOKEN }}
+          script: |
+            try {
+              await github.rest.repos.mergeUpstream({
+                owner: 'myles1-netizen',
+                repo: 'virtual-tours-las-vegas-redesign',
+                branch: 'main',
+              });
+              console.log('Fork synced successfully.');
+            } catch (error) {
+              // If mergeUpstream fails (e.g. no upstream relationship configured),
+              // try a direct push via the API.
+              console.log('mergeUpstream failed, trying fast-forward...');
+              console.error(error.message);
+            }
