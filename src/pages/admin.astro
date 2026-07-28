@@ -2505,42 +2505,59 @@ const focusByPath = Object.fromEntries(
             loading: "lazy",
           });
           wrap.appendChild(frame);
-          const disconnect = el("button", { class: "btn btn-ghost btn-sm", style: "margin-top:10px", text: "Disconnect calendar", onclick: () => {
+          const btnRow = el("div", { style: "display:flex;gap:10px;margin-top:10px" });
+          btnRow.appendChild(el("a", { class: "btn btn-outline btn-sm", href: "https://calendar.google.com", target: "_blank", text: "Open Google Calendar ↗" }));
+          btnRow.appendChild(el("button", { class: "btn btn-ghost btn-sm", text: "Disconnect", onclick: () => {
             localStorage.removeItem("vtlv_gcal_embed");
             drawCalendarSetup("");
-          }});
-          wrap.appendChild(disconnect);
+          }}));
+          wrap.appendChild(btnRow);
         } else {
-          // Show setup instructions
+          // Simple email-based setup — the fastest way to connect
           wrap.appendChild(el("div", { html: `
-            <p style="margin-top:0">Connect your Google Calendar to see your real schedule here — no more switching tabs.</p>
-            <div class="field">
-              <label>Google Calendar embed URL</label>
-              <input type="text" id="gcal-url" placeholder="https://calendar.google.com/calendar/embed?src=your@email.com&ctz=America/Los_Angeles" />
-              <div class="hint">
-                <b>How to get this:</b><br>
-                1. Open <a href="https://calendar.google.com" target="_blank">Google Calendar</a> → Settings (gear icon)<br>
-                2. Click your calendar on the left → "Integrate calendar"<br>
-                3. Copy the "Embed code" box<br>
-                4. Paste just the <code>src="..."</code> URL here (or the full embed code — we'll extract it)
-              </div>
-            </div>
+            <p style="margin-top:0">See your real shooting schedule right here. Two ways to connect:</p>
           `}));
-          const connectBtn = el("button", { class: "btn btn-primary", text: "Connect calendar", onclick: () => {
+
+          // Method 1: Just enter your Google email (fastest)
+          const emailCard = el("div", { style: "border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px" });
+          emailCard.appendChild(el("div", { style: "font-weight:600;margin-bottom:6px", text: "Quick connect — enter your Google email" }));
+          emailCard.appendChild(el("div", { class: "hint", style: "margin-bottom:10px", html: "Just type the Gmail address you use for your calendar. We'll build the embed link automatically. <b>Note:</b> your calendar must be set to 'Make available to public' in Google Calendar settings for the embed to show." }));
+          const emailInput = el("input", { type: "email", id: "gcal-email", placeholder: "yourname@gmail.com" });
+          emailCard.appendChild(emailInput);
+          const quickBtn = el("button", { class: "btn btn-primary", style: "margin-top:10px", text: "Connect my calendar", onclick: () => {
+            const email = $("#gcal-email").value.trim();
+            if (!email || !email.includes("@")) { toast("Enter your Google email address.", "error"); return; }
+            // Build the embed URL from the email — Google supports this format
+            const url = `https://calendar.google.com/calendar/embed?src=${encodeURIComponent(email)}&ctz=America/Los_Angeles&mode=WEEK`;
+            localStorage.setItem("vtlv_gcal_embed", url);
+            drawCalendarSetup(url);
+            toast("Calendar connected! If it's blank, make your calendar public in Google Calendar settings.", "success");
+          }});
+          emailCard.appendChild(quickBtn);
+          wrap.appendChild(emailCard);
+
+          // Method 2: Advanced — paste embed code
+          const advDetails = el("details", {});
+          advDetails.appendChild(el("summary", { style: "cursor:pointer;font-weight:600;color:var(--ink-soft);padding:8px 0", text: "Advanced: paste embed code manually" }));
+          const advBody = el("div", { style: "padding-top:10px" });
+          advBody.appendChild(el("div", { class: "field" },
+            el("label", { text: "Google Calendar embed URL or embed code" }),
+            (() => { const i = el("input", { type: "text", id: "gcal-url", placeholder: "Paste from Google Calendar → Settings → Integrate calendar" }); return i; })(),
+            el("div", { class: "hint", html: "Go to <a href='https://calendar.google.com' target='_blank'>Google Calendar</a> → Settings (gear) → your calendar → 'Integrate calendar' → copy the embed code or URL." })
+          ));
+          const advBtn = el("button", { class: "btn btn-outline", text: "Connect from embed code", onclick: () => {
             const input = $("#gcal-url").value.trim();
             let url = input;
-            // If they pasted the full embed code, extract the src URL
             const srcMatch = input.match(/src="(https:\/\/calendar\.google\.com\/calendar\/embed[^"]+)"/);
             if (srcMatch) url = srcMatch[1];
-            if (!url.includes("calendar.google.com")) {
-              toast("That doesn't look like a Google Calendar embed URL. Copy it from Calendar Settings → Integrate calendar.", "error");
-              return;
-            }
+            if (!url.includes("calendar.google.com")) { toast("Paste your Google Calendar embed URL.", "error"); return; }
             localStorage.setItem("vtlv_gcal_embed", url);
             drawCalendarSetup(url);
             toast("Calendar connected!", "success");
           }});
-          wrap.appendChild(connectBtn);
+          advBody.appendChild(advBtn);
+          advDetails.appendChild(advBody);
+          wrap.appendChild(advDetails);
         }
       }
 
