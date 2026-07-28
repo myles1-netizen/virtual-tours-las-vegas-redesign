@@ -380,6 +380,123 @@ const csp = cspOverride ?? DEFAULT_CSP;
       document.addEventListener("themechange", syncMeta);
     </script>
 
+    {/* ===== CMS VISUAL EDITOR MODE =====
+        This script is dormant on the live site. It ONLY activates when the
+        admin's Page Builder loads this page in an iframe and sends a
+        postMessage({ type: "cms-activate" }). When active, every element
+        with a data-cms attribute becomes clickable/editable, and changes
+        are sent back to the parent (admin) window. */}
+    <script is:inline>
+      (function () {
+        var CMS_ACTIVE = false;
+        var CMS_STYLE = document.createElement("style");
+        CMS_STYLE.id = "cms-edit-mode-css";
+        CMS_STYLE.textContent = [
+          "[data-cms]{cursor:text;transition:outline 0.15s,box-shadow 0.15s;outline:2px solid transparent;outline-offset:2px;position:relative;}",
+          "[data-cms]:hover{outline-color:rgba(201,169,97,0.5)!important;background:rgba(201,169,97,0.06);}",
+          "[data-cms][data-cms-type=image]{cursor:pointer;}",
+          "[data-cms][data-cms-type=image]:hover{outline-color:rgba(91,155,213,0.6)!important;background:rgba(91,155,213,0.06);}",
+          "[data-cms][contenteditable=true]:focus{outline:2px solid #5b9bd5!important;background:rgba(91,155,213,0.08);box-shadow:0 0 0 4px rgba(91,155,213,0.15);}",
+          ".cms-field-label{position:fixed;background:#1a1814;color:#c9a961;padding:3px 9px;border-radius:4px;font-size:11px;font-weight:600;font-family:-apple-system,sans-serif;z-index:99999;pointer-events:none;opacity:0;transition:opacity 0.15s;letter-spacing:0.02em;box-shadow:0 2px 8px rgba(0,0,0,0.3);}",
+          ".cms-field-label.show{opacity:1;}",
+          ".cms-editing-banner{position:fixed;top:0;left:0;right:0;background:#0f0e0c;color:#c9a961;padding:8px 20px;font-family:-apple-system,sans-serif;font-size:13px;font-weight:600;z-index:99998;display:flex;align-items:center;gap:12px;box-shadow:0 2px 12px rgba(0,0,0,0.3);}",
+          ".cms-editing-banner .dot{width:8px;height:8px;border-radius:50%;background:#6abf69;animation:cms-pulse 2s infinite;}",
+          "@keyframes cms-pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}",
+        ].join("\n");
+
+        var fieldLabel = document.createElement("div");
+        fieldLabel.className = "cms-field-label";
+
+        function activateCMS() {
+          if (CMS_ACTIVE) return;
+          CMS_ACTIVE = true;
+          document.head.appendChild(CMS_STYLE);
+          document.body.appendChild(fieldLabel);
+
+          // Add editing banner
+          var banner = document.createElement("div");
+          banner.className = "cms-editing-banner";
+          banner.innerHTML = '<span class="dot"></span> Edit Mode — click any text to edit it. Click images to swap them.';
+          document.body.appendChild(banner);
+          document.body.style.paddingTop = "36px";
+
+          var cmsElements = document.querySelectorAll("[data-cms]");
+          cmsElements.forEach(function (el) {
+            var path = el.getAttribute("data-cms");
+            var type = el.getAttribute("data-cms-type");
+
+            if (type === "image") {
+              // Image click → ask parent to open image picker
+              el.addEventListener("click", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                parent.postMessage({ type: "cms-image-click", path: path }, "*");
+              });
+              // Show label on hover
+              el.addEventListener("mouseenter", function () { showLabel(el, "🖼 " + path); });
+              el.addEventListener("mouseleave", hideLabel);
+            } else {
+              // Text element → make editable
+              el.setAttribute("contenteditable", "true");
+              el.addEventListener("mouseenter", function () { showLabel(el, "✏ " + path); });
+              el.addEventListener("mouseleave", hideLabel);
+              // Send changes on blur (debounced)
+              var timer;
+              el.addEventListener("input", function () {
+                clearTimeout(timer);
+                timer = setTimeout(function () {
+                  parent.postMessage({ type: "cms-edit", path: path, value: el.textContent || el.innerText }, "*");
+                }, 300);
+              });
+              // Prevent links from navigating while editing
+              el.addEventListener("click", function (e) {
+                if (CMS_ACTIVE && el.tagName === "A") e.preventDefault();
+              });
+            }
+          });
+        }
+
+        function deactivateCMS() {
+          CMS_ACTIVE = false;
+          if (CMS_STYLE.parentNode) CMS_STYLE.parentNode.removeChild(CMS_STYLE);
+          if (fieldLabel.parentNode) fieldLabel.parentNode.removeChild(fieldLabel);
+          var banner = document.querySelector(".cms-editing-banner");
+          if (banner) banner.remove();
+          document.body.style.paddingTop = "";
+          document.querySelectorAll("[data-cms][contenteditable]").forEach(function (el) {
+            el.removeAttribute("contenteditable");
+          });
+        }
+
+        function showLabel(el, text) {
+          fieldLabel.textContent = text;
+          fieldLabel.classList.add("show");
+          var rect = el.getBoundingClientRect();
+          fieldLabel.style.left = (rect.left + window.scrollX) + "px";
+          fieldLabel.style.top = (rect.top + window.scrollY - 26) + "px";
+        }
+        function hideLabel() {
+          fieldLabel.classList.remove("show");
+        }
+
+        // Listen for activation from the admin parent window
+        window.addEventListener("message", function (e) {
+          if (e.data && e.data.type === "cms-activate") activateCMS();
+          if (e.data && e.data.type === "cms-deactivate") deactivateCMS();
+          // Parent sends a new image URL after the picker
+          if (e.data && e.data.type === "cms-set-image") {
+            var el = document.querySelector('[data-cms="' + e.data.path + '"]');
+            if (el && el.tagName === "IMG") {
+              el.src = e.data.url;
+              // Also update the webp source if inside a picture
+              var source = el.parentElement && el.parentElement.querySelector("source[type='image/webp']");
+              if (source) source.srcset = e.data.url.replace(/\.(jpe?g|png)$/i, ".webp");
+            }
+          }
+        });
+      })();
+    </script>
+
     <style>
       .skip-link {
         position: absolute;

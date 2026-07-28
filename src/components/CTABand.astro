@@ -5,13 +5,17 @@ export interface Props {
   body?: string;
   variant?: "dark" | "image";
   image?: string;
+  /** CMS: prefix for data-cms attributes */
+  cmsPrefix?: string;
 }
 const {
   title = "Let's get your listing shot.",
   body = "Call or text Mike directly. Most shoots are booked within 48 hours. Serving Las Vegas, Henderson & the greater valley.",
   variant = "image",
   image = "/images/portfolio/listing-01.jpg",
+  cmsPrefix = "",
 } = Astro.props;
+const cms = (field) => (cmsPrefix ? { "data-cms": `${cmsPrefix}.${field}` } : {});
 ---
 <section class:list={["cta-band", `v-${variant}`]} data-reveal>
   {variant === "image" && (
@@ -21,8 +25,8 @@ const {
   <div class="container cta-inner">
     <div class="cta-text">
       <p class="eyebrow center">Book your shoot</p>
-      <h2 class="display cta-title">{title}</h2>
-      <p class="cta-body">{body}</p>
+      <h2 class="display cta-title" {...cms("title")}>{title}</h2>
+      <p class="cta-body" {...cms("body")}>{body}</p>
     </div>
     <div class="cta-actions">
       <a href={business.phoneHref} class="btn brass">

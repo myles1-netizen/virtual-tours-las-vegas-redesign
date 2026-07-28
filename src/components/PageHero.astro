@@ -7,6 +7,8 @@ export interface Props {
   image?: string;
   imageAlt?: string;
   align?: "left" | "center";
+  /** CMS: prefix for data-cms attributes */
+  cmsPrefix?: string;
 }
 const {
   eyebrow,
@@ -15,21 +17,23 @@ const {
   image = "/images/portfolio/listing-01.jpg",
   imageAlt = "",
   align = "left",
+  cmsPrefix = "",
 } = Astro.props;
+const cms = (field) => (cmsPrefix ? { "data-cms": `${cmsPrefix}.${field}` } : {});
 ---
 <section class="phero">
   <div class="phero-bg">
     <picture>
       <source type="image/webp" srcset={asset(webpOf(image))} />
-      <img src={asset(image)} alt={imageAlt} fetchpriority="high" decoding="async" />
+      <img src={asset(image)} alt={imageAlt} fetchpriority="high" decoding="async" {...cms("image")} data-cms-type="image" />
     </picture>
     <div class="phero-shade"></div>
   </div>
   <div class="container phero-inner" data-align={align}>
     <div class="phero-text">
-      {eyebrow && <p class="eyebrow">{eyebrow}</p>}
-      <h1 class="display phero-title">{title}</h1>
-      {lead && <p class="lead lg">{lead}</p>}
+      {eyebrow && <p class="eyebrow" {...cms("eyebrow")}>{eyebrow}</p>}
+      <h1 class="display phero-title" {...cms("title")}>{title}</h1>
+      {lead && <p class="lead lg" {...cms("lead")}>{lead}</p>}
     </div>
   </div>
 </section>

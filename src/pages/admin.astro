@@ -1355,32 +1355,135 @@ const focusByPath = Object.fromEntries(
       let pbSlug = "home";     // slug of the page being edited
 
       async function renderPageBuilder(root) {
-        root.appendChild(pageHead("Page Builder", "Edit the real text and images on any page. Changes go live after saving.", [
+        root.appendChild(pageHead("Page Builder", "Edit any page visually — click text to edit, click images to swap. Changes go live after saving.", [
           el("button", { class: "btn btn-primary", onclick: () => newPageModal(), html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New Page' }),
         ]));
 
-        // Page selector card
-        const selCard = card("Choose a page to edit", el("div", { style: "display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap" }));
+        // Page selector card with Visual + Form mode buttons
+        const selCard = card("Choose a page to edit", el("div", {}));
+        const selBody = selCard.querySelector(".card-body");
+        const selRow = el("div", { style: "display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap" });
         const sel = el("select", { id: "pb-page-select", style: "flex:1;min-width:200px" });
         sel.appendChild(el("option", { value: "home", text: "Homepage (/)" }));
         for (const p of pages.filter(p => p.path !== "/")) {
           const slug = p.path.replace(/^\//, "").replace(/\/$/, "").replace(/\//g, "-");
           sel.appendChild(el("option", { value: slug, text: `${p.title} — ${p.path}` }));
         }
-        selCard.querySelector(".card-body").appendChild(field("Page", sel));
-        const loadBtn = el("button", { class: "btn btn-primary", text: "Load page", onclick: () => loadPageContent($("#pb-page-select").value) });
-        selCard.querySelector(".card-body").appendChild(loadBtn);
+        selRow.appendChild(el("div", { style: "flex:1;min-width:200px" }, (() => { const f = el("div"); f.appendChild(el("label", { text: "Page", style: "display:block;font-size:13px;font-weight:600;margin-bottom:6px" })); f.appendChild(sel); return f; })()));
+        const visualBtn = el("button", { class: "btn btn-primary", html: '👁 Visual Editor', onclick: () => loadPageContent($("#pb-page-select").value, "visual") });
+        const formBtn = el("button", { class: "btn btn-outline", html: '📝 Form Editor', onclick: () => loadPageContent($("#pb-page-select").value, "form") });
+        selRow.appendChild(visualBtn);
+        selRow.appendChild(formBtn);
+        selBody.appendChild(selRow);
         root.appendChild(selCard);
 
-        // Editor will render here
+        // Editor area
         root.appendChild(el("div", { id: "pb-editor-area" }));
 
-        // Default: show a hint
-        const hint = el("div", { class: "empty", html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><h3>Select a page above and click "Load page"</h3><p>You\'ll see every text field and image on that page, ready to edit.</p>' });
-        $("#pb-editor-area", root).appendChild(hint);
+        // Auto-load the homepage in visual mode
+        loadPageContent("home", "visual");
+      }
 
-        // Auto-load the homepage
-        loadPageContent("home");
+      // ===== VISUAL EDITOR (Divi-style) =====
+      // Loads the actual rendered page in a full-screen iframe, activates
+      // edit mode, and captures changes via postMessage.
+      let visualIframe = null;
+      let visualPath = null;
+      let visualDirty = false;
+
+      function startVisualEditor(slug, pagePath, content) {
+        const root = $("#pb-editor-area");
+        root.innerHTML = "";
+
+        // Top bar with controls
+        const topbar = el("div", { style: "display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap" });
+        topbar.appendChild(el("span", { style: "font-size:14px;font-weight:600", text: "Visual Editor — click any text or image on the page to edit it" }));
+        topbar.appendChild(el("span", { style: "flex:1" }));
+
+        // Device width toggles
+        const deskBtn = el("button", { class: "btn btn-outline btn-sm ie-tool active", html: "🖥 Desktop", onclick: () => setDeviceWidth("100%") });
+        const tabBtn = el("button", { class: "btn btn-outline btn-sm ie-tool", html: "📱 Tablet", onclick: () => setDeviceWidth("768px") });
+        const mobBtn = el("button", { class: "btn btn-outline btn-sm ie-tool", html: "📱 Mobile", onclick: () => setDeviceWidth("375px") });
+        function setDeviceWidth(w) {
+          const wrap = $("#visual-frame-wrap");
+          if (wrap) { wrap.style.maxWidth = w; wrap.style.margin = w === "100%" ? "0" : "0 auto"; wrap.style.boxShadow = w === "100%" ? "none" : "0 0 40px rgba(0,0,0,0.2)"; }
+          deskBtn.classList.toggle("active", w === "100%");
+          tabBtn.classList.toggle("active", w === "768px");
+          mobBtn.classList.toggle("active", w === "375px");
+        }
+        topbar.appendChild(deskBtn);
+        topbar.appendChild(tabBtn);
+        topbar.appendChild(mobBtn);
+
+        // Mode toggle
+        topbar.appendChild(el("button", { class: "btn btn-ghost btn-sm", text: "Switch to Form", onclick: () => loadPageContent(slug, "form") }));
+        // Save button
+        const saveBtn = el("button", { class: "btn btn-primary btn-sm", id: "visual-save-btn", html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save', onclick: () => savePageContent() });
+        topbar.appendChild(saveBtn);
+        root.appendChild(topbar);
+
+        // Dirty indicator
+        const dirtyBadge = el("div", { id: "visual-dirty", style: "display:none;font-size:12px;color:var(--amber);margin-bottom:10px", text: "● Unsaved changes — click Save to publish" });
+        root.appendChild(dirtyBadge);
+
+        // Iframe wrapper
+        const frameWrap = el("div", { id: "visual-frame-wrap", style: "width:100%;transition:max-width 0.3s;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#fff;min-height:600px" });
+        visualIframe = el("iframe", { id: "visual-iframe", src: pagePath, style: "width:100%;height:80vh;border:0;display:block" });
+        frameWrap.appendChild(visualIframe);
+        root.appendChild(frameWrap);
+
+        visualPath = pagePath;
+        visualDirty = false;
+
+        // Activate edit mode once the iframe loads
+        visualIframe.addEventListener("load", () => {
+          visualIframe.contentWindow.postMessage({ type: "cms-activate" }, "*");
+        });
+
+        // Listen for edits from the iframe
+        window.addEventListener("message", handleVisualMessage);
+      }
+
+      function handleVisualMessage(e) {
+        if (!e.data) return;
+        if (e.data.type === "cms-edit") {
+          // Update the content object at the dotted path
+          setNestedPath(pbContent, e.data.path, e.data.value);
+          visualDirty = true;
+          const badge = $("#visual-dirty");
+          if (badge) badge.style.display = "block";
+        }
+        if (e.data.type === "cms-image-click") {
+          // Open the image picker, then send the URL back to the iframe
+          openImagePicker((url) => {
+            setNestedPath(pbContent, e.data.path, url);
+            // Send the new image URL to the iframe to update visually
+            if (visualIframe && visualIframe.contentWindow) {
+              visualIframe.contentWindow.postMessage({ type: "cms-set-image", path: e.data.path, url }, "*");
+            }
+            visualDirty = true;
+            const badge = $("#visual-dirty");
+            if (badge) badge.style.display = "block";
+          });
+        }
+      }
+
+      // Set a value at a dotted path like "hero.title" or "why.cards.0.title"
+      function setNestedPath(obj, path, value) {
+        const parts = path.split(".");
+        let cur = obj;
+        for (let i = 0; i < parts.length - 1; i++) {
+          const key = parts[i];
+          if (cur[key] == null) cur[key] = isNaN(parts[i + 1]) ? {} : [];
+          cur = cur[key];
+        }
+        cur[parts[parts.length - 1]] = value;
+      }
+
+      // Clean up event listener when leaving visual mode
+      function cleanupVisualEditor() {
+        window.removeEventListener("message", handleVisualMessage);
+        visualIframe = null;
       }
 
       // Service pages store their SEO/hero copy in cms/services/{slug}.json.
@@ -1533,8 +1636,9 @@ const focusByPath = Object.fromEntries(
         };
       }
 
-      async function loadPageContent(slug) {
+      async function loadPageContent(slug, mode) {
         pbSlug = slug;
+        cleanupVisualEditor();
         showLoading();
         try {
           let raw;
@@ -1549,7 +1653,17 @@ const focusByPath = Object.fromEntries(
             pbContent = { _page: slug, _slug: slug };
           }
           hideLoading();
-          drawContentEditor();
+          if (mode === "visual") {
+            // Resolve the page path for the iframe
+            const pageInfo = pages.find(p => {
+              const s = p.path === "/" ? "home" : p.path.replace(/^\//, "").replace(/\/$/, "").replace(/\//g, "-");
+              return s === slug;
+            });
+            const pagePath = pageInfo ? pageInfo.path : (slug === "home" ? "/" : "/" + slug.replace(/-/g, "/") + "/");
+            startVisualEditor(slug, pagePath, pbContent);
+          } else {
+            drawContentEditor();
+          }
         } catch (e) {
           hideLoading();
           toast(e.message, "error", "Could not load page");
@@ -1753,7 +1867,7 @@ const focusByPath = Object.fromEntries(
       async function openPageBuilderFor(path) {
         navigate("pagebuilder");
         const slug = path === "/" ? "home" : path.replace(/^\//, "").replace(/\/$/, "").replace(/\//g, "-");
-        setTimeout(() => loadPageContent(slug), 100);
+        setTimeout(() => loadPageContent(slug, "visual"), 100);
       }
 
       //=====================================================================

@@ -57,17 +57,17 @@ const description = c.seo?.description || "Las Vegas real estate photographer Mi
     <div class="hero-bg">
       <picture>
         <source type="image/webp" srcset={asset(webpOf(c.hero.image))} />
-        <img src={asset(c.hero.image)} alt={c.hero.imageAlt} fetchpriority="high" decoding="async" />
+        <img src={asset(c.hero.image)} alt={c.hero.imageAlt} fetchpriority="high" decoding="async" data-cms="hero.image" data-cms-type="image" />
       </picture>
       <div class="hero-shade"></div>
     </div>
     <div class="container hero-inner">
       <div class="hero-text">
-        <p class="eyebrow" data-reveal>{c.hero.eyebrow}</p>
-        <h1 class="display hero-title" data-reveal data-reveal-delay="1" set:html={c.hero.title} />
-        <p class="lead lg hero-lead" data-reveal data-reveal-delay="2" set:html={c.hero.lead} />
+        <p class="eyebrow" data-reveal data-cms="hero.eyebrow">{c.hero.eyebrow}</p>
+        <h1 class="display hero-title" data-reveal data-reveal-delay="1" set:html={c.hero.title} data-cms="hero.title" />
+        <p class="lead lg hero-lead" data-reveal data-reveal-delay="2" set:html={c.hero.lead} data-cms="hero.lead" />
         <div class="btn-row hero-cta" data-reveal data-reveal-delay="3">
-          <a href={asset(c.hero.buttonPrimaryLink || "/work/")} class="btn brass">{c.hero.buttonPrimary}</a>
+          <a href={asset(c.hero.buttonPrimaryLink || "/work/")} class="btn brass" data-cms="hero.buttonPrimary">{c.hero.buttonPrimary}</a>
           <a href={business.phoneHref} class="btn outline">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             {c.hero.buttonSecondary} {business.phone}
@@ -106,10 +106,10 @@ const description = c.seo?.description || "Las Vegas real estate photographer Mi
     <div class="container">
       <div class="pf-head">
         <div data-reveal>
-          <p class="eyebrow">{c.portfolio.eyebrow}</p>
-          <h2 class="display pf-title">{c.portfolio.title}</h2>
+          <p class="eyebrow" data-cms="portfolio.eyebrow">{c.portfolio.eyebrow}</p>
+          <h2 class="display pf-title" data-cms="portfolio.title">{c.portfolio.title}</h2>
         </div>
-        <a href={asset("/work/")} class="text-link" data-reveal data-reveal-delay="1">{c.portfolio.linkText}</a>
+        <a href={asset("/work/")} class="text-link" data-reveal data-reveal-delay="1" data-cms="portfolio.linkText">{c.portfolio.linkText}</a>
       </div>
       <Gallery shots={featuredShots} />
     </div>
@@ -118,7 +118,7 @@ const description = c.seo?.description || "Las Vegas real estate photographer Mi
   {/* ===== WHY MIKE ===== */}
   <section class="section dark why">
     <div class="container">
-      <SectionHeader eyebrow={c.why.eyebrow} title={c.why.title} lead={c.why.lead} />
+      <SectionHeader eyebrow={c.why.eyebrow} title={c.why.title} lead={c.why.lead} cmsPrefix="why" />
       <div class="why-grid">
         <article class="why-card" data-reveal data-reveal-delay="1">
           <div class="why-icon">
@@ -155,7 +155,7 @@ const description = c.seo?.description || "Las Vegas real estate photographer Mi
   {/* ===== SERVICES BY BUYER ===== */}
   <section class="section services-routes">
     <div class="container">
-      <SectionHeader eyebrow={c.services.eyebrow} title={c.services.title} lead={c.services.lead} />
+      <SectionHeader eyebrow={c.services.eyebrow} title={c.services.title} lead={c.services.lead} cmsPrefix="services" />
       <div class="routes-grid">
         {serviceBuyers.map((b, i) => <ServiceCard b={b} index={i} />)}
       </div>
@@ -167,9 +167,9 @@ const description = c.seo?.description || "Las Vegas real estate photographer Mi
     <div class="container">
       <div class="st-grid">
         <div class="st-text">
-          <p class="eyebrow" data-reveal>{c.staging.eyebrow}</p>
-          <h2 class="display st-title" data-reveal data-reveal-delay="1" set:html={c.staging.title} />
-          <p class="lead" data-reveal data-reveal-delay="2">{c.staging.lead}</p>
+          <p class="eyebrow" data-reveal data-cms="staging.eyebrow">{c.staging.eyebrow}</p>
+          <h2 class="display st-title" data-reveal data-reveal-delay="1" set:html={c.staging.title} data-cms="staging.title" />
+          <p class="lead" data-reveal data-reveal-delay="2" data-cms="staging.lead">{c.staging.lead}</p>
           <ul class="st-points" role="list" data-reveal data-reveal-delay="3">
             {(c.staging.points || ["Photoreal furniture scaled to your room", "Multiple styles — modern, traditional, glam", "Faster and far cheaper than physical staging", "Staged photos for MLS + 360 panoramas for tours"]).map((pt) => <li>{pt}</li>)}
           </ul>
@@ -191,12 +191,12 @@ const description = c.seo?.description || "Las Vegas real estate photographer Mi
   {/* ===== PRICING SNAPSHOT ===== */}
   <section class="section paper-2 pricing-snap">
     <div class="container">
-      <SectionHeader eyebrow={c.pricing.eyebrow} title={c.pricing.title} lead={c.pricing.lead} align="center" />
+      <SectionHeader eyebrow={c.pricing.eyebrow} title={c.pricing.title} lead={c.pricing.lead} align="center" cmsPrefix="pricing" />
       <div class="pkg-grid">
         {vegasPackages.map((p) => <PricingCard pkg={p} />)}
       </div>
       <div class="text-center" style="margin-top:2.5rem" data-reveal>
-        <a href={asset("/pricing/")} class="btn outline">{c.pricing.buttonText}</a>
+        <a href={asset("/pricing/")} class="btn outline" data-cms="pricing.buttonText">{c.pricing.buttonText}</a>
       </div>
     </div>
   </section>
@@ -204,7 +204,7 @@ const description = c.seo?.description || "Las Vegas real estate photographer Mi
   {/* ===== PROCESS ===== */}
   <section class="section dark process-section">
     <div class="container">
-      <SectionHeader eyebrow={c.process.eyebrow} title={c.process.title} />
+      <SectionHeader eyebrow={c.process.eyebrow} title={c.process.title} cmsPrefix="process" />
       <div class="proc-grid">
         {process.map((p, i) => (
           <article class="proc" data-reveal data-reveal-delay={String(i + 1)}>
@@ -220,7 +220,7 @@ const description = c.seo?.description || "Las Vegas real estate photographer Mi
   {/* ===== TESTIMONIALS ===== */}
   <section class="section testimonials-section">
     <div class="container">
-      <SectionHeader eyebrow={c.testimonials.eyebrow} title={c.testimonials.title} />
+      <SectionHeader eyebrow={c.testimonials.eyebrow} title={c.testimonials.title} cmsPrefix="testimonials" />
       <div class="t-grid" data-stagger>
         {testimonials.map((t) => <TestimonialCard t={t} />)}
       </div>
@@ -232,9 +232,9 @@ const description = c.seo?.description || "Las Vegas real estate photographer Mi
     <div class="container">
       <div class="area-grid">
         <div data-reveal>
-          <p class="eyebrow">{c.serviceArea.eyebrow}</p>
-          <h2 class="display area-title">{c.serviceArea.title}</h2>
-          <p class="lead">{c.serviceArea.lead}</p>
+          <p class="eyebrow" data-cms="serviceArea.eyebrow">{c.serviceArea.eyebrow}</p>
+          <h2 class="display area-title" data-cms="serviceArea.title">{c.serviceArea.title}</h2>
+          <p class="lead" data-cms="serviceArea.lead">{c.serviceArea.lead}</p>
           <ul class="area-list" role="list">
             {serviceAreaLinks.map((city) => (
               <li>
@@ -258,7 +258,7 @@ const description = c.seo?.description || "Las Vegas real estate photographer Mi
   </section>
 
   {/* ===== FINAL CTA ===== */}
-  <CTABand title={c.cta.title} body={c.cta.body} />
+  <CTABand title={c.cta.title} body={c.cta.body} cmsPrefix="cta" />
 </Base>
 
 <style>

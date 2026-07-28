@@ -6,6 +6,8 @@ export interface Props {
   align?: "left" | "center";
   as?: "h1" | "h2";
   class?: string;
+  /** CMS: prefix for data-cms attributes, e.g. "why" → data-cms="why.title" */
+  cmsPrefix?: string;
 }
 const {
   eyebrow,
@@ -14,13 +16,15 @@ const {
   align = "left",
   as = "h2",
   class: className = "",
+  cmsPrefix = "",
 } = Astro.props;
 const Tag = as;
+const cms = (field) => (cmsPrefix ? { "data-cms": `${cmsPrefix}.${field}` } : {});
 ---
 <div class:list={["section-head", `align-${align}`, className]} data-reveal>
-  {eyebrow && <p class="eyebrow">{eyebrow}</p>}
-  <Tag class="display title">{title}</Tag>
-  {lead && <p class="lead" set:html={lead} />}
+  {eyebrow && <p class="eyebrow" {...cms("eyebrow")}>{eyebrow}</p>}
+  <Tag class="display title" {...cms("title")}>{title}</Tag>
+  {lead && <p class="lead" set:html={lead} {...cms("lead")} />}
 </div>
 
 <style>

@@ -18,6 +18,7 @@ const description = c.seo?.description || "Meet Mike Madsen, Las Vegas real esta
     lead={c.hero?.lead || "Most real estate photo companies are middlemen who outsource your listing to whoever's closest. Virtual Tours Las Vegas is one photographer, Mike Madsen, and I shoot, edit and deliver every property myself."}
     image={asset(c.hero?.image || "/images/portfolio/sierra-skye-kitchen.jpg")}
     imageAlt={c.hero?.imageAlt || "Modern Las Vegas kitchen photographed by Mike Madsen"}
+    cmsPrefix="hero"
   />
 
   {/* ===== STORY ===== */}
@@ -68,6 +69,7 @@ const description = c.seo?.description || "Meet Mike Madsen, Las Vegas real esta
         eyebrow={c.approach?.eyebrow || "The approach"}
         title={c.approach?.title || '"I get behind my mirrorless DSLR and let the camera tell me what it wants to see."'}
         lead={c.approach?.lead || "My philosophy is simple: everything starts with the photos. A great 3D tour, social reel, or floor plan only matters if the underlying imagery is right. I treat every shoot like a 24/7 open house, because that's what it is to the buyer who clicks through at midnight."}
+        cmsPrefix="approach"
       />
       <div class="approach-grid">
         {(c.approach?.cards || [
@@ -99,6 +101,7 @@ const description = c.seo?.description || "Meet Mike Madsen, Las Vegas real esta
         eyebrow={c.credentials?.eyebrow || "Certifications"}
         title={c.credentials?.title || "Licensed, certified & trusted."}
         align="center"
+        cmsPrefix="credentials"
       />
       <div class="cred-imgs">
         {(c.credentials?.items || [
@@ -118,6 +121,7 @@ const description = c.seo?.description || "Meet Mike Madsen, Las Vegas real esta
   <CTABand
     title={c.cta?.title || "Work with the photographer Zillow & Lennar trusted."}
     body={c.cta?.body || `Same standard, every shoot. Call or text ${business.phone}.`}
+    cmsPrefix="cta"
   />
 </Base>
 

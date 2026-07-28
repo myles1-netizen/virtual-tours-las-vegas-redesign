@@ -19,6 +19,7 @@ const description = c.seo?.description || "Book a Las Vegas real estate photogra
     lead={c.hero?.lead || "Fastest path: call or text me directly. Prefer to send details first? Fill out the form and I'll get back to you, usually same day."}
     image={asset(c.hero?.image || "/images/portfolio/listing-02.jpg")}
     imageAlt={c.hero?.imageAlt || "Spacious Las Vegas property interior, ready to be photographed"}
+    cmsPrefix="hero"
   />
 
   <section class="section">
@@ -69,6 +70,7 @@ const description = c.seo?.description || "Book a Las Vegas real estate photogra
         eyebrow={c.faq?.eyebrow || "Before you book"}
         title={c.faq?.title || "Common questions."}
         align="center"
+        cmsPrefix="faq"
       />
       <FAQAccordion limit={6} />
       <p class="text-center muted" style="margin-top:1.5rem"><a href={asset("/faq/")} class="text-link">{c.faq?.allLinkText || "All FAQs →"}</a></p>
