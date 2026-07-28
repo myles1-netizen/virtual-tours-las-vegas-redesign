@@ -2,7 +2,7 @@
 //
 // The browser sends a JWT (issued by /api/cms/auth) in the Authorization
 // header. We verify it with env.JWT_SECRET before proxying any GitHub API
-// call. The GitHub PAT (env.GH_TOKEN) is injected server-side and never
+// call. The GitHub PAT (env.GH_TOKEN, REPO) is injected server-side and never
 // touches the browser.
 //
 // Supported operations (POST JSON body):
@@ -61,7 +61,7 @@ function json(data, status = 200) {
   });
 }
 
-async function ghFetch(path, opts = {}, token) {
+async function ghFetch(path, opts = {}, token, repoName) {
   const res = await fetch(`${API}${path}`, {
     ...opts,
     headers: {
@@ -76,7 +76,10 @@ async function ghFetch(path, opts = {}, token) {
   let data;
   try { data = text ? JSON.parse(text) : null; } catch { data = text; }
   if (!res.ok) {
-    const err = new Error((data && data.message) || `GitHub API error ${res.status}`);
+    // Include the actual repo name and GitHub's error message so the admin
+    // can see exactly what's wrong — which repo, what GitHub said.
+    const ghMsg = (data && data.message) ? data.message : `HTTP ${res.status}`;
+    const err = new Error(`GitHub ${res.status} on ${repoName}: ${ghMsg}`);
     err.status = res.status;
     err.data = data;
     throw err;
@@ -93,7 +96,7 @@ function jwtSecret(env) {
 }
 
 export async function onRequestPost({ request, env }) {
-  if (!env.GH_TOKEN) return json({ error: "Server missing GH_TOKEN. Set GH_TOKEN in Cloudflare environment variables." }, 500);
+  if (!env.GH_TOKEN, REPO) return json({ error: "Server missing GH_TOKEN. Set GH_TOKEN in Cloudflare environment variables." }, 500);
   const secret = jwtSecret(env);
   const REPO = repo(env); // resolve repo from env var or default
 
@@ -109,32 +112,32 @@ export async function onRequestPost({ request, env }) {
   try {
     switch (op) {
       case "repo": {
-        const repoData = await ghFetch(`/repos/${REPO}`, {}, env.GH_TOKEN);
+        const repoData = await ghFetch(`/repos/${REPO}`, {}, env.GH_TOKEN, REPO);
         return json({ repo: { name: repoData.name, full_name: repoData.full_name, default_branch: repoData.default_branch } });
       }
       case "read": {
-        const data = await ghFetch(`/repos/${REPO}/contents/${body.path}?ref=${BRANCH}`, {}, env.GH_TOKEN);
+        const data = await ghFetch(`/repos/${REPO}/contents/${body.path}?ref=${BRANCH}`, {}, env.GH_TOKEN, REPO);
         let content = data.content ? atob(data.content.replace(/\n/g, "")) : "";
         return json({ content, sha: data.sha, path: data.path });
       }
       case "write": {
         const p = { message: body.message || `CMS edit: ${body.path}`, content: body.content, branch: BRANCH };
         if (body.sha) p.sha = body.sha;
-        const data = await ghFetch(`/repos/${REPO}/contents/${body.path}`, { method: "PUT", body: JSON.stringify(p) }, env.GH_TOKEN);
+        const data = await ghFetch(`/repos/${REPO}/contents/${body.path}`, { method: "PUT", body: JSON.stringify(p) }, env.GH_TOKEN, REPO);
         return json({ ok: true, sha: data.content?.sha, path: body.path, commit: data.commit?.sha });
       }
       case "upload": {
         const p = { message: body.message || `CMS upload: ${body.path}`, content: body.content, branch: BRANCH };
-        const data = await ghFetch(`/repos/${REPO}/contents/${body.path}`, { method: "PUT", body: JSON.stringify(p) }, env.GH_TOKEN);
+        const data = await ghFetch(`/repos/${REPO}/contents/${body.path}`, { method: "PUT", body: JSON.stringify(p) }, env.GH_TOKEN, REPO);
         return json({ ok: true, sha: data.content?.sha, path: body.path });
       }
       case "delete": {
         const p = { message: body.message || `CMS delete: ${body.path}`, sha: body.sha, branch: BRANCH };
-        await ghFetch(`/repos/${REPO}/contents/${body.path}`, { method: "DELETE", body: JSON.stringify(p) }, env.GH_TOKEN);
+        await ghFetch(`/repos/${REPO}/contents/${body.path}`, { method: "DELETE", body: JSON.stringify(p) }, env.GH_TOKEN, REPO);
         return json({ ok: true });
       }
       case "list": {
-        const data = await ghFetch(`/repos/${REPO}/contents/${body.path}?ref=${BRANCH}`, {}, env.GH_TOKEN);
+        const data = await ghFetch(`/repos/${REPO}/contents/${body.path}?ref=${BRANCH}`, {}, env.GH_TOKEN, REPO);
         const items = Array.isArray(data)
           ? data.map((e) => ({ name: e.name, path: e.path, sha: e.sha, type: e.type, size: e.size }))
           : [{ name: data.name, path: data.path, sha: data.sha, type: data.type, size: data.size }];
@@ -143,7 +146,7 @@ export async function onRequestPost({ request, env }) {
       case "commits": {
         const perPage = Math.min(body.perPage || 20, 100);
         const pathQ = body.path ? `&path=${encodeURIComponent(body.path)}` : "";
-        const data = await ghFetch(`/repos/${REPO}/commits?sha=${BRANCH}&per_page=${perPage}${pathQ}`, {}, env.GH_TOKEN);
+        const data = await ghFetch(`/repos/${REPO}/commits?sha=${BRANCH}&per_page=${perPage}${pathQ}`, {}, env.GH_TOKEN, REPO);
         return json({ commits: data.map((c) => ({ sha: c.sha, message: c.commit.message, date: c.commit.author?.date, author: c.commit.author?.name })) });
       }
       default:
@@ -156,7 +159,7 @@ export async function onRequestPost({ request, env }) {
 
 export async function onRequestGet({ request, env }) {
   // Simple reachability check — still requires a valid JWT.
-  if (!env.GH_TOKEN) return json({ error: "Missing GH_TOKEN" }, 500);
+  if (!env.GH_TOKEN, REPO) return json({ error: "Missing GH_TOKEN" }, 500);
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   const payload = await verifyJWT(token, jwtSecret(env));
   if (!payload) return json({ error: "Unauthorized" }, 401);

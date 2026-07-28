@@ -1241,17 +1241,17 @@ const focusByPath = Object.fromEntries(
             await checkRepo();
             healthResult = { ok: true, detail: "Connected and ready to save edits." };
           } catch (e) {
-            const msg = (e.message || "").toLowerCase();
+            const msg = e.message || "";
             if (msg.includes("missing gh_token") || msg.includes("not configured")) {
               healthResult = { ok: false, detail: "GH_TOKEN env var is not set in Cloudflare. Add it under Settings → Environment variables." };
-            } else if (e.status === 401 || msg.includes("bad credentials")) {
+            } else if (e.status === 401 || msg.toLowerCase().includes("bad credentials")) {
               healthResult = { ok: false, detail: "GitHub rejected the token (401). It may be expired — generate a new PAT and update GH_TOKEN in Cloudflare." };
             } else if (e.status === 403) {
-              healthResult = { ok: false, detail: "GitHub blocked access (403). The PAT needs 'Contents: Read and Write' permission on the repo MylesThePro1/virtual-tours-las-vegas-redesign. Go to github.com → Settings → Developer settings → Fine-grained tokens → edit your token → Repository permissions → Contents = Read and Write." };
+              healthResult = { ok: false, detail: msg + " — Make sure: (1) the PAT has Contents: Read and Write permission, (2) GH_REPO env var matches the repo your PAT has access to (e.g. myles1-netizen/virtual-tours-las-vegas-redesign for the fork), (3) the PAT hasn't expired." };
             } else if (e.status === 404) {
-              healthResult = { ok: false, detail: "Token works but the repository wasn't found (404). The PAT may be scoped to a different repo than MylesThePro1/virtual-tours-las-vegas-redesign." };
+              healthResult = { ok: false, detail: msg + " — The repo name doesn't match. Set GH_REPO in Cloudflare to match your fork." };
             } else {
-              healthResult = { ok: false, detail: e.message || "Could not connect to GitHub." };
+              healthResult = { ok: false, detail: msg || "Could not connect to GitHub." };
             }
           }
           hl.appendChild(healthRow({ name: "Connection", ...healthResult }));
