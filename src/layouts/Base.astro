@@ -245,7 +245,9 @@ const csp = cspOverride ?? DEFAULT_CSP;
     <meta name="twitter:image" content={ogImage} />
     <meta name="theme-color" content="#1a1814" />
 
+    <link rel="icon" type="image/png" sizes="32x32" href={asset("/favicon-32.png")} />
     <link rel="icon" type="image/svg+xml" href={asset("/favicon.svg")} />
+    <link rel="apple-touch-icon" sizes="180x180" href={asset("/apple-touch-icon.png")} />
     <link rel="apple-touch-icon" href={asset("/apple-touch-icon.png")} />
 
     {/* Preload the LCP hero image — every page shares this default background
