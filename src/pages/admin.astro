@@ -2,33 +2,30 @@
 // =============================================================================
 //  Virtual Tours Las Vegas — Content Manager
 // =============================================================================
-//  Mike logs in with username + password ONLY. The GitHub PAT lives entirely
-//  server-side as a Cloudflare Pages environment variable (GH_TOKEN) and is
-//  never sent to the browser. Every read/write is proxied through
-//  /api/cms/github-proxy, which injects the token on the server.
+//  SECURITY MODEL:
+//  This page contains ZERO credentials. No password hash, no username, no
+//  tokens, no secrets of any kind. Nothing to find via Inspect Element, view-
+//  source, or reading this repo on GitHub.
 //
-//  Auth model: the browser sends X-CMS-Auth = SHA-256(password) on every
-//  request. The proxy compares it to SHA-256(env.CMS_PASSWORD). The password
-//  itself never crosses the wire. This is a convenience gate on already-public
-//  marketing content; the real credential is the server-side PAT.
+//  Login POSTs username + password to /api/cms/auth (a Cloudflare Function).
+//  The server validates against env vars (CMS_USERNAME, CMS_PASSWORD) and
+//  returns a signed JWT (HMAC-SHA256, 12h expiry). The JWT is the ONLY thing
+//  stored in the browser — it's useless without env.JWT_SECRET, which lives
+//  only on the server.
 //
-//  All editable content lives in src/data/cms/*.json + Markdown under
-//  src/content/blog/. The CMS edits those exact files via the proxy.
+//  Every CMS API call (read/write/upload) sends the JWT in the Authorization
+//  header to /api/cms/github-proxy, which verifies the JWT, then injects the
+//  GitHub PAT (env.GH_TOKEN) and talks to the GitHub API. The PAT never
+//  reaches the browser.
+//
+//  Bottom line: even with full access to this repo and the admin page source,
+//  an attacker cannot log in. There is nothing in either place to exploit.
 // =============================================================================
 
 import { seoCatalog } from "../data/seo-catalog";
 
-// Admin credentials (overridable via env at build time).
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "VTLV";
-const ADMIN_PASSWORD = process.env.CMS_PASSWORD || process.env.ADMIN_PASSWORD || "Gfs**kU$x2bAc$P8";
-async function sha256(s) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-const usernameHash = await sha256(ADMIN_USERNAME);
-const passwordHash = await sha256(ADMIN_PASSWORD);
-
 // Page list for Pages + SEO sections (hand-maintained catalog = what Google sees).
+// This is public marketing data, not a secret.
 const pages = seoCatalog
   .filter((p) => p.path !== "/404")
   .map((p) => ({
@@ -716,7 +713,7 @@ const focusByPath = Object.fromEntries(
     <div id="toasts"></div>
     <div id="loading"><div class="spinner"></div></div>
 
-    <script is:inline define:vars={{ usernameHash, passwordHash, pages, focusByPath }}>
+    <script is:inline define:vars={{ pages, focusByPath }}>
       //=====================================================================
       // CMS APPLICATION
       //=====================================================================
@@ -726,41 +723,40 @@ const focusByPath = Object.fromEntries(
       const BASE = "/";
 
       // --- Auth state ---
+      // The ONLY credential stored in the browser is a JWT (signed, 12h expiry).
+      // It's useless without env.JWT_SECRET, which lives only on the server.
+      // No password, no hash, no username — nothing for an attacker to find.
       const LS = {
-        user: "vtlv_cms_user",
-        pass: "vtlv_cms_pass",
+        token: "vtlv_cms_jwt",
         remember: "vtlv_cms_remember",
         theme: "vtlv_cms_theme",
       };
 
-      // Password hash is passed in from the server (define:vars).
-      // The browser stores the *hash*, never the plaintext, after login.
-      // On every API call we send X-CMS-Auth = the hash so the proxy can verify.
-      function cmsAuthHash() {
-        return sessionStorage[LS.pass] || localStorage[LS.pass] || "";
+      function getToken() {
+        return sessionStorage[LS.token] || localStorage[LS.token] || "";
       }
       function isLoggedIn() {
-        const u = sessionStorage[LS.user] || localStorage[LS.user];
-        const p = sessionStorage[LS.pass] || localStorage[LS.pass];
-        return !!(u && p);
+        return !!getToken();
       }
 
       //=====================================================================
       // API CLIENT — talks to the Cloudflare Function proxy.
-      // The GitHub token NEVER touches the browser.
+      // Sends the JWT in the Authorization header. The GitHub token NEVER
+      // touches the browser.
       //=====================================================================
       const API = "/api/cms/github-proxy";
-      const REPO_FILE = (p) => p; // paths are repo-relative already
 
       async function cmsFetch(op, body = {}) {
         const res = await fetch(API, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-CMS-Auth": cmsAuthHash(),
+            "Authorization": "Bearer " + getToken(),
           },
           body: JSON.stringify({ op, ...body }),
         });
+        // If the JWT expired or is invalid, force re-login.
+        if (res.status === 401) { forceReauth(); throw new Error("Session expired. Please sign in again."); }
         const data = await res.json().catch(() => ({ error: "Invalid response" }));
         if (!res.ok) {
           const err = new Error(data.error || `Request failed (${res.status})`);
@@ -818,7 +814,7 @@ const focusByPath = Object.fromEntries(
         return cmsFetch("commits", { path, perPage });
       }
       async function checkRepo() {
-        return cmsFetch("user");
+        return cmsFetch("repo");
       }
 
       //=====================================================================
@@ -2747,30 +2743,30 @@ const focusByPath = Object.fromEntries(
       function esc(s) { return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
       //=====================================================================
-      // AUTH FLOW
+      // AUTH FLOW — server-side JWT issuance
+      // The browser NEVER knows the password. It sends credentials to
+      // /api/cms/auth, which returns a signed JWT. The JWT is the only thing
+      // stored in the browser and it's cryptographically useless without the
+      // server's JWT_SECRET.
       //=====================================================================
-      async function sha256Hex(s) {
-        const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
-        return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
-      }
-
       async function attemptLogin(user, pass, remember) {
         showLoading();
         try {
-          const userHash = await sha256Hex(user);
-          const passHash = await sha256Hex(pass);
-          if (userHash !== usernameHash) throw new Error("Wrong username. Check your credentials.");
-          if (passHash !== passwordHash) throw new Error("Wrong password. Check your credentials.");
-          // Verify the proxy is reachable (this also confirms GH_TOKEN is set server-side)
-          try {
-            await checkRepo();
-          } catch (e) {
-            throw new Error("Could not connect to the publishing service. The site is still editable — try saving in a moment.");
+          // 1. Authenticate against the server.
+          const res = await fetch("/api/cms/auth", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: user, password: pass }),
+          });
+          const data = await res.json().catch(() => ({ error: "No response from server." }));
+          if (!res.ok) {
+            throw new Error(data.error || "Invalid username or password.");
           }
+          // 2. Store the JWT (NOT the password). In localStorage if "remember",
+          //    otherwise sessionStorage (cleared when the tab closes).
           const store = remember ? localStorage : sessionStorage;
-          store[LS.user] = userHash;
-          store[LS.pass] = passHash;
-          if (remember) localStorage[LS.remember] = "1"; else localStorage.removeItem(LS.remember);
+          store[LS.token] = data.token;
+          localStorage[LS.remember] = remember ? "1" : "";
           hideLoading();
           enterApp();
           toast("Welcome back!", "success", "Signed in");
@@ -2790,12 +2786,32 @@ const focusByPath = Object.fromEntries(
       }
 
       function logout() {
-        sessionStorage.removeItem(LS.user);
-        sessionStorage.removeItem(LS.pass);
-        localStorage.removeItem(LS.user);
-        localStorage.removeItem(LS.pass);
+        sessionStorage.removeItem(LS.token);
+        localStorage.removeItem(LS.token);
         localStorage.removeItem(LS.remember);
         location.reload();
+      }
+
+      // Called when the proxy rejects a request (JWT expired/invalid).
+      function forceReauth() {
+        if ($("#app").classList.contains("active")) {
+          sessionStorage.removeItem(LS.token);
+          localStorage.removeItem(LS.token);
+          toast("Your session expired. Please sign in again.", "error", "Session ended");
+          setTimeout(() => location.reload(), 1500);
+        }
+      }
+
+      // Validate that the stored JWT is still good (server-side check).
+      async function verifySession() {
+        const token = getToken();
+        if (!token) return false;
+        try {
+          const res = await fetch("/api/cms/auth", {
+            headers: { "Authorization": "Bearer " + token },
+          });
+          return res.ok;
+        } catch { return false; }
       }
 
       //=====================================================================
@@ -2826,23 +2842,19 @@ const focusByPath = Object.fromEntries(
         if (e.target.closest("#logout-btn")) logout();
       });
 
-      // Auto-login if already authenticated
+      // Auto-login if a valid JWT is already in storage (resumes session).
       (async function () {
         if (isLoggedIn()) {
-          try {
-            await checkRepo();
+          const valid = await verifySession();
+          if (valid) {
             enterApp();
-          } catch (e) {
-            // Token may have rotated server-side; force re-login
-            logout();
+          } else {
+            // JWT expired or revoked — clear it so the login form shows.
+            sessionStorage.removeItem(LS.token);
+            localStorage.removeItem(LS.token);
           }
         }
       })();
-
-      // Prefill remembered username indicator
-      if (localStorage[LS.remember] === "1") {
-        // Keep the checkbox checked (default). Password must be re-entered for security.
-      }
     </script>
   </body>
 </html>
