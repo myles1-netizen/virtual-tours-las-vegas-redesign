@@ -759,7 +759,12 @@ const focusByPath = Object.fromEntries(
         });
         // If the JWT expired or is invalid, force re-login.
         if (res.status === 401) { forceReauth(); throw new Error("Session expired. Please sign in again."); }
-        const data = await res.json().catch(() => ({ error: "Invalid response" }));
+        // If the proxy crashed (returned HTML instead of JSON), give a clear error
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); } catch {
+          throw new Error(`The CMS server returned an unexpected response (HTTP ${res.status}). This usually means the proxy function has an error. Check the Cloudflare Functions logs.`);
+        }
         if (!res.ok) {
           const err = new Error(data.error || `Request failed (${res.status})`);
           err.status = res.status;

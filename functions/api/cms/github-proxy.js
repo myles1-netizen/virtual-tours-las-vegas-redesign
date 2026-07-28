@@ -96,9 +96,9 @@ function jwtSecret(env) {
 }
 
 export async function onRequestPost({ request, env }) {
-  if (!env.GH_TOKEN, REPO) return json({ error: "Server missing GH_TOKEN. Set GH_TOKEN in Cloudflare environment variables." }, 500);
-  const secret = jwtSecret(env);
   const REPO = repo(env); // resolve repo from env var or default
+  if (!env.GH_TOKEN) return json({ error: "Server missing GH_TOKEN. Set GH_TOKEN in Cloudflare environment variables." }, 500);
+  const secret = jwtSecret(env);
 
   // ---- Auth: require a valid JWT ----
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
@@ -159,7 +159,7 @@ export async function onRequestPost({ request, env }) {
 
 export async function onRequestGet({ request, env }) {
   // Simple reachability check — still requires a valid JWT.
-  if (!env.GH_TOKEN, REPO) return json({ error: "Missing GH_TOKEN" }, 500);
+  if (!env.GH_TOKEN) return json({ error: "Missing GH_TOKEN" }, 500);
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   const payload = await verifyJWT(token, jwtSecret(env));
   if (!payload) return json({ error: "Unauthorized" }, 401);
