@@ -1196,12 +1196,11 @@ const focusByPath = Object.fromEntries(
 
         // Load data
         showLoading();
-        let ghConnected = true;
+        let loadError = null;
         try {
           await loadAllModels();
         } catch (e) {
-          // Content models couldn't load — most likely GH_TOKEN isn't set yet.
-          ghConnected = false;
+          loadError = e;
         }
         try {
           const testimonialCount = (models.testimonials?.data?.items || []).length;
@@ -1212,32 +1211,38 @@ const focusByPath = Object.fromEntries(
           stats.appendChild(statCard(portfolioCount, "Portfolio items"));
           stats.appendChild(statCard(faqCount, "FAQ entries"));
 
-          // Health
+          // Health check — test the actual GitHub connection. The error
+          // message distinguishes between "GH_TOKEN not set" (server returns
+          // a specific message), "token expired/invalid" (GitHub 401), and
+          // other errors.
           const hl = $("#health-list");
           hl.innerHTML = "";
-          const checks = [];
-          checks.push(await healthCheck("Connection", async () => {
+          let healthResult;
+          try {
             await checkRepo();
-            return { ok: true, detail: "Connected and ready to save." };
-          }));
-          for (const c of checks) hl.appendChild(healthRow(c));
+            healthResult = { ok: true, detail: "Connected and ready to save edits." };
+          } catch (e) {
+            const msg = (e.message || "").toLowerCase();
+            if (msg.includes("missing gh_token") || msg.includes("not configured")) {
+              healthResult = { ok: false, detail: "GH_TOKEN env var is not set in Cloudflare. Add it under Settings → Environment variables." };
+            } else if (e.status === 401 || msg.includes("bad credentials")) {
+              healthResult = { ok: false, detail: "GitHub rejected the token. It may be expired — generate a new PAT and update GH_TOKEN in Cloudflare." };
+            } else if (e.status === 404) {
+              healthResult = { ok: false, detail: "Token works but the repository wasn't found. Check the repo name." };
+            } else {
+              healthResult = { ok: false, detail: e.message || "Could not connect to GitHub." };
+            }
+          }
+          hl.appendChild(healthRow({ name: "Connection", ...healthResult }));
 
-          // If GH_TOKEN isn't set, show a clear setup notice instead of
-          // leaving the health/activity sections stuck on "Checking…".
-          if (!ghConnected) {
-            hl.innerHTML = "";
-            const notice = el("div", { class: "list-item" });
-            notice.appendChild(el("span", { class: "badge badge-red", text: "Setup needed" }));
-            notice.appendChild(el("div", { class: "list-main" },
-              el("div", { class: "t", text: "Add the GH_TOKEN environment variable" }),
-              el("div", { class: "s", html: "In Cloudflare → Settings → Environment variables, add <b>GH_TOKEN</b> (your GitHub PAT). This lets the admin save your edits. Until then, you can browse but not save." })
-            ));
-            hl.appendChild(notice);
+          // If connection failed, show the error in Recent Activity too.
+          if (!healthResult.ok) {
             const act = $("#recent-activity");
             act.innerHTML = "";
             act.appendChild(el("div", { class: "list-item" },
               el("div", { class: "list-main" },
-                el("div", { class: "t", text: "Recent activity will appear here once GH_TOKEN is set." })
+                el("div", { class: "t", text: healthResult.detail }),
+                el("div", { class: "s", text: "Fix this to enable saving and recent activity." })
               )
             ));
           } else {
@@ -1330,7 +1335,9 @@ const focusByPath = Object.fromEntries(
       let pbSlug = "home";     // slug of the page being edited
 
       async function renderPageBuilder(root) {
-        root.appendChild(pageHead("Page Builder", "Edit the real text and images on any page. Changes go live after saving."));
+        root.appendChild(pageHead("Page Builder", "Edit the real text and images on any page. Changes go live after saving.", [
+          el("button", { class: "btn btn-primary", onclick: () => newPageModal(), html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New Page' }),
+        ]));
 
         // Page selector card
         const selCard = card("Choose a page to edit", el("div", { style: "display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap" }));
@@ -1359,6 +1366,152 @@ const focusByPath = Object.fromEntries(
       // Service pages store their SEO/hero copy in cms/services/{slug}.json.
       // This maps service slugs to their content file location.
       const SERVICE_SLUGS = ["hdr-photography", "3d-tours", "drone-photography", "floor-plans", "virtual-staging", "twilight-photography", "commercial", "vacation-rentals", "google-business-view", "as-built", "photo-packages", "residential", "matterport", "walk-through-video", "zillow-3d", "vacation-rental-floor-plans"];
+
+      // Page templates / presets for creating new pages
+      const PAGE_PRESETS = {
+        "Real Estate Service": {
+          desc: "Service page with hero, gallery, pricing table, and CTA",
+          content: {
+            seo: { title: "New Service — Virtual Tours Las Vegas", description: "Describe this service for SEO." },
+            hero: { eyebrow: "Services", title: "New Service Name", lead: "What this service includes and why clients choose it.", image: "/images/portfolio/sierra-skye-living.jpg", imageAlt: "Service example" },
+            intro: { eyebrow: "Overview", title: "What's included", body: "Describe the deliverables, process, and what makes this service stand out." },
+            cta: { title: "Book this service", body: "Call or text to schedule.", buttonText: "Get a quote" },
+          },
+        },
+        "Location / Area Page": {
+          desc: "SEO page targeting a Las Vegas area or neighborhood",
+          content: {
+            seo: { title: "Location Photography — Virtual Tours Las Vegas", description: "Real estate photography in this area." },
+            hero: { eyebrow: "Service Area", title: "Real Estate Photography in this Area", lead: "Professional photography for properties in this area.", image: "/images/portfolio/drone-aerial.jpg", imageAlt: "Area view" },
+            intro: { eyebrow: "About this area", title: "Serving this community", body: "Describe the area and your experience shooting there." },
+            cta: { title: "Book a shoot in this area", body: "Same-day availability. Call or text.", buttonText: "Schedule now" },
+          },
+        },
+        "About / Bio Page": {
+          desc: "Personal story page with credentials",
+          content: {
+            seo: { title: "About — Virtual Tours Las Vegas", description: "Learn about the photographer." },
+            hero: { eyebrow: "About", title: "Your headline here", lead: "Tell your story.", image: "/images/portfolio/sierra-skye-kitchen.jpg", imageAlt: "" },
+            story: { eyebrow: "The story", title: "Your journey", paragraphs: ["Write your story here. Each paragraph is a separate text box you can edit."] },
+            cta: { title: "Get in touch", body: "Call or text to book.", buttonText: "Contact" },
+          },
+        },
+        "Landing Page": {
+          desc: "Marketing page with hero, features, testimonials, CTA",
+          content: {
+            seo: { title: "Special Offer — Virtual Tours Las Vegas", description: "Limited time offer." },
+            hero: { eyebrow: "Special Offer", title: "Your offer headline", lead: "Compelling subtitle about your offer.", image: "/images/portfolio/spitze-interior.jpg", imageAlt: "" },
+            features: { eyebrow: "What you get", title: "Everything included", cards: [{ title: "Feature 1", body: "Describe this feature." }, { title: "Feature 2", body: "Describe this feature." }] },
+            cta: { title: "Claim this offer", body: "Limited availability. Book now.", buttonText: "Book now" },
+          },
+        },
+        "Gallery / Portfolio": {
+          desc: "Image showcase page",
+          content: {
+            seo: { title: "Gallery — Virtual Tours Las Vegas", description: "Browse our work." },
+            hero: { eyebrow: "Gallery", title: "Our work", lead: "Browse examples of our photography.", image: "/images/portfolio/matterport-360.jpg", imageAlt: "" },
+            cta: { title: "Like what you see?", body: "Book a shoot today.", buttonText: "Book now" },
+          },
+        },
+        "FAQ Page": {
+          desc: "Questions and answers page",
+          content: {
+            seo: { title: "FAQ — Virtual Tours Las Vegas", description: "Common questions answered." },
+            hero: { eyebrow: "Help", title: "Frequently asked questions", lead: "Answers to the most common questions.", image: "", imageAlt: "" },
+            cta: { title: "Still have questions?", body: "Call or text anytime.", buttonText: "Contact" },
+          },
+        },
+        "Contact Page": {
+          desc: "Contact info + form page",
+          content: {
+            seo: { title: "Contact — Virtual Tours Las Vegas", description: "Get in touch." },
+            hero: { eyebrow: "Contact", title: "Get in touch", lead: "We'd love to hear from you.", image: "", imageAlt: "" },
+            options: { eyebrow: "Reach me", title: "Contact information", phone: "702-527-2732", email: "virtualtourslasvegas@gmail.com" },
+          },
+        },
+        "Blank Page": {
+          desc: "Start from scratch — just hero + text",
+          content: {
+            seo: { title: "New Page — Virtual Tours Las Vegas", description: "" },
+            hero: { eyebrow: "", title: "Page title", lead: "Subtitle goes here.", image: "", imageAlt: "" },
+            body: { title: "Section heading", text: "Write your content here." },
+          },
+        },
+      };
+
+      function newPageModal() {
+        let html = `<div class="modal-head"><h2>Create a new page</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
+          <div class="modal-body">
+            <div class="field">
+              <label>Page title</label>
+              <input type="text" id="np-title" placeholder="e.g. Summerlin Photography Special" />
+            </div>
+            <div class="field">
+              <label>URL slug</label>
+              <input type="text" id="np-slug" placeholder="summerlin-special" />
+              <div class="hint">The page will live at <b>/slug/</b>. Lowercase letters and dashes only.</div>
+            </div>
+            <div class="field">
+              <label>Choose a starting template</label>
+            </div>
+            <div class="stats" id="np-presets" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));margin-bottom:0"></div>
+          </div>
+          <div class="modal-foot">
+            <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="np-create">Create page</button>
+          </div>`;
+        showModal(html, { size: "lg" });
+
+        const grid = $("#np-presets");
+        let chosenPreset = "Real Estate Service";
+        const presetKeys = Object.keys(PAGE_PRESETS);
+        for (const key of presetKeys) {
+          const preset = PAGE_PRESETS[key];
+          const opt = el("div", { class: "stat", style: "cursor:pointer", "data-preset": key });
+          opt.appendChild(el("div", { text: key, style: "font-size:14px;font-weight:600;margin-bottom:4px" }));
+          opt.appendChild(el("div", { text: preset.desc, style: "font-size:12px;color:var(--muted);line-height:1.4" }));
+          if (key === chosenPreset) opt.style.borderColor = "var(--brass)";
+          opt.onclick = () => {
+            chosenPreset = key;
+            $$("#np-presets .stat").forEach(s => s.style.borderColor = "var(--line)");
+            opt.style.borderColor = "var(--brass)";
+          };
+          grid.appendChild(opt);
+        }
+
+        // Auto-generate slug from title
+        $("#np-title").oninput = () => {
+          const slug = $("#np-title").value.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+          $("#np-slug").value = slug;
+        };
+
+        $("#np-create").onclick = async () => {
+          const title = $("#np-title").value.trim();
+          let slug = $("#np-slug").value.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+          if (!title || !slug) { toast("Enter a title and slug.", "error"); return; }
+
+          const preset = PAGE_PRESETS[chosenPreset];
+          const content = JSON.parse(JSON.stringify(preset.content));
+          content._page = title;
+          content._slug = slug;
+          if (content.seo) content.seo.title = content.seo.title.replace("New Service", title).replace("Location", title).replace("New Page", title);
+
+          showLoading();
+          try {
+            // Save the content JSON
+            pbContentPath = `${CONTENT_DIR}/${slug}.json`;
+            await writeFile(pbContentPath, JSON.stringify(content, null, 2) + "\n", `CMS: create new page ${slug}`);
+            hideLoading();
+            toast("Page created! Edit the content, then add it to the site navigation.", "success", "New page ready");
+            closeModal();
+            // Load it in the editor
+            setTimeout(() => loadPageContent(slug), 200);
+          } catch (e) {
+            hideLoading();
+            toast(e.message, "error", "Could not create page");
+          }
+        };
+      }
 
       async function loadPageContent(slug) {
         pbSlug = slug;
@@ -2301,28 +2454,30 @@ const focusByPath = Object.fromEntries(
       // SECTION: BOOKINGS (LatePoint-style)
       //=====================================================================
       async function renderBookings(root) {
-        root.appendChild(pageHead("Bookings", "Booking requests from your contact form.", [
+        root.appendChild(pageHead("Bookings", "Manage appointments and connect your calendar.", [
           el("a", { class: "btn btn-outline", href: "/contact/", target: "_blank", text: "View booking form" }),
         ]));
-        const stats = el("div", { class: "stats" });
-        stats.appendChild(statCard("—", "Pending"));
-        stats.appendChild(statCard("—", "Confirmed"));
-        stats.appendChild(statCard("—", "This month"));
-        root.appendChild(stats);
 
+        // Google Calendar integration card
+        const savedCal = localStorage.getItem("vtlv_gcal_embed") || "";
+        const calCard = card("Google Calendar", el("div", { id: "cal-setup" }), { sub: "See your real schedule right here" });
+        root.appendChild(calCard);
+        drawCalendarSetup(savedCal);
+
+        // How bookings work
         root.appendChild(card("How bookings work", el("div", { html: `
-          <p style="margin-top:0">When a customer fills out the booking form on your <a href="/contact/" target="_blank">contact page</a>, the request is emailed directly to you. This is the simplest, most reliable system for a solo photographer — no software to maintain.</p>
+          <p style="margin-top:0">When a customer fills out the booking form on your <a href="/contact/" target="_blank">contact page</a>, the request is emailed directly to you. Reply to confirm, then add the shoot to your Google Calendar (shown above once connected).</p>
           <p><b>Each booking request includes:</b> client name, phone, email, property address, preferred date, and the services they want.</p>
-          <p><b>To confirm a booking:</b> Reply to the email or call the client directly. Add it to your personal calendar (Google Calendar, iPhone, etc.).</p>
         ` }), { sub: "Email-based booking flow" }));
 
+        // Your services
         root.appendChild(card("Your services", el("div", { id: "booking-services", text: "Loading…" })));
         showLoading();
         try {
           await loadAllModels();
           const svcs = $("#booking-services");
           svcs.innerHTML = "";
-          const packages = models.pricing.data.vegasPackages || [];
+          const packages = models.pricing?.data?.vegasPackages || [];
           for (const pkg of packages) {
             svcs.appendChild(el("div", { class: "list-item" },
               el("div", { class: "list-main" },
@@ -2334,9 +2489,60 @@ const focusByPath = Object.fromEntries(
           }
         } catch (e) {}
         hideLoading();
+      }
 
-        root.appendChild(card("Calendar", el("div", { id: "booking-cal" }), { sub: "Today's date highlighted" }));
-        $("#booking-cal").appendChild(buildMonthCalendar());
+      // Google Calendar setup — embeds the user's real calendar via an iframe.
+      // Uses the public embed URL format: https://calendar.google.com/calendar/embed?src=EMAIL
+      function drawCalendarSetup(savedEmbed) {
+        const wrap = $("#cal-setup");
+        if (!wrap) return;
+        wrap.innerHTML = "";
+
+        if (savedEmbed) {
+          // Show the live embedded calendar
+          const frame = el("iframe", {
+            src: savedEmbed,
+            style: "width:100%;height:480px;border:0;border-radius:var(--radius)",
+            loading: "lazy",
+          });
+          wrap.appendChild(frame);
+          const disconnect = el("button", { class: "btn btn-ghost btn-sm", style: "margin-top:10px", text: "Disconnect calendar", onclick: () => {
+            localStorage.removeItem("vtlv_gcal_embed");
+            drawCalendarSetup("");
+          }});
+          wrap.appendChild(disconnect);
+        } else {
+          // Show setup instructions
+          wrap.appendChild(el("div", { html: `
+            <p style="margin-top:0">Connect your Google Calendar to see your real schedule here — no more switching tabs.</p>
+            <div class="field">
+              <label>Google Calendar embed URL</label>
+              <input type="text" id="gcal-url" placeholder="https://calendar.google.com/calendar/embed?src=your@email.com&ctz=America/Los_Angeles" />
+              <div class="hint">
+                <b>How to get this:</b><br>
+                1. Open <a href="https://calendar.google.com" target="_blank">Google Calendar</a> → Settings (gear icon)<br>
+                2. Click your calendar on the left → "Integrate calendar"<br>
+                3. Copy the "Embed code" box<br>
+                4. Paste just the <code>src="..."</code> URL here (or the full embed code — we'll extract it)
+              </div>
+            </div>
+          `}));
+          const connectBtn = el("button", { class: "btn btn-primary", text: "Connect calendar", onclick: () => {
+            const input = $("#gcal-url").value.trim();
+            let url = input;
+            // If they pasted the full embed code, extract the src URL
+            const srcMatch = input.match(/src="(https:\/\/calendar\.google\.com\/calendar\/embed[^"]+)"/);
+            if (srcMatch) url = srcMatch[1];
+            if (!url.includes("calendar.google.com")) {
+              toast("That doesn't look like a Google Calendar embed URL. Copy it from Calendar Settings → Integrate calendar.", "error");
+              return;
+            }
+            localStorage.setItem("vtlv_gcal_embed", url);
+            drawCalendarSetup(url);
+            toast("Calendar connected!", "success");
+          }});
+          wrap.appendChild(connectBtn);
+        }
       }
 
       function buildMonthCalendar() {
