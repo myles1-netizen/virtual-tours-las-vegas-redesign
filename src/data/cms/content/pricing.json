@@ -1,0 +1,77 @@
+{
+  "_page": "pricing",
+  "_slug": "pricing",
+  "seo": {
+    "title": "Pricing — Las Vegas Real Estate Photography Packages | VTLV",
+    "description": "Real, published Las Vegas real estate photography pricing. Glitz & Glam, City Never Sleeps and Neon Skyline packages plus individual pricing for HDR, Matterport 3D, drone, floor plans, virtual staging, video and commercial work. No quote-and-wait."
+  },
+  "hero": {
+    "eyebrow": "Transparent pricing",
+    "title": "Real prices. No quote-and-wait.",
+    "lead": "Most photographers hide their rates. I don't. These are the actual published prices for Las Vegas real estate photography, 3D tours, drone, floor plans and virtual staging. Pick a package or build your own from the full price list."
+  },
+  "packages": {
+    "eyebrow": "Residential packages",
+    "title": "Three Las Vegas packages.",
+    "lead": "The most-booked combinations at a glance. Each one targets a different listing need. Pick the one that matches your property, or mix and match from the full price list below.",
+    "pricingFine": "Residential resale only · Larger properties priced per package · See what's in each →"
+  },
+  "calculator": {
+    "eyebrow": "Quote builder",
+    "title": "Build your exact shoot. See the price now.",
+    "lead": "Pick the property type, add the services you need, set the square footage — the total updates as you go, with a clear line-by-line breakdown. Works for residential, commercial, vacation rentals and land. No quote-and-wait."
+  },
+  "priceList": {
+    "eyebrow": "Full price list",
+    "title": "Build your own shoot.",
+    "lead": "Prefer to read the tables? Every service I offer, priced individually. Add to a package, or book standalone.",
+    "tableTitles": [
+      "HDR photography",
+      "Matterport 3D tours",
+      "Floor plans",
+      "Walk-through video & reels",
+      "Virtual staging",
+      "Premium 360 panoramas (8-shot)"
+    ],
+    "matterportNote": "Includes 2 MLS links + 6 months hosting",
+    "addonHeaders": {
+      "hdr": "HDR add-ons",
+      "floorPlan": "Floor plan add-ons",
+      "included": "What's always included"
+    },
+    "alwaysIncluded": [
+      "Free MLS slideshow",
+      "Complimentary basic floor plan",
+      "24–48 hour standard delivery",
+      "Cloud delivery in MLS-ready format"
+    ]
+  },
+  "commercial": {
+    "eyebrow": "Commercial pricing",
+    "title": "For offices, retail, restaurants & venues.",
+    "lead": "Commercial assets are licensed for longer-term advertising use, typically 1–3 years. Custom quotes for unusual spaces; the most common scopes are listed below.",
+    "tableTitles": [
+      "Commercial HDR photos",
+      "Express 360 panoramas"
+    ],
+    "googlePackage": {
+      "eyebrow": "Most-booked commercial package",
+      "ctaLabel": "Book this package"
+    }
+  },
+  "turnaround": {
+    "eyebrow": "Turnaround",
+    "title": "How fast you'll get your media.",
+    "items": [
+      { "time": "24–48h", "what": "HDR photography" },
+      { "time": "24–48h", "what": "3D virtual tours" },
+      { "time": "48h", "what": "Floor plans" },
+      { "time": "12–24h", "what": "Zillow walk-through video" },
+      { "time": "+$40", "what": "Rush: next-morning" }
+    ]
+  },
+  "cta": {
+    "title": "Not sure which option fits?",
+    "body": "Tell me about the property and the budget, and I'll recommend the right scope. Call or text {phone}."
+  }
+}

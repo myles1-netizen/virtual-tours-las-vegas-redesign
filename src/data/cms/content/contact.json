@@ -1,0 +1,40 @@
+{
+  "_page": "Contact",
+  "_slug": "contact",
+  "seo": {
+    "title": "Book a Shoot — Las Vegas Real Estate Photography | VTLV",
+    "description": "Book a Las Vegas real estate photography shoot with Mike Madsen. Call or text (702) 527-2732, or send a booking request. Residential, commercial, vacation rentals, 3D tours, drone, floor plans. 24–48 hour delivery."
+  },
+  "hero": {
+    "eyebrow": "Contact & booking",
+    "title": "Book your shoot.",
+    "lead": "Fastest path: call or text me directly. Prefer to send details first? Fill out the form and I'll get back to you, usually same day.",
+    "image": "/images/portfolio/listing-02.jpg",
+    "imageAlt": "Spacious Las Vegas property interior, ready to be photographed"
+  },
+  "options": {
+    "eyebrow": "Fastest response",
+    "title": "Call or text me.",
+    "sub": "For a $200–500 service, talking it through is usually quickest. I pick up myself.",
+    "callLabel": "Call",
+    "textLabel": "Text me",
+    "facts": {
+      "serviceArea": "Service area",
+      "based": "Based",
+      "hours": "Hours",
+      "hoursValue": "Mon–Sat, 8a–6p PT",
+      "turnaround": "Turnaround",
+      "email": "Email"
+    }
+  },
+  "form": {
+    "eyebrow": "Booking request",
+    "title": "Send the details.",
+    "sub": "Tell me about the property and what you need, only the fields that actually help me quote and schedule."
+  },
+  "faq": {
+    "eyebrow": "Before you book",
+    "title": "Common questions.",
+    "allLinkText": "All FAQs →"
+  }
+}

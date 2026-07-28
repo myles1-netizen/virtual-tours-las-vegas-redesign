@@ -1,0 +1,22 @@
+{
+  "_page": "FAQ",
+  "_slug": "faq",
+  "seo": {
+    "title": "FAQ — Las Vegas Real Estate Photography & 3D Tours | VTLV",
+    "description": "Answers to common questions about Las Vegas real estate photography, Matterport 3D tours, Zillow 3D Home, drone, floor plans and as-built surveys with Mike Madsen / Virtual Tours Las Vegas."
+  },
+  "hero": {
+    "eyebrow": "FAQ",
+    "title": "Good questions, straight answers.",
+    "lead": "The most common things Las Vegas agents, hosts and builders ask before booking. Don't see yours? I'm a phone call away.",
+    "image": "/images/portfolio/mattertag.jpg",
+    "imageAlt": "Mattertag info hotspot embedded in a Matterport 3D tour"
+  },
+  "stillHaveQuestion": {
+    "eyebrow": "Still have a question?",
+    "title": "I'm a phone call away.",
+    "lead": "No phone tree, no account rep. Just the photographer.",
+    "callLabel": "Call",
+    "messageLabel": "Send a message"
+  }
+}

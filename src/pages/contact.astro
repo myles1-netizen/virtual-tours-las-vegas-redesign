@@ -1,5 +1,5 @@
 ---
-import { asset } from "../data/site";
+import { asset, getContent } from "../data/site";
 import Base from "../layouts/Base.astro";
 import PageHero from "../components/PageHero.astro";
 import ContactForm from "../components/ContactForm.astro";
@@ -8,16 +8,17 @@ import SectionHeader from "../components/SectionHeader.astro";
 import { business } from "../data/site";
 import { serviceAreaLinks } from "../data/site";
 
-const title = "Book a Shoot — Las Vegas Real Estate Photography | VTLV";
-const description = "Book a Las Vegas real estate photography shoot with Mike Madsen. Call or text (702) 527-2732, or send a booking request. Residential, commercial, vacation rentals, 3D tours, drone, floor plans. 24–48 hour delivery.";
+const c = getContent("contact", {});
+const title = c.seo?.title || "Book a Shoot — Las Vegas Real Estate Photography | VTLV";
+const description = c.seo?.description || "Book a Las Vegas real estate photography shoot with Mike Madsen. Call or text (702) 527-2732, or send a booking request. Residential, commercial, vacation rentals, 3D tours, drone, floor plans. 24–48 hour delivery.";
 ---
 <Base title={title} description={description} heroVariant="dark">
   <PageHero
-    eyebrow="Contact & booking"
-    title="Book your shoot."
-    lead="Fastest path: call or text me directly. Prefer to send details first? Fill out the form and I'll get back to you, usually same day."
-    image={asset("/images/portfolio/listing-02.jpg")}
-    imageAlt="Spacious Las Vegas property interior, ready to be photographed"
+    eyebrow={c.hero?.eyebrow || "Contact & booking"}
+    title={c.hero?.title || "Book your shoot."}
+    lead={c.hero?.lead || "Fastest path: call or text me directly. Prefer to send details first? Fill out the form and I'll get back to you, usually same day."}
+    image={asset(c.hero?.image || "/images/portfolio/listing-02.jpg")}
+    imageAlt={c.hero?.imageAlt || "Spacious Las Vegas property interior, ready to be photographed"}
   />
 
   <section class="section">
@@ -26,24 +27,24 @@ const description = "Book a Las Vegas real estate photography shoot with Mike Ma
         {/* Quick contact options */}
         <aside class="contact-options" data-reveal>
           <div class="opt-card">
-            <p class="eyebrow">Fastest response</p>
-            <h2 class="display opt-title">Call or text me.</h2>
-            <p class="opt-sub">For a $200–500 service, talking it through is usually quickest. I pick up myself.</p>
+            <p class="eyebrow">{c.options?.eyebrow || "Fastest response"}</p>
+            <h2 class="display opt-title">{c.options?.title || "Call or text me."}</h2>
+            <p class="opt-sub">{c.options?.sub || "For a $200–500 service, talking it through is usually quickest. I pick up myself."}</p>
             <a href={business.phoneHref} class="btn brass btn-block">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-              Call {business.phone}
+              {c.options?.callLabel || "Call"} {business.phone}
             </a>
             <a href={business.smsHref} class="btn outline btn-block">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              Text me
+              {c.options?.textLabel || "Text me"}
             </a>
             <hr class="divider" style="margin-block:1.4rem" />
             <ul class="opt-facts" role="list">
-              <li><span>Service area</span><strong>{serviceAreaLinks.map((c, i) => (<>{i > 0 && " · "}<a href={asset(c.href)}>{c.name}</a></>))}</strong></li>
-              <li><span>Based</span><strong>{business.areaNote}</strong></li>
-              <li><span>Hours</span><strong>Mon–Sat, 8a–6p PT</strong></li>
-              <li><span>Turnaround</span><strong>{business.turnaround}</strong></li>
-              <li><span>Email</span><strong><a href={business.emailHref}>{business.email}</a></strong></li>
+              <li><span>{c.options?.facts?.serviceArea || "Service area"}</span><strong>{serviceAreaLinks.map((city, i) => (<>{i > 0 && " · "}<a href={asset(city.href)}>{city.name}</a></>))}</strong></li>
+              <li><span>{c.options?.facts?.based || "Based"}</span><strong>{business.areaNote}</strong></li>
+              <li><span>{c.options?.facts?.hours || "Hours"}</span><strong>{c.options?.facts?.hoursValue || "Mon–Sat, 8a–6p PT"}</strong></li>
+              <li><span>{c.options?.facts?.turnaround || "Turnaround"}</span><strong>{business.turnaround}</strong></li>
+              <li><span>{c.options?.facts?.email || "Email"}</span><strong><a href={business.emailHref}>{business.email}</a></strong></li>
             </ul>
           </div>
         </aside>
@@ -51,9 +52,9 @@ const description = "Book a Las Vegas real estate photography shoot with Mike Ma
         {/* Form */}
         <div class="form-wrap" data-reveal data-reveal-delay="1">
           <div class="form-card">
-            <p class="eyebrow">Booking request</p>
-            <h2 class="display form-title">Send the details.</h2>
-            <p class="form-sub">Tell me about the property and what you need, only the fields that actually help me quote and schedule.</p>
+            <p class="eyebrow">{c.form?.eyebrow || "Booking request"}</p>
+            <h2 class="display form-title">{c.form?.title || "Send the details."}</h2>
+            <p class="form-sub">{c.form?.sub || "Tell me about the property and what you need, only the fields that actually help me quote and schedule."}</p>
             <ContactForm />
           </div>
         </div>
@@ -65,12 +66,12 @@ const description = "Book a Las Vegas real estate photography shoot with Mike Ma
   <section class="section paper-2">
     <div class="container narrow">
       <SectionHeader
-        eyebrow="Before you book"
-        title="Common questions."
+        eyebrow={c.faq?.eyebrow || "Before you book"}
+        title={c.faq?.title || "Common questions."}
         align="center"
       />
       <FAQAccordion limit={6} />
-      <p class="text-center muted" style="margin-top:1.5rem"><a href={asset("/faq/")} class="text-link">All FAQs →</a></p>
+      <p class="text-center muted" style="margin-top:1.5rem"><a href={asset("/faq/")} class="text-link">{c.faq?.allLinkText || "All FAQs →"}</a></p>
     </div>
   </section>
 </Base>

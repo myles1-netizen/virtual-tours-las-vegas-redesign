@@ -1,13 +1,14 @@
 ---
-import { asset } from "../data/site";
+import { asset, getContent } from "../data/site";
 import Base from "../layouts/Base.astro";
 import PageHero from "../components/PageHero.astro";
 import FAQAccordion from "../components/FAQAccordion.astro";
 import CTABand from "../components/CTABand.astro";
 import { faqs, business } from "../data/site";
 
-const title = "FAQ — Las Vegas Real Estate Photography & 3D Tours | VTLV";
-const description = "Answers to common questions about Las Vegas real estate photography, Matterport 3D tours, Zillow 3D Home, drone, floor plans and as-built surveys with Mike Madsen / Virtual Tours Las Vegas.";
+const c = getContent("faq", {});
+const title = c.seo?.title || "FAQ — Las Vegas Real Estate Photography & 3D Tours | VTLV";
+const description = c.seo?.description || "Answers to common questions about Las Vegas real estate photography, Matterport 3D tours, Zillow 3D Home, drone, floor plans and as-built surveys with Mike Madsen / Virtual Tours Las Vegas.";
 
 // FAQPage schema — helps search + AI answer engines surface these answers directly.
 const faqJsonLd = {
@@ -23,23 +24,23 @@ const faqJsonLd = {
 <Base title={title} description={description} heroVariant="dark">
   <script type="application/ld+json" is:inline slot="head" set:html={JSON.stringify(faqJsonLd)} />
   <PageHero
-    eyebrow="FAQ"
-    title="Good questions, straight answers."
-    lead="The most common things Las Vegas agents, hosts and builders ask before booking. Don't see yours? I'm a phone call away."
-    image={asset("/images/portfolio/mattertag.jpg")}
-    imageAlt="Mattertag info hotspot embedded in a Matterport 3D tour"
+    eyebrow={c.hero?.eyebrow || "FAQ"}
+    title={c.hero?.title || "Good questions, straight answers."}
+    lead={c.hero?.lead || "The most common things Las Vegas agents, hosts and builders ask before booking. Don't see yours? I'm a phone call away."}
+    image={asset(c.hero?.image || "/images/portfolio/mattertag.jpg")}
+    imageAlt={c.hero?.imageAlt || "Mattertag info hotspot embedded in a Matterport 3D tour"}
   />
 
   <section class="section">
     <div class="container narrow">
       <FAQAccordion />
       <div class="still-q" data-reveal>
-        <p class="eyebrow center">Still have a question?</p>
-        <h2 class="display">I'm a phone call away.</h2>
-        <p class="lead" style="margin-inline:auto">No phone tree, no account rep. Just the photographer.</p>
+        <p class="eyebrow center">{c.stillHaveQuestion?.eyebrow || "Still have a question?"}</p>
+        <h2 class="display">{c.stillHaveQuestion?.title || "I'm a phone call away."}</h2>
+        <p class="lead" style="margin-inline:auto">{c.stillHaveQuestion?.lead || "No phone tree, no account rep. Just the photographer."}</p>
         <div class="btn-row" style="justify-content:center; margin-top:1.5rem">
-          <a href={business.phoneHref} class="btn brass">Call {business.phone}</a>
-          <a href={asset("/contact/")} class="btn outline">Send a message</a>
+          <a href={business.phoneHref} class="btn brass">{c.stillHaveQuestion?.callLabel || "Call"} {business.phone}</a>
+          <a href={asset("/contact/")} class="btn outline">{c.stillHaveQuestion?.messageLabel || "Send a message"}</a>
         </div>
       </div>
     </div>

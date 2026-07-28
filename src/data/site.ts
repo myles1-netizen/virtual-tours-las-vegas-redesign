@@ -28,6 +28,55 @@ export const url = asset;
 export const webpOf = (p: string): string =>
   /\.(jpe?g|png)$/i.test(p) ? p.replace(/\.(jpe?g|png)$/i, ".webp") : p;
 
+// ===== Page content loader =====
+// Each page's editable text/images live in cms/content/{slug}.json. This
+// helper loads that JSON and deep-merges it with a fallback object, so every
+// field has a default (the current hardcoded copy) even if the JSON file is
+// missing or a field was added later. The page builder edits these JSON files;
+// pages read through this function so edits go live on the next build.
+//
+// Usage in a page:
+//   const c = getContent("home", { hero: { title: "fallback" }, ... });
+//   <h1>{c.hero.title}</h1>
+//
+// slug: page identifier ("home", "pricing", "about", "services/hdr-photography", etc.)
+// fallback: the full default content tree (used if JSON is absent or a key is missing)
+function deepMerge(base: any, override: any): any {
+  if (override === null || override === undefined) return base;
+  if (typeof base !== "object" || base === null) return override !== undefined ? override : base;
+  if (Array.isArray(override)) return override; // arrays replace, don't merge
+  const result: any = {};
+  const keys = new Set([...Object.keys(base || {}), ...Object.keys(override || {})]);
+  for (const k of keys) {
+    const b = (base || {})[k];
+    const o = (override || {})[k];
+    if (o === undefined) result[k] = b;
+    else if (b === undefined) result[k] = o;
+    else if (typeof b === "object" && typeof o === "object" && !Array.isArray(b)) result[k] = deepMerge(b, o);
+    else result[k] = o;
+  }
+  return result;
+}
+
+const contentCache: Record<string, any> = {};
+export function getContent(slug: string, fallback: Record<string, any>): Record<string, any> {
+  if (contentCache[slug]) return contentCache[slug];
+  let fileData: Record<string, any> = {};
+  try {
+    // Vite's import.meta.glob lets us statically discover the JSON files at
+    // build time — no runtime filesystem access needed.
+    const modules = import.meta.glob("./cms/content/*.json", { eager: true });
+    const key = `./cms/content/${slug}.json`;
+    const mod = modules[key];
+    if (mod && mod.default) fileData = mod.default;
+  } catch (e) {
+    // JSON missing — use fallback only. This is fine.
+  }
+  const merged = deepMerge(fallback, fileData);
+  contentCache[slug] = merged;
+  return merged;
+}
+
 export const business = {
   name: settings.name,
   shortName: settings.shortName,

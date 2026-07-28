@@ -1,5 +1,5 @@
 ---
-import { asset } from "../data/site";
+import { asset, getContent } from "../data/site";
 import Base from "../layouts/Base.astro";
 import PageHero from "../components/PageHero.astro";
 import SectionHeader from "../components/SectionHeader.astro";
@@ -7,16 +7,17 @@ import TrustBar from "../components/TrustBar.astro";
 import CTABand from "../components/CTABand.astro";
 import { business, trust } from "../data/site";
 
-const title = "About Mike Madsen — Las Vegas Photographer | VTLV";
-const description = "Meet Mike Madsen, Las Vegas real estate photographer since 2006 — licensed agent, FAA Part 107 drone pilot and Google Trusted Photographer serving Las Vegas.";
+const c = getContent("about", {});
+const title = c.seo?.title || "About Mike Madsen — Las Vegas Photographer | VTLV";
+const description = c.seo?.description || "Meet Mike Madsen, Las Vegas real estate photographer since 2006 — licensed agent, FAA Part 107 drone pilot and Google Trusted Photographer serving Las Vegas.";
 ---
 <Base title={title} description={description} heroVariant="dark">
   <PageHero
-    eyebrow="About"
-    title="You're hiring me. Not a middleman."
-    lead="Most real estate photo companies are middlemen who outsource your listing to whoever's closest. Virtual Tours Las Vegas is one photographer, Mike Madsen, and I shoot, edit and deliver every property myself."
-    image={asset("/images/portfolio/sierra-skye-kitchen.jpg")}
-    imageAlt="Modern Las Vegas kitchen photographed by Mike Madsen"
+    eyebrow={c.hero?.eyebrow || "About"}
+    title={c.hero?.title || "You're hiring me. Not a middleman."}
+    lead={c.hero?.lead || "Most real estate photo companies are middlemen who outsource your listing to whoever's closest. Virtual Tours Las Vegas is one photographer, Mike Madsen, and I shoot, edit and deliver every property myself."}
+    image={asset(c.hero?.image || "/images/portfolio/sierra-skye-kitchen.jpg")}
+    imageAlt={c.hero?.imageAlt || "Modern Las Vegas kitchen photographed by Mike Madsen"}
   />
 
   {/* ===== STORY ===== */}
@@ -24,13 +25,15 @@ const description = "Meet Mike Madsen, Las Vegas real estate photographer since 
     <div class="container">
       <div class="story-grid">
         <div class="story-text" data-reveal>
-          <p class="eyebrow">The story</p>
-          <h2 class="display story-title">From bank-owned listings to building VTLV.</h2>
+          <p class="eyebrow">{c.story?.eyebrow || "The story"}</p>
+          <h2 class="display story-title">{c.story?.title || "From bank-owned listings to building VTLV."}</h2>
           <div class="story-body">
-            <p>I've been in real estate since {business.realEstateSince} — first as a licensed agent, then as the marketing lead overseeing the sale of bank-owned properties through the recession. That work earned me Sales &amp; Marketing recognition from the Wall Street Journal and Realtor.com, and it's where I learned what actually moves a listing.</p>
-            <p>When the bank-owned market wound down, I launched Virtual Tours Las Vegas in {business.since}. I've shot thousands of properties, from one-bedroom condos to mansions with indoor basketball gyms. Along the way, <strong>I was the photographer for the Zillow Offers program in Las Vegas</strong> (that program ended in 2021), and <strong>I provided Matterport services for builders like Lennar Homes</strong>.</p>
-            <p>Once, I shot HDR photos and 360s for eight houses in a single day. I've also spent two straight days documenting a single mansion. Every property gets the same standard: straight walls, real colors, no blown-out windows.</p>
-            <p>I shoot on a mirrorless DSLR, hold a Part 107 drone license, and am a Google Street View Trusted photographer. I still hold my real estate license too, and started the business with my wife Michelle Sproul, a licensed Realtor. I understand listings because I've been on that side of the desk.</p>
+            {(c.story?.paragraphs || [
+              `I've been in real estate since ${business.realEstateSince} — first as a licensed agent, then as the marketing lead overseeing the sale of bank-owned properties through the recession. That work earned me Sales &amp; Marketing recognition from the Wall Street Journal and Realtor.com, and it's where I learned what actually moves a listing.`,
+              `When the bank-owned market wound down, I launched Virtual Tours Las Vegas in ${business.since}. I've shot thousands of properties, from one-bedroom condos to mansions with indoor basketball gyms. Along the way, <strong>I was the photographer for the Zillow Offers program in Las Vegas</strong> (that program ended in 2021), and <strong>I provided Matterport services for builders like Lennar Homes</strong>.`,
+              "Once, I shot HDR photos and 360s for eight houses in a single day. I've also spent two straight days documenting a single mansion. Every property gets the same standard: straight walls, real colors, no blown-out windows.",
+              "I shoot on a mirrorless DSLR, hold a Part 107 drone license, and am a Google Street View Trusted photographer. I still hold my real estate license too, and started the business with my wife Michelle Sproul, a licensed Realtor. I understand listings because I've been on that side of the desk.",
+            ]).map((p) => <p set:html={p} />)}
           </div>
         </div>
         <aside class="story-side" data-reveal data-reveal-delay="2">
@@ -62,15 +65,22 @@ const description = "Meet Mike Madsen, Las Vegas real estate photographer since 
   <section class="section dark approach">
     <div class="container">
       <SectionHeader
-        eyebrow="The approach"
-        title='"I get behind my mirrorless DSLR and let the camera tell me what it wants to see."'
-        lead="My philosophy is simple: everything starts with the photos. A great 3D tour, social reel, or floor plan only matters if the underlying imagery is right. I treat every shoot like a 24/7 open house, because that's what it is to the buyer who clicks through at midnight."
+        eyebrow={c.approach?.eyebrow || "The approach"}
+        title={c.approach?.title || '"I get behind my mirrorless DSLR and let the camera tell me what it wants to see."'}
+        lead={c.approach?.lead || "My philosophy is simple: everything starts with the photos. A great 3D tour, social reel, or floor plan only matters if the underlying imagery is right. I treat every shoot like a 24/7 open house, because that's what it is to the buyer who clicks through at midnight."}
       />
       <div class="approach-grid">
-        <article data-reveal><h3>One photographer, one standard</h3><p>No rotating cast of subcontractors. I capture and deliver every shoot myself: the same eye, the same edit, the same accountability, every time.</p></article>
-        <article data-reveal data-reveal-delay="1"><h3>Real-estate native</h3><p>A licensed agent who's marketed and sold real estate. I understand MLS workflow, listing strategy and what actually makes a buyer click, because I've done it myself.</p></article>
-        <article data-reveal data-reveal-delay="2"><h3>Equipment &amp; craft</h3><p>Mirrorless DSLR capture, professional HDR processing, Matterport 3D scanning, FAA-certified aerial work. I keep refining the craft, the same approach I picked up studying photography fundamentals years ago.</p></article>
-        <article data-reveal data-reveal-delay="3"><h3>Fast &amp; reliable</h3><p>24–48 hour standard delivery, MLS-ready formats, embed codes included. Rush next-morning delivery when a listing needs to go live fast.</p></article>
+        {(c.approach?.cards || [
+          { title: "One photographer, one standard", body: "No rotating cast of subcontractors. I capture and deliver every shoot myself: the same eye, the same edit, the same accountability, every time." },
+          { title: "Real-estate native", body: "A licensed agent who's marketed and sold real estate. I understand MLS workflow, listing strategy and what actually makes a buyer click, because I've done it myself." },
+          { title: "Equipment & craft", body: "Mirrorless DSLR capture, professional HDR processing, Matterport 3D scanning, FAA-certified aerial work. I keep refining the craft, the same approach I picked up studying photography fundamentals years ago." },
+          { title: "Fast & reliable", body: "24–48 hour standard delivery, MLS-ready formats, embed codes included. Rush next-morning delivery when a listing needs to go live fast." },
+        ]).map((card, i) => (
+          <article data-reveal data-reveal-delay={String(i)}>
+            <h3>{card.title}</h3>
+            <p>{card.body}</p>
+          </article>
+        ))}
       </div>
     </div>
   </section>
@@ -86,30 +96,28 @@ const description = "Meet Mike Madsen, Las Vegas real estate photographer since 
   <section class="section paper-2 creds-strip">
     <div class="container">
       <SectionHeader
-        eyebrow="Certifications"
-        title="Licensed, certified & trusted."
+        eyebrow={c.credentials?.eyebrow || "Certifications"}
+        title={c.credentials?.title || "Licensed, certified & trusted."}
         align="center"
       />
       <div class="cred-imgs">
-        <div class="cred-img" data-reveal>
-          <img src={asset("/images/services/faa-certified.jpg")} alt="FAA Part 107 Certified Drone Pilot credential" loading="lazy" />
-          <p>FAA Part 107<br />Drone Pilot</p>
-        </div>
-        <div class="cred-img" data-reveal data-reveal-delay="1">
-          <img src={asset("/images/services/google-trusted.jpg")} alt="Google Trusted Photographer credential" loading="lazy" />
-          <p>Google Trusted<br />Photographer</p>
-        </div>
-        <div class="cred-img" data-reveal data-reveal-delay="2">
-          <img src={asset("/images/services/credentials.png")} alt="Real estate photography credentials" loading="lazy" />
-          <p>Real Estate<br />Industry Credentials</p>
-        </div>
+        {(c.credentials?.items || [
+          { image: "/images/services/faa-certified.jpg", alt: "FAA Part 107 Certified Drone Pilot credential", caption: "FAA Part 107<br />Drone Pilot" },
+          { image: "/images/services/google-trusted.jpg", alt: "Google Trusted Photographer credential", caption: "Google Trusted<br />Photographer" },
+          { image: "/images/services/credentials.png", alt: "Real estate photography credentials", caption: "Real Estate<br />Industry Credentials" },
+        ]).map((item, i) => (
+          <div class="cred-img" data-reveal data-reveal-delay={String(i)}>
+            <img src={asset(item.image)} alt={item.alt} loading="lazy" />
+            <p set:html={item.caption} />
+          </div>
+        ))}
       </div>
     </div>
   </section>
 
   <CTABand
-    title="Work with the photographer Zillow & Lennar trusted."
-    body={`Same standard, every shoot. Call or text ${business.phone}.`}
+    title={c.cta?.title || "Work with the photographer Zillow & Lennar trusted."}
+    body={c.cta?.body || `Same standard, every shoot. Call or text ${business.phone}.`}
   />
 </Base>
 

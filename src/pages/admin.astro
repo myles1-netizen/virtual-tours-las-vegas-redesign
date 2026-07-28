@@ -1004,7 +1004,7 @@ const focusByPath = Object.fromEntries(
       //=====================================================================
       const CMS_DIR = "src/data/cms";
       const BLOG_DIR = "src/content/blog";
-      const PB_DIR = "src/data/cms/layouts";
+      const CONTENT_DIR = "src/data/cms/content";
       const SEO_DIR = "src/data/cms/seo";
       const MEDIA_FOLDERS = ["portfolio", "clients", "services", "team", "misc"];
       const IMG_EXT = /\.(jpe?g|png|webp|gif|svg)$/i;
@@ -1321,538 +1321,266 @@ const focusByPath = Object.fromEntries(
       }
 
       //=====================================================================
-      // SECTION: PAGE BUILDER (Divi-like inline editor)
+      // SECTION: PAGE BUILDER — edits REAL page content
+      // Reads/writes src/data/cms/content/{slug}.json, which every page
+      // reads via getContent(). Edits go live on the next build.
       //=====================================================================
-      let currentLayout = [];
-      let currentPageSlug = "home";
-
-      // Page templates for quick page creation
-      const TEMPLATES = {
-        blank: { name: "Blank", icon: "📄", blocks: [] },
-        landing: {
-          name: "Landing Page", icon: "🚀",
-          blocks: [
-            { type: "hero", fields: { eyebrow: "Welcome", title: "Your headline here", text: "A short subtitle describing what you offer.", button: "Get started", image: "" } },
-            { type: "heading", fields: { text: "About this page", level: "h2", align: "center" } },
-            { type: "paragraph", fields: { text: "Describe your service or offering here. This is your main body copy — make it compelling and clear.", align: "left" } },
-            { type: "image", fields: { src: "", alt: "", caption: "" } },
-            { type: "cta", fields: { title: "Ready to get started?", button: "Contact us", link: "/contact/" } },
-          ],
-        },
-        service: {
-          name: "Service Page", icon: "🛎️",
-          blocks: [
-            { type: "hero", fields: { eyebrow: "Services", title: "Service name", text: "What this service includes and why clients choose it.", button: "Book this", image: "" } },
-            { type: "heading", fields: { text: "What's included", level: "h2", align: "left" } },
-            { type: "paragraph", fields: { text: "Detail the deliverables, process, and what makes this service stand out.", align: "left" } },
-            { type: "image", fields: { src: "", alt: "", caption: "Example of this service" } },
-            { type: "heading", fields: { text: "Pricing", level: "h2", align: "left" } },
-            { type: "paragraph", fields: { text: "Describe your pricing structure. See the full pricing page for details.", align: "left" } },
-            { type: "cta", fields: { title: "Book this service", button: "Get a quote", link: "/contact/" } },
-          ],
-        },
-        about: {
-          name: "About Page", icon: "👤",
-          blocks: [
-            { type: "hero", fields: { eyebrow: "About", title: "About your business", text: "Tell your story.", image: "" } },
-            { type: "heading", fields: { text: "Our story", level: "h2", align: "left" } },
-            { type: "paragraph", fields: { text: "Share the history, mission, and what makes your business unique.", align: "left" } },
-            { type: "image", fields: { src: "", alt: "", caption: "" } },
-            { type: "cta", fields: { title: "Get in touch", button: "Contact us", link: "/contact/" } },
-          ],
-        },
-        contact: {
-          name: "Contact Page", icon: "✉️",
-          blocks: [
-            { type: "hero", fields: { eyebrow: "Contact", title: "Get in touch", text: "We'd love to hear from you.", image: "" } },
-            { type: "heading", fields: { text: "Contact information", level: "h2", align: "left" } },
-            { type: "paragraph", fields: { text: "Add your phone, email, and hours here. The contact form is on the live contact page.", align: "left" } },
-          ],
-        },
-        gallery: {
-          name: "Gallery Page", icon: "🖼️",
-          blocks: [
-            { type: "hero", fields: { eyebrow: "Gallery", title: "Our work", text: "Browse examples of our photography.", image: "" } },
-            { type: "gallery-grid", fields: { images: "", columns: "3" } },
-            { type: "cta", fields: { title: "Like what you see?", button: "Book a shoot", link: "/contact/" } },
-          ],
-        },
-      };
+      const CONTENT_DIR = "src/data/cms/content";
+      let pbContent = {};      // the loaded content object for the current page
+      let pbSlug = "home";     // slug of the page being edited
 
       async function renderPageBuilder(root) {
-        root.appendChild(pageHead("Page Builder", "Edit any page visually — drag blocks, click to edit text, swap images.", [
-          el("button", { class: "btn btn-outline", onclick: () => newPageModal(), html: "+ New Page from Template" }),
-        ]));
+        root.appendChild(pageHead("Page Builder", "Edit the real text and images on any page. Changes go live after saving."));
 
-        // Page selector
-        const selWrap = el("div", { class: "card" });
-        const selBody = el("div", { class: "card-body", style: "display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap" });
-        const pageField = field("Page to edit", (() => {
-          const sel = el("select", { id: "pb-page-select" });
-          sel.appendChild(el("option", { value: "home", text: "Homepage (/)" }));
-          for (const p of pages.filter(p => p.path !== "/")) {
-            sel.appendChild(el("option", { value: p.path.replace(/^\//, "").replace(/\/$/, "").replace(/\//g, "-") || "home", text: `${p.title} (${p.path})` }));
-          }
-          return sel;
-        })());
-        selBody.appendChild(pageField);
-        const loadBtn = el("button", { class: "btn btn-primary", text: "Load page", onclick: () => {
-          const sel = $("#pb-page-select");
-          openPageBuilderFor(sel.value === "home" ? "/" : "/" + sel.value.replace(/-/g, "/") + "/");
-        }});
-        selBody.appendChild(loadBtn);
-        selWrap.appendChild(selBody);
-        root.appendChild(selWrap);
-
-        root.appendChild(el("div", { class: "empty", html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><h3>Pick a page to edit</h3><p>Choose a page above, or create a new one from a template.</p>' }));
-      }
-
-      function newPageModal() {
-        showModal(`<div class="modal-head"><h2>Create a new page</h2><button class="modal-close" onclick="closeModal()">&times;</button></div>
-          <div class="modal-body">
-            <div class="field">
-              <label>Page title</label>
-              <input type="text" id="np-title" placeholder="e.g. Drone Photography Special" />
-            </div>
-            <div class="field">
-              <label>URL slug</label>
-              <input type="text" id="np-slug" placeholder="drone-special" />
-              <div class="hint">The page will live at <b>/slug/</b>. Lowercase, dashes only.</div>
-            </div>
-            <div class="field">
-              <label>Start from a template</label>
-              <div class="stats" id="np-templates" style="margin-bottom:0"></div>
-            </div>
-          </div>
-          <div class="modal-foot">
-            <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-            <button class="btn btn-primary" id="np-create">Create page</button>
-          </div>`, { size: "lg" });
-
-        const grid = $("#np-templates");
-        grid.style.gridTemplateColumns = "repeat(auto-fill,minmax(140px,1fr))";
-        let chosen = "landing";
-        for (const [key, t] of Object.entries(TEMPLATES)) {
-          const opt = el("div", { class: "stat", style: "cursor:pointer;text-align:center", "data-tpl": key });
-          opt.appendChild(el("div", { text: t.icon, style: "font-size:28px;margin-bottom:6px" }));
-          opt.appendChild(el("div", { text: t.name, style: "font-size:13px;font-weight:600" }));
-          if (key === "landing") opt.style.borderColor = "var(--brass)";
-          opt.onclick = () => {
-            chosen = key;
-            $$("#np-templates .stat").forEach(s => s.style.borderColor = "");
-            opt.style.borderColor = "var(--brass)";
-          };
-          grid.appendChild(opt);
+        // Page selector card
+        const selCard = card("Choose a page to edit", el("div", { style: "display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap" }));
+        const sel = el("select", { id: "pb-page-select", style: "flex:1;min-width:200px" });
+        sel.appendChild(el("option", { value: "home", text: "Homepage (/)" }));
+        for (const p of pages.filter(p => p.path !== "/")) {
+          const slug = p.path.replace(/^\//, "").replace(/\/$/, "").replace(/\//g, "-");
+          sel.appendChild(el("option", { value: slug, text: `${p.title} — ${p.path}` }));
         }
+        selCard.querySelector(".card-body").appendChild(field("Page", sel));
+        const loadBtn = el("button", { class: "btn btn-primary", text: "Load page", onclick: () => loadPageContent($("#pb-page-select").value) });
+        selCard.querySelector(".card-body").appendChild(loadBtn);
+        root.appendChild(selCard);
 
-        $("#np-create").onclick = () => {
-          const title = $("#np-title").value.trim();
-          let slug = $("#np-slug").value.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
-          if (!title || !slug) { toast("Enter a title and slug.", "error"); return; }
-          const tpl = TEMPLATES[chosen];
-          // Deep clone the template blocks
-          const blocks = JSON.parse(JSON.stringify(tpl.blocks));
-          // Open the builder with these blocks
-          closeModal();
-          startInlineEditor(slug, title, blocks, true);
-        };
+        // Editor will render here
+        root.appendChild(el("div", { id: "pb-editor-area" }));
+
+        // Default: show a hint
+        const hint = el("div", { class: "empty", html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><h3>Select a page above and click "Load page"</h3><p>You\'ll see every text field and image on that page, ready to edit.</p>' });
+        $("#pb-editor-area", root).appendChild(hint);
+
+        // Auto-load the homepage
+        loadPageContent("home");
       }
 
-      async function openPageBuilderFor(path) {
-        const slug = path === "/" ? "home" : path.replace(/^\//, "").replace(/\/$/, "").replace(/\//g, "-");
-        currentPageSlug = slug;
+      // Service pages store their SEO/hero copy in cms/services/{slug}.json.
+      // This maps service slugs to their content file location.
+      const SERVICE_SLUGS = ["hdr-photography", "3d-tours", "drone-photography", "floor-plans", "virtual-staging", "twilight-photography", "commercial", "vacation-rentals", "google-business-view", "as-built", "photo-packages", "residential", "matterport", "walk-through-video", "zillow-3d", "vacation-rental-floor-plans"];
+
+      async function loadPageContent(slug) {
+        pbSlug = slug;
         showLoading();
         try {
-          let layout;
+          let raw;
+          // Service pages use a different directory
+          const isService = SERVICE_SLUGS.includes(slug);
+          pbContentPath = isService ? `${CMS_DIR}/services/${slug}.json` : `${CONTENT_DIR}/${slug}.json`;
           try {
-            const raw = await readFile(`${PB_DIR}/${slug}.json`);
-            layout = JSON.parse(raw);
+            raw = await readFile(pbContentPath);
+            pbContent = JSON.parse(raw);
           } catch (e) {
-            layout = defaultLayout(slug);
+            // No content file yet — start with empty structure
+            pbContent = { _page: slug, _slug: slug };
           }
           hideLoading();
-          startInlineEditor(slug, pages.find(p => p.path === path)?.title || slug, layout, false);
+          drawContentEditor();
         } catch (e) {
           hideLoading();
           toast(e.message, "error", "Could not load page");
         }
       }
 
-      function defaultLayout(slug) {
-        // Sensible starter for homepage, otherwise a simple hero+text
-        if (slug === "home") {
-          return [
-            { type: "hero", fields: { eyebrow: "Las Vegas Real Estate Photography", title: "Photography & 3D tours that sell properties faster.", text: "HDR photos, Matterport, drone, floor plans & virtual staging — delivered in 24 hours.", button: "See pricing", image: "/images/portfolio/sierra-skye-living.jpg" } },
-            { type: "heading", fields: { text: "Every service, one photographer", level: "h2", align: "center" } },
-            { type: "paragraph", fields: { text: "Edit this page by clicking on any text below. Use the toolbar to add images, buttons, and more blocks.", align: "center" } },
-          ];
-        }
-        return [
-          { type: "hero", fields: { eyebrow: "", title: "Page title", text: "Subtitle goes here.", image: "" } },
-          { type: "paragraph", fields: { text: "Click here to edit this text.", align: "left" } },
-        ];
-      }
+      let pbContentPath = "";
 
-      function startInlineEditor(slug, title, layout, isNew) {
-        currentLayout = layout;
-        currentPageSlug = slug;
-        const root = $("#content");
-        root.innerHTML = "";
-        root.className = "";
+      // Recursively renders an editable form for every field in the content JSON.
+      // Each top-level key (hero, why, services, etc.) = one section panel.
+      function drawContentEditor() {
+        const area = $("#pb-editor-area");
+        if (!area) return;
+        area.innerHTML = "";
 
-        root.appendChild(pageHead(title, `Editing <code>${slug}</code> ${isNew ? "(new page)" : ""}`, [
-          el("button", { class: "btn btn-ghost", onclick: () => navigate("pagebuilder"), text: "← Back" }),
-          el("button", { class: "btn btn-outline", onclick: () => addBlockModal(), html: "+ Add block" }),
-          el("button", { class: "btn btn-primary", onclick: () => pbSave(isNew), html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save page' }),
+        const pageInfo = pages.find(p => {
+          const s = p.path === "/" ? "home" : p.path.replace(/^\//, "").replace(/\/$/, "").replace(/\//g, "-");
+          return s === pbSlug;
+        });
+        const pageTitle = pageInfo?.title || pbSlug;
+
+        area.appendChild(pageHead(pageTitle, `Editing ${pbSlug}.json — every field below appears on the live page.`, [
+          el("button", { class: "btn btn-ghost", onclick: () => togglePreview(pageInfo?.path || "/"), html: '👁 Preview' }),
+          el("a", { class: "btn btn-ghost", href: pageInfo?.path || "/", target: "_blank", text: "Open ↗" }),
+          el("button", { class: "btn btn-primary", onclick: () => savePageContent(), html: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save changes' }),
         ]));
 
-        // Format toolbar
-        const toolbar = el("div", { class: "ie-toolbar", id: "ie-toolbar" });
-        toolbar.appendChild(toolbarBtn("B", "<b>B</b>", () => document.execCommand("bold"), "Bold"));
-        toolbar.appendChild(toolbarBtn("I", "<i>I</i>", () => document.execCommand("italic"), "Italic"));
-        toolbar.appendChild(toolbarBtn("U", "<u>U</u>", () => document.execCommand("underline"), "Underline"));
-        toolbar.appendChild(divider());
-        toolbar.appendChild(toolbarBtn("H1", "H1", () => document.execCommand("formatBlock", false, "H1"), "Heading 1"));
-        toolbar.appendChild(toolbarBtn("H2", "H2", () => document.execCommand("formatBlock", false, "H2"), "Heading 2"));
-        toolbar.appendChild(toolbarBtn("P", "¶", () => document.execCommand("formatBlock", false, "P"), "Paragraph"));
-        toolbar.appendChild(divider());
-        // Font family selector
-        const fontSel = el("select", { id: "ie-font", style: "padding:5px 8px;font-size:12px;background:var(--panel-3);border:1px solid var(--line);border-radius:5px;color:var(--ink);min-height:auto" });
-        fontSel.appendChild(el("option", { value: "", text: "Font…" }));
-        for (const f of ["Georgia, serif", "Inter, sans-serif", "'Courier New', monospace", "'Times New Roman', serif", "Arial, sans-serif", "Verdana, sans-serif"]) {
-          fontSel.appendChild(el("option", { value: f, text: f.split(",")[0].replace(/'/g, ""), style: `font-family:${f}` }));
+        // Render each section as a collapsible card
+        for (const [sectionKey, sectionValue] of Object.entries(pbContent)) {
+          if (sectionKey.startsWith("_")) continue; // skip metadata
+          const sectionCard = renderSectionPanel(sectionKey, sectionValue);
+          area.appendChild(sectionCard);
         }
-        fontSel.onchange = () => { document.execCommand("fontName", false, fontSel.value); fontSel.value = ""; };
-        toolbar.appendChild(fontSel);
-        // Font size
-        const sizeSel = el("select", { id: "ie-size", style: "padding:5px 8px;font-size:12px;background:var(--panel-3);border:1px solid var(--line);border-radius:5px;color:var(--ink);min-height:auto" });
-        sizeSel.appendChild(el("option", { value: "", text: "Size" }));
-        for (const s of ["12px","14px","16px","18px","20px","24px","28px","32px","40px","48px"]) sizeSel.appendChild(el("option", { value: s, text: s }));
-        sizeSel.onchange = () => { document.execCommand("fontSize", false, "7"); const fonts = document.queryCommandValue("fontSize"); /* workaround */ if (sizeSel.value) { document.execCommand("fontSize", false, "7"); const el7 = document.querySelectorAll('font[size="7"]'); el7.forEach(f => { f.removeAttribute("size"); f.style.fontSize = sizeSel.value; }); } sizeSel.value = ""; };
-        toolbar.appendChild(sizeSel);
-        // Text color
-        const colorInput = el("input", { type: "color", style: "width:30px;height:28px;padding:0;border:1px solid var(--line);border-radius:5px;background:transparent;cursor:pointer", title: "Text color" });
-        colorInput.oninput = () => document.execCommand("foreColor", false, colorInput.value);
-        toolbar.appendChild(colorInput);
-        toolbar.appendChild(divider());
-        toolbar.appendChild(toolbarBtn("Link", '🔗', () => {
-          const url = prompt("Link URL:"); if (url) document.execCommand("createLink", false, url);
-        }, "Insert link"));
-        toolbar.appendChild(toolbarBtn("Image", '🖼️', () => insertImageInline(), "Insert image"));
-        toolbar.appendChild(divider());
-        toolbar.appendChild(toolbarBtn("UL", "• List", () => document.execCommand("insertUnorderedList"), "Bullet list"));
-        toolbar.appendChild(toolbarBtn("OL", "1. List", () => document.execCommand("insertOrderedList"), "Numbered list"));
-        toolbar.appendChild(toolbarBtn("Clear", "⌫", () => document.execCommand("removeFormat"), "Clear formatting"));
-        root.appendChild(toolbar);
-
-        // Canvas
-        const canvas = el("div", { class: "ie-canvas", id: "ie-canvas" });
-        root.appendChild(canvas);
-        drawInlineBlocks(canvas);
       }
 
-      function toolbarBtn(id, label, onclick, title) {
-        return el("button", { class: "ie-tool", id: `ie-tool-${id}`, html: label, onclick, title: title || label });
+      // Toggle a live preview overlay showing the actual rendered page.
+      function togglePreview(path) {
+        let overlay = $("#pb-preview-overlay");
+        if (overlay) { overlay.remove(); return; }
+        overlay = el("div", { id: "pb-preview-overlay", style: "position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,0.9);display:flex;flex-direction:column" });
+        const bar = el("div", { style: "background:var(--panel);padding:10px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line)" });
+        bar.appendChild(el("span", { text: "Live preview — " + path, style: "color:var(--ink);font-weight:600;font-size:13px" }));
+        bar.appendChild(el("span", { class: "badge badge-amber", text: "Note: preview shows the currently live version. Saved changes appear after rebuild (~90s)." }));
+        const closeBtn = el("button", { class: "btn btn-outline btn-sm", text: "Close", style: "margin-left:auto", onclick: () => overlay.remove() });
+        bar.appendChild(closeBtn);
+        overlay.appendChild(bar);
+        const frameWrap = el("div", { style: "flex:1;overflow:hidden" });
+        const frame = el("iframe", { src: path, style: "width:100%;height:100%;border:0;background:#fff" });
+        frameWrap.appendChild(frame);
+        overlay.appendChild(frameWrap);
+        document.body.appendChild(overlay);
       }
-      function divider() { return el("div", { class: "ie-divider" }); }
 
-      function drawInlineBlocks(canvas) {
-        canvas.innerHTML = "";
-        if (!currentLayout.length) {
-          canvas.appendChild(el("div", { class: "empty", html: '<h3>This page is empty</h3><p>Click "Add block" to start building.</p>' }));
+      // A section panel: collapsible, shows all fields inside.
+      function renderSectionPanel(key, value) {
+        const card = el("div", { class: "card" });
+        const head = el("div", { class: "card-head", style: "cursor:pointer" });
+        const titleWrap = el("div");
+        titleWrap.appendChild(el("h2", { text: prettifyKey(key) }));
+        titleWrap.appendChild(el("span", { class: "card-sub", text: typeof value === "object" ? `${Object.keys(value).length} fields` : "text" }));
+        head.appendChild(titleWrap);
+        head.appendChild(el("span", { class: "badge badge-muted", text: "▾", style: "font-size:14px" }));
+        card.appendChild(head);
+
+        const body = el("div", { class: "card-body" });
+        renderValueEditor(body, value, [key]);
+        card.appendChild(body);
+
+        // Toggle collapse
+        head.onclick = () => {
+          const hidden = body.style.display === "none";
+          body.style.display = hidden ? "" : "none";
+          head.querySelector(".badge").textContent = hidden ? "▾" : "▸";
+        };
+
+        return card;
+      }
+
+      // Recursively renders the right editor for a value (string → text/textarea,
+      // array → repeater, object → nested fields). Path is used for nested access.
+      function renderValueEditor(container, value, path) {
+        if (value === null || value === undefined) {
+          container.appendChild(field(prettifyKey(path[path.length - 1]), textInput({ value: "" })));
           return;
         }
-        currentLayout.forEach((block, i) => {
-          canvas.appendChild(renderInlineBlock(block, i, canvas));
-        });
-      }
-
-      function renderInlineBlock(block, index, canvas) {
-        const wrap = el("div", { class: "ie-block" + (block.hidden ? " hidden-block" : ""), "data-index": index });
-        // Block toolbar (appears on hover)
-        const bar = el("div", { class: "ie-bar" });
-        bar.appendChild(barBtn("⠿", () => {}, "drag-handle", "Drag to reorder"));
-        bar.appendChild(barBtn("↑", () => moveBlock(index, -1, canvas), "", "Move up"));
-        bar.appendChild(barBtn("↓", () => moveBlock(index, 1, canvas), "", "Move down"));
-        bar.appendChild(barBtn(block.hidden ? "👁" : "🚫", () => { block.hidden = !block.hidden; drawInlineBlocks(canvas); }, "", block.hidden ? "Show" : "Hide"));
-        bar.appendChild(barBtn("⚙", () => blockSettingsModal(block, () => drawInlineBlocks(canvas)), "", "Settings"));
-        bar.appendChild(barBtn("📋", () => { currentLayout.splice(index + 1, 0, JSON.parse(JSON.stringify(block))); drawInlineBlocks(canvas); }, "", "Duplicate"));
-        bar.appendChild(barBtn("🗑", () => { if (confirm("Delete this block?")) { currentLayout.splice(index, 1); drawInlineBlocks(canvas); } }, "danger", "Delete"));
-        wrap.appendChild(bar);
-
-        // Drag and drop
-        const handle = bar.querySelector(".drag-handle");
-        wrap.draggable = true;
-        wrap.addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/plain", String(index)); wrap.style.opacity = "0.4"; });
-        wrap.addEventListener("dragend", () => { wrap.style.opacity = ""; });
-        wrap.addEventListener("dragover", (e) => { e.preventDefault(); wrap.style.borderTop = "3px solid var(--brass)"; });
-        wrap.addEventListener("dragleave", () => { wrap.style.borderTop = ""; });
-        wrap.addEventListener("drop", (e) => {
-          e.preventDefault();
-          wrap.style.borderTop = "";
-          const from = parseInt(e.dataTransfer.getData("text/plain"));
-          const to = index;
-          if (from === to) return;
-          const [moved] = currentLayout.splice(from, 1);
-          currentLayout.splice(to, 0, moved);
-          drawInlineBlocks(canvas);
-        });
-
-        // Preview content
-        const preview = el("div", { class: "ie-preview" + (block.fields.bg === "dark" ? " dark" : block.fields.bg === "paper" ? " paper" : "") });
-        preview.appendChild(blockPreview(block));
-        wrap.appendChild(preview);
-        return wrap;
-      }
-
-      function barBtn(label, onclick, extraClass, title) {
-        return el("button", { class: extraClass, html: label, onclick: (e) => { e.stopPropagation(); onclick(); }, title });
-      }
-
-      // Contenteditable helper
-      function editable(value, onInput, opts = {}) {
-        const node = el("div", { contenteditable: "true", ...opts });
-        if (value) node.textContent = value;
-        else { node.setAttribute("data-empty", "1"); node.setAttribute("data-placeholder", opts.placeholder || "Click to edit"); }
-        node.addEventListener("focus", () => { if (node.getAttribute("data-empty") === "1") { node.removeAttribute("data-empty"); node.textContent = ""; } });
-        node.addEventListener("blur", () => {
-          const text = node.textContent.trim();
-          if (!text) { node.setAttribute("data-empty", "1"); node.textContent = ""; }
-          onInput(text);
-        });
-        node.addEventListener("input", () => { onInput(node.textContent.trim()); });
-        return node;
-      }
-
-      function blockPreview(block) {
-        const f = block.fields || {};
-        const wrap = el("div");
-        switch (block.type) {
-          case "hero": {
-            const eyebrow = f.eyebrow !== undefined ? editable(f.eyebrow, v => f.eyebrow = v, { class: "ie-eyebrow", placeholder: "Eyebrow text" }) : null;
-            const title = editable(f.title || "", v => f.title = v, { class: "ie-h1", placeholder: "Headline" });
-            const text = editable(f.text || "", v => f.text = v, { class: "ie-p", placeholder: "Subtitle text" });
-            if (eyebrow) wrap.appendChild(eyebrow);
-            wrap.appendChild(title);
-            wrap.appendChild(text);
-            if (f.button !== undefined) {
-              const btn = editable(f.button, v => f.button = v, { class: "ie-btn-preview", placeholder: "Button label" });
-              wrap.appendChild(btn);
+        if (typeof value === "string") {
+          // Image path fields get an image picker
+          const isImage = /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(value) || path[path.length - 1].toLowerCase().includes("image");
+          // Long strings get a textarea
+          if (value.length > 80 || value.includes("\n")) {
+            const ta = textarea({ style: "min-height:80px" });
+            ta.value = value;
+            ta.oninput = () => setNested(pbContent, path, ta.value);
+            container.appendChild(field(prettifyKey(path[path.length - 1]), ta));
+          } else if (isImage) {
+            const wrap = el("div");
+            const input = textInput({ value });
+            input.oninput = () => setNested(pbContent, path, input.value);
+            wrap.appendChild(input);
+            if (value) {
+              const preview = el("img", { src: value, alt: "", style: "width:100%;max-height:120px;object-fit:cover;border-radius:var(--radius-sm);margin-top:8px" });
+              wrap.appendChild(preview);
             }
-            if (f.image) {
-              const imgWrap = el("div", { class: "ie-img-wrap", style: "margin-top:16px" });
-              imgWrap.appendChild(el("img", { class: "ie-img", src: f.image, alt: f.alt || "" }));
-              wrap.appendChild(imgWrap);
+            const pickBtn = btn("Choose image", "outline sm", () => openImagePicker((url) => {
+              input.value = url;
+              setNested(pbContent, path, url);
+              // Update preview
+              let img = wrap.querySelector("img");
+              if (img) img.src = url;
+              else { img = el("img", { src: url, alt: "", style: "width:100%;max-height:120px;object-fit:cover;border-radius:var(--radius-sm);margin-top:8px" }); input.after(img); }
+            }));
+            pickBtn.style.marginTop = "6px"; pickBtn.style.width = "100%";
+            wrap.appendChild(pickBtn);
+            container.appendChild(field(prettifyKey(path[path.length - 1]), wrap));
+          } else {
+            const input = textInput({ value });
+            input.oninput = () => setNested(pbContent, path, input.value);
+            container.appendChild(field(prettifyKey(path[path.length - 1]), input));
+          }
+        } else if (typeof value === "number") {
+          const input = textInput({ type: "number", value: String(value) });
+          input.oninput = () => setNested(pbContent, path, parseFloat(input.value) || 0);
+          container.appendChild(field(prettifyKey(path[path.length - 1]), input));
+        } else if (typeof value === "boolean") {
+          const check = el("input", { type: "checkbox" });
+          if (value) check.checked = true;
+          check.onchange = () => setNested(pbContent, path, check.checked);
+          const lbl = el("label", { class: "row-check", style: "margin-bottom:0" });
+          lbl.appendChild(check);
+          lbl.appendChild(el("span", { text: " " + prettifyKey(path[path.length - 1]) }));
+          container.appendChild(lbl);
+        } else if (Array.isArray(value)) {
+          // Array → repeater (cards with add/remove/reorder)
+          const arrLabel = el("div", { class: "field" });
+          arrLabel.appendChild(el("label", { text: prettifyKey(path[path.length - 1]) }));
+          container.appendChild(arrLabel);
+          for (let i = 0; i < value.length; i++) {
+            const itemWrap = el("div", { style: "border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;position:relative" });
+            // Item number + delete button
+            const itemHead = el("div", { style: "display:flex;justify-content:space-between;align-items:center;margin-bottom:8px" });
+            itemHead.appendChild(el("span", { class: "badge badge-blue", text: `#${i + 1}` }));
+            const delBtn = el("button", { class: "btn btn-danger btn-sm", text: "Remove", onclick: () => { value.splice(i, 1); drawContentEditor(); } });
+            itemHead.appendChild(delBtn);
+            itemWrap.appendChild(itemHead);
+            // Render the item's fields
+            renderValueEditor(itemWrap, value[i], [...path, i]);
+            container.appendChild(itemWrap);
+          }
+          // Add button
+          const addBtn = el("button", { class: "btn btn-outline btn-sm btn-block", text: "+ Add item", onclick: () => {
+            // Clone the structure of the last item, or add a blank string
+            if (value.length > 0 && typeof value[0] === "object") {
+              value.push(JSON.parse(JSON.stringify(value[value.length - 1])));
+            } else {
+              value.push("");
             }
-            return wrap;
+            drawContentEditor();
+          }});
+          container.appendChild(addBtn);
+        } else if (typeof value === "object") {
+          // Nested object → render each field
+          for (const [k, v] of Object.entries(value)) {
+            if (k.startsWith("_")) continue;
+            renderValueEditor(container, v, [...path, k]);
           }
-          case "heading": {
-            const node = editable(f.text || "", v => f.text = v, { class: f.level === "h1" ? "ie-h1" : f.level === "h3" ? "ie-h3" : "ie-h2", placeholder: "Heading text" });
-            if (f.align === "center") node.style.textAlign = "center";
-            return node;
-          }
-          case "paragraph":
-          case "text": {
-            const node = editable(f.text || "", v => f.text = v, { class: "ie-p", placeholder: "Type your text here…" });
-            if (f.align === "center") node.style.textAlign = "center";
-            if (f.align === "right") node.style.textAlign = "right";
-            return node;
-          }
-          case "image": {
-            if (f.src) {
-              const imgWrap = el("div", { class: "ie-img-wrap" });
-              const img = el("img", { class: "ie-img", src: f.src, alt: f.alt || "" });
-              img.style.cursor = "pointer";
-              img.onclick = () => openImagePicker((url) => { f.src = url; refreshInlineEditor(); });
-              imgWrap.appendChild(img);
-              if (f.caption !== undefined) {
-                const cap = editable(f.caption, v => f.caption = v, { class: "ie-p", style: "text-align:center;font-size:12px;color:var(--muted);margin-top:6px", placeholder: "Caption (optional)" });
-                imgWrap.appendChild(cap);
-              }
-              return imgWrap;
-            }
-            const ph = el("div", { class: "ie-img-ph", html: "🖼️<br>Click to add an image", onclick: () => openImagePicker((url) => { f.src = url; refreshInlineEditor(); }) });
-            return ph;
-          }
-          case "button": {
-            const btn = editable(f.label || "Button", v => f.label = v, { class: "ie-btn-preview", placeholder: "Button text" });
-            return btn;
-          }
-          case "gallery-grid": {
-            const gallery = el("div", { class: "ie-gallery" });
-            const imgs = (f.images || "").split("\n").map(s => s.trim()).filter(Boolean);
-            for (const src of imgs) {
-              const item = el("div", { class: "ie-gitem" });
-              item.appendChild(el("img", { src, alt: "", loading: "lazy" }));
-              gallery.appendChild(item);
-            }
-            const add = el("div", { class: "ie-img-ph", style: "aspect-ratio:1", html: "+<br>Add", onclick: () => openImagePicker((url) => { f.images = (f.images || "") + "\n" + url; refreshInlineEditor(); }) });
-            gallery.appendChild(add);
-            return gallery;
-          }
-          case "video":
-          case "video-embed": {
-            const url = pbEmbedUrl(f.url || "");
-            if (url) {
-              const frame = el("div", { style: "position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px" });
-              frame.appendChild(el("iframe", { src: url, style: "position:absolute;inset:0;width:100%;height:100%;border:0", allow: "fullscreen", loading: "lazy" }));
-              return frame;
-            }
-            return el("div", { class: "ie-img-ph", html: "🎬<br>Click to add video", onclick: () => blockSettingsModal(currentLayout.find(b => b === block), refreshInlineEditor) });
-          }
-          case "cta": {
-            const inner = el("div", { style: "text-align:center;padding:16px" });
-            inner.appendChild(editable(f.title || "", v => f.title = v, { class: "ie-h2", placeholder: "Call to action headline" }));
-            if (f.button !== undefined) inner.appendChild(editable(f.button, v => f.button = v, { class: "ie-btn-preview", style: "margin-top:12px", placeholder: "Button label" }));
-            return inner;
-          }
-          case "spacer":
-            return el("div", { class: "ie-spacer" });
-          case "divider":
-            return el("div", { class: "ie-divider-line" });
-          default:
-            return el("div", { class: "ie-p", text: `[${block.type} block — edit via settings]` });
         }
       }
 
-      function refreshInlineEditor() {
-        const canvas = $("#ie-canvas");
-        if (canvas) drawInlineBlocks(canvas);
+      // Set a value at a nested path in the content object.
+      // path can contain string keys AND integer array indices.
+      function setNested(obj, path, val) {
+        let cur = obj;
+        for (let i = 0; i < path.length - 1; i++) {
+          cur = cur[path[i]];
+        }
+        cur[path[path.length - 1]] = val;
       }
 
-      function moveBlock(index, dir, canvas) {
-        const to = index + dir;
-        if (to < 0 || to >= currentLayout.length) return;
-        const [m] = currentLayout.splice(index, 1);
-        currentLayout.splice(to, 0, m);
-        drawInlineBlocks(canvas);
+      // "whyTitle" → "Why title", "heroImage" → "Hero image"
+      function prettifyKey(key) {
+        if (typeof key === "number") return String(key);
+        return key
+          .replace(/([A-Z])/g, " $1")
+          .replace(/^./, (s) => s.toUpperCase())
+          .replace(/\bId\b/gi, "ID");
       }
 
-      function pbEmbedUrl(url) {
-        if (!url) return "";
-        // YouTube
-        const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
-        if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
-        // Vimeo
-        const vm = url.match(/vimeo\.com\/(\d+)/);
-        if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
-        // Matterport
-        const mp = url.match(/matterport\.com\/.*?(m=|\/)([\w]+)/);
-        if (mp) return `https://my.matterport.com/show/?m=${mp[2]}&play=1`;
-        return url;
-      }
-
-      // Insert image into a contenteditable selection (from the image picker)
-      function insertImageInline() {
-        openImagePicker((url) => {
-          document.execCommand("insertImage", false, url);
-        });
-      }
-
-      function blockSettingsModal(block, onDone) {
-        const fields = block.fields || (block.fields = {});
-        let html = `<div class="modal-head"><h2>Block settings</h2><button class="modal-close" onclick="closeModal()">&times;</button></div><div class="modal-body" id="bs-body">`;
-        html += `<div class="field"><label>Background</label><select id="bs-bg"><option value="">Default</option><option value="dark" ${fields.bg === "dark" ? "selected" : ""}>Dark</option><option value="paper" ${fields.bg === "paper" ? "selected" : ""}>Light</option></select></div>`;
-        // Type-specific fields
-        if (block.type === "heading") {
-          html += `<div class="field"><label>Heading level</label><select id="bs-level"><option value="h1" ${fields.level === "h1" ? "selected" : ""}>H1</option><option value="h2" ${fields.level === "h2" || !fields.level ? "selected" : ""}>H2</option><option value="h3" ${fields.level === "h3" ? "selected" : ""}>H3</option></select></div>`;
-          html += `<div class="field"><label>Alignment</label><select id="bs-align"><option value="left" ${fields.align === "left" || !fields.align ? "selected" : ""}>Left</option><option value="center" ${fields.align === "center" ? "selected" : ""}>Center</option><option value="right" ${fields.align === "right" ? "selected" : ""}>Right</option></select></div>`;
-        }
-        if (block.type === "paragraph" || block.type === "text") {
-          html += `<div class="field"><label>Alignment</label><select id="bs-align"><option value="left" ${fields.align === "left" || !fields.align ? "selected" : ""}>Left</option><option value="center" ${fields.align === "center" ? "selected" : ""}>Center</option><option value="right" ${fields.align === "right" ? "selected" : ""}>Right</option></select></div>`;
-        }
-        if (block.type === "image") {
-          html += `<div class="field"><label>Image URL</label><input type="text" id="bs-src" value="${fields.src || ""}" placeholder="/images/..." /></div>`;
-          html += `<div class="field"><label>Alt text</label><input type="text" id="bs-alt" value="${fields.alt || ""}" /></div>`;
-          html += `<button class="btn btn-outline btn-block" id="bs-pick">Choose from library</button>`;
-        }
-        if (block.type === "gallery-grid") {
-          html += `<div class="field"><label>Image URLs (one per line)</label><textarea id="bs-images" style="min-height:120px;font-family:var(--font-mono);font-size:12px">${fields.images || ""}</textarea></div>`;
-          html += `<div class="field"><label>Columns</label><select id="bs-cols"><option value="2" ${fields.columns === "2" ? "selected" : ""}>2</option><option value="3" ${fields.columns === "3" || !fields.columns ? "selected" : ""}>3</option><option value="4" ${fields.columns === "4" ? "selected" : ""}>4</option></select></div>`;
-        }
-        if (block.type === "video" || block.type === "video-embed") {
-          html += `<div class="field"><label>Video URL (YouTube, Vimeo, Matterport)</label><input type="text" id="bs-url" value="${fields.url || ""}" placeholder="https://youtube.com/watch?v=..." /></div>`;
-        }
-        if (block.type === "button") {
-          html += `<div class="field"><label>Link URL</label><input type="text" id="bs-link" value="${fields.link || ""}" /></div>`;
-        }
-        if (block.type === "cta") {
-          html += `<div class="field"><label>Button link</label><input type="text" id="bs-link" value="${fields.link || "/contact/"}" /></div>`;
-        }
-        if (block.type === "spacer") {
-          html += `<div class="field"><label>Height (px)</label><input type="number" id="bs-height" value="${fields.height || 40}" /></div>`;
-        }
-        html += `</div><div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" id="bs-save">Apply</button></div>`;
-        showModal(html);
-
-        // Wire pick button
-        const pickBtn = $("#bs-pick");
-        if (pickBtn) pickBtn.onclick = () => openImagePicker((url) => { $("#bs-src").value = url; });
-        $("#bs-save").onclick = () => {
-          const bg = $("#bs-bg");
-          if (bg) fields.bg = bg.value;
-          const level = $("#bs-level");
-          if (level) fields.level = level.value;
-          const align = $("#bs-align");
-          if (align) fields.align = align.value;
-          const src = $("#bs-src");
-          if (src) fields.src = src.value;
-          const alt = $("#bs-alt");
-          if (alt) fields.alt = alt.value;
-          const imgs = $("#bs-images");
-          if (imgs) fields.images = imgs.value;
-          const cols = $("#bs-cols");
-          if (cols) fields.columns = cols.value;
-          const url = $("#bs-url");
-          if (url) fields.url = url.value;
-          const link = $("#bs-link");
-          if (link) fields.link = link.value;
-          const h = $("#bs-height");
-          if (h) fields.height = parseInt(h.value) || 40;
-          closeModal();
-          onDone();
-        };
-      }
-
-      function addBlockModal() {
-        const LIBRARY = [
-          { type: "hero", name: "Hero section", icon: "🎯", desc: "Big headline + image", fields: { eyebrow: "", title: "New headline", text: "Subtitle", button: "Learn more", image: "" } },
-          { type: "heading", name: "Heading", icon: "H", desc: "Section title", fields: { text: "Section heading", level: "h2", align: "left" } },
-          { type: "paragraph", name: "Text block", icon: "¶", desc: "Body paragraph", fields: { text: "Type your text here…", align: "left" } },
-          { type: "image", name: "Image", icon: "🖼️", desc: "Single image", fields: { src: "", alt: "", caption: "" } },
-          { type: "gallery-grid", name: "Image gallery", icon: "🖼", desc: "Grid of images", fields: { images: "", columns: "3" } },
-          { type: "button", name: "Button", icon: "🔘", desc: "Call-to-action button", fields: { label: "Click here", link: "" } },
-          { type: "cta", name: "Call to action", icon: "📣", desc: "Headline + button", fields: { title: "Ready to get started?", button: "Contact us", link: "/contact/" } },
-          { type: "video", name: "Video embed", icon: "🎬", desc: "YouTube/Vimeo/Matterport", fields: { url: "" } },
-          { type: "spacer", name: "Spacer", icon: "↕", desc: "Empty space", fields: { height: 40 } },
-          { type: "divider", name: "Divider", icon: "—", desc: "Horizontal line", fields: {} },
-        ];
-        let gridHtml = '<div class="stats" id="ab-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">';
-        for (const b of LIBRARY) {
-          gridHtml += `<div class="stat" style="cursor:pointer;text-align:center" data-type="${b.type}"><div style="font-size:24px;margin-bottom:6px">${b.icon}</div><div style="font-size:13px;font-weight:600">${b.name}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${b.desc}</div></div>`;
-        }
-        gridHtml += "</div>";
-        showModal(`<div class="modal-head"><h2>Add a block</h2><button class="modal-close" onclick="closeModal()">&times;</button></div><div class="modal-body">${gridHtml}</div>`, { size: "lg" });
-        $$("#ab-grid .stat").forEach(s => s.onclick = () => {
-          const type = s.dataset.type;
-          const def = LIBRARY.find(b => b.type === type);
-          currentLayout.push({ type, fields: JSON.parse(JSON.stringify(def.fields)) });
-          closeModal();
-          refreshInlineEditor();
-        });
-      }
-
-      async function pbSave(isNew) {
+      async function savePageContent() {
         showLoading();
         try {
-          const path = `${PB_DIR}/${currentPageSlug}.json`;
-          await writeFile(path, JSON.stringify(currentLayout, null, 2) + "\n", `CMS: edit page ${currentPageSlug}`);
+          await writeFile(pbContentPath || `${CONTENT_DIR}/${pbSlug}.json`, JSON.stringify(pbContent, null, 2) + "\n", `CMS: edit ${pbSlug} page content`);
           hideLoading();
           toast("Page saved! Site rebuilds in ~90 seconds.", "success", "Published");
         } catch (e) {
           hideLoading();
           toast(e.message, "error", "Save failed");
         }
+      }
+
+      // Open page builder for a specific page (called from Pages list)
+      async function openPageBuilderFor(path) {
+        navigate("pagebuilder");
+        const slug = path === "/" ? "home" : path.replace(/^\//, "").replace(/\/$/, "").replace(/\//g, "-");
+        setTimeout(() => loadPageContent(slug), 100);
       }
 
       //=====================================================================

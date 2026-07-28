@@ -1,0 +1,22 @@
+{
+  "_page": "Portfolio",
+  "_slug": "work",
+  "seo": {
+    "title": "Portfolio — Las Vegas Real Estate Photography & 3D Tours",
+    "description": "Selected Las Vegas real estate photography by Mike Madsen: HDR interiors, drone, virtual staging, Matterport 3D tours, commercial, and floor plans. Filter by category and view full-screen."
+  },
+  "hero": {
+    "eyebrow": "Selected work",
+    "title": "A Las Vegas photographer's portfolio.",
+    "lead": "HDR interiors, aerial drone, virtual staging, Matterport 3D and commercial work, all shot by me across the Las Vegas Valley. Filter by category and click any image to view full-screen.",
+    "image": "/images/portfolio/listing-01.jpg",
+    "imageAlt": "Spacious Las Vegas living room with mountain views, professionally photographed"
+  },
+  "more": {
+    "eyebrow": "Need to see more?",
+    "title": "I've shot thousands of properties.",
+    "lead": "From one-bedroom condos to mansions with indoor basketball gyms. Request a specific type of sample, or book a walkthrough of recent work.",
+    "callLabel": "Call",
+    "samplesLabel": "Request samples"
+  }
+}

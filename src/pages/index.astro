@@ -1,5 +1,5 @@
 ---
-import { asset, webpOf } from "../data/site";
+import { asset, webpOf, getContent } from "../data/site";
 import Base from "../layouts/Base.astro";
 import TrustBar from "../components/TrustBar.astro";
 import Gallery from "../components/Gallery.astro";
@@ -15,39 +15,62 @@ import {
   serviceAreaLinks,
 } from "../data/site";
 
+// Load editable content (falls back to these defaults if JSON is missing).
+const c = getContent("home", {
+  hero: {
+    eyebrow: "Las Vegas · Henderson · The Valley",
+    title: "Las Vegas real estate photography that gets properties sold.",
+    lead: "Mike Madsen: full-service Las Vegas real estate photographer and 3D virtual tour provider. HDR photography, Matterport, drone, floor plans and virtual staging, delivered in **24–48 hours**.",
+    image: "/images/portfolio/sierra-skye-living.jpg",
+    imageAlt: "Sunlit Las Vegas living room captured with professional HDR real estate photography",
+    buttonPrimary: "View the portfolio",
+    buttonPrimaryLink: "/work/",
+    buttonSecondary: "Call",
+  },
+  portfolio: { eyebrow: "Selected work", title: "Photography that sells the listing.", linkText: "View full portfolio →" },
+  why: {
+    eyebrow: "Why work with me",
+    title: "You hire the photographer. Not a gig worker.",
+    lead: "Most real estate photo companies are middlemen who outsource your listing to whoever's closest. I shoot every property myself. I was the photographer for the Zillow Offers program in Las Vegas and provided Matterport services for builders like Lennar Homes.",
+  },
+  services: { eyebrow: "Built for what you're selling", title: "Find the right package for your property.", lead: "Residential listings, commercial space, vacation rentals or new construction: start with the buyer type and add the services you need." },
+  staging: { eyebrow: "Virtual staging", title: "Empty rooms become move-in ready in a click.", lead: "Virtual staging fills vacant rooms with realistic, properly-scaled furniture so buyers can see the potential without the cost of physical staging. Drag the slider to see real examples from my work." },
+  pricing: { eyebrow: "Transparent pricing", title: "Three Las Vegas packages. Pick yours.", lead: "No quote-and-wait. Real, published pricing sized to your property. The full price list is on the pricing page.", buttonText: "See full pricing" },
+  process: { eyebrow: "How it works", title: "From booking to MLS in three steps." },
+  testimonials: { eyebrow: "What clients say", title: "Rated five stars by Las Vegas agents & hosts." },
+  serviceArea: { eyebrow: "Service area", title: "Proudly local to Las Vegas.", lead: "Centrally located about three miles east of the Strip. I shoot across the entire Las Vegas Valley, from Summerlin and Henderson to North Las Vegas and beyond.", image: "/images/portfolio/drone-aerial.jpg", imageAlt: "Aerial drone view of a Las Vegas neighborhood" },
+  cta: { title: "Let's make your next listing the one buyers remember.", body: "Call or text me directly. Most shoots are on the calendar within 48 hours." },
+});
+
 const featuredShots = portfolio.filter((s) =>
   ["sierra-skye-living", "sierra-skye-kitchen", "drone-aerial", "brooklyn-1",
    "matterport-360", "listing-01", "spitze-interior", "floorplan-combined"]
     .some((n) => s.src.includes(n))
 ).slice(0, 8);
 
-const title = "Las Vegas Real Estate Photographer | Virtual Tours Las Vegas";
-const description = "Las Vegas real estate photographer Mike Madsen — HDR photos, Matterport 3D tours, drone, floor plans and virtual staging. Book online, 24–48 hr turnaround.";
+const title = c.seo?.title || "Las Vegas Real Estate Photographer | Virtual Tours Las Vegas";
+const description = c.seo?.description || "Las Vegas real estate photographer Mike Madsen — HDR photos, Matterport 3D tours, drone, floor plans and virtual staging. Book online, 24–48 hr turnaround.";
 ---
 <Base title={title} description={description} heroVariant="dark">
   {/* ===== HERO ===== */}
   <section class="hero">
     <div class="hero-bg">
       <picture>
-        <source type="image/webp" srcset={asset(webpOf("/images/portfolio/sierra-skye-living.jpg"))} />
-        <img src={asset("/images/portfolio/sierra-skye-living.jpg")} alt="Sunlit Las Vegas living room captured with professional HDR real estate photography" fetchpriority="high" decoding="async" />
+        <source type="image/webp" srcset={asset(webpOf(c.hero.image))} />
+        <img src={asset(c.hero.image)} alt={c.hero.imageAlt} fetchpriority="high" decoding="async" />
       </picture>
       <div class="hero-shade"></div>
     </div>
     <div class="container hero-inner">
       <div class="hero-text">
-        <p class="eyebrow" data-reveal>Las Vegas · Henderson · The Valley</p>
-        <h1 class="display hero-title" data-reveal data-reveal-delay="1">
-          Las Vegas real estate photography that gets properties sold.
-        </h1>
-        <p class="lead lg hero-lead" data-reveal data-reveal-delay="2">
-          Mike Madsen: full-service Las Vegas real estate photographer and 3D virtual tour provider. HDR photography, Matterport, drone, floor plans and virtual staging, delivered in <strong>24–48 hours</strong>.
-        </p>
+        <p class="eyebrow" data-reveal>{c.hero.eyebrow}</p>
+        <h1 class="display hero-title" data-reveal data-reveal-delay="1" set:html={c.hero.title} />
+        <p class="lead lg hero-lead" data-reveal data-reveal-delay="2" set:html={c.hero.lead} />
         <div class="btn-row hero-cta" data-reveal data-reveal-delay="3">
-          <a href={asset("/work/")} class="btn brass">View the portfolio</a>
+          <a href={asset(c.hero.buttonPrimaryLink || "/work/")} class="btn brass">{c.hero.buttonPrimary}</a>
           <a href={business.phoneHref} class="btn outline">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            Call {business.phone}
+            {c.hero.buttonSecondary} {business.phone}
           </a>
         </div>
       </div>
@@ -83,10 +106,10 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
     <div class="container">
       <div class="pf-head">
         <div data-reveal>
-          <p class="eyebrow">Selected work</p>
-          <h2 class="display pf-title">Photography that sells the listing.</h2>
+          <p class="eyebrow">{c.portfolio.eyebrow}</p>
+          <h2 class="display pf-title">{c.portfolio.title}</h2>
         </div>
-        <a href={asset("/work/")} class="text-link" data-reveal data-reveal-delay="1">View full portfolio →</a>
+        <a href={asset("/work/")} class="text-link" data-reveal data-reveal-delay="1">{c.portfolio.linkText}</a>
       </div>
       <Gallery shots={featuredShots} />
     </div>
@@ -95,39 +118,35 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
   {/* ===== WHY MIKE ===== */}
   <section class="section dark why">
     <div class="container">
-      <SectionHeader
-        eyebrow="Why work with me"
-        title="You hire the photographer. Not a gig worker."
-        lead="Most real estate photo companies are middlemen who outsource your listing to whoever's closest. I shoot every property myself. I was the photographer for the Zillow Offers program in Las Vegas and provided Matterport services for builders like Lennar Homes."
-      />
+      <SectionHeader eyebrow={c.why.eyebrow} title={c.why.title} lead={c.why.lead} />
       <div class="why-grid">
         <article class="why-card" data-reveal data-reveal-delay="1">
           <div class="why-icon">
             <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
           </div>
-          <h3>The actual photographer</h3>
-          <p>One point of contact. One standard. I capture, edit and deliver every shoot myself, never a rotating cast of subcontractors.</p>
+          <h3>{c.why.cards?.[0]?.title || "The actual photographer"}</h3>
+          <p>{c.why.cards?.[0]?.body || "One point of contact. One standard. I capture, edit and deliver every shoot myself, never a rotating cast of subcontractors."}</p>
         </article>
         <article class="why-card" data-reveal data-reveal-delay="2">
           <div class="why-icon">
             <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
           </div>
-          <h3>Real-estate native</h3>
-          <p>A licensed agent working in the industry since {business.realEstateSince}. I understand listings, MLS workflow and what actually makes a buyer click, because I've been on that side.</p>
+          <h3>{c.why.cards?.[1]?.title || "Real-estate native"}</h3>
+          <p>{c.why.cards?.[1]?.body || `A licensed agent working in the industry since ${business.realEstateSince}. I understand listings, MLS workflow and what actually makes a buyer click, because I've been on that side.`}</p>
         </article>
         <article class="why-card" data-reveal data-reveal-delay="3">
           <div class="why-icon">
             <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-8-4.5-8-11.8V5l8-3 8 3v5.2c0 7.3-8 11.8-8 11.8z"/><path d="m9 12 2 2 4-4"/></svg>
           </div>
-          <h3>Certified &amp; trusted</h3>
-          <p>FAA Part 107 drone pilot and Google Trusted Photographer. The credentials to fly near Las Vegas airports and publish to Google Street View.</p>
+          <h3>{c.why.cards?.[2]?.title || "Certified & trusted"}</h3>
+          <p>{c.why.cards?.[2]?.body || "FAA Part 107 drone pilot and Google Trusted Photographer. The credentials to fly near Las Vegas airports and publish to Google Street View."}</p>
         </article>
         <article class="why-card" data-reveal data-reveal-delay="4">
           <div class="why-icon">
             <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
           </div>
-          <h3>Fast, predictable delivery</h3>
-          <p>MLS-ready photos, tour links and floor plans in your inbox within 24–48 hours. Rush next-morning delivery available when you need to go live.</p>
+          <h3>{c.why.cards?.[3]?.title || "Fast, predictable delivery"}</h3>
+          <p>{c.why.cards?.[3]?.body || "MLS-ready photos, tour links and floor plans in your inbox within 24–48 hours. Rush next-morning delivery available when you need to go live."}</p>
         </article>
       </div>
     </div>
@@ -136,11 +155,7 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
   {/* ===== SERVICES BY BUYER ===== */}
   <section class="section services-routes">
     <div class="container">
-      <SectionHeader
-        eyebrow="Built for what you're selling"
-        title="Find the right package for your property."
-        lead="Residential listings, commercial space, vacation rentals or new construction: start with the buyer type and add the services you need."
-      />
+      <SectionHeader eyebrow={c.services.eyebrow} title={c.services.title} lead={c.services.lead} />
       <div class="routes-grid">
         {serviceBuyers.map((b, i) => <ServiceCard b={b} index={i} />)}
       </div>
@@ -152,20 +167,13 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
     <div class="container">
       <div class="st-grid">
         <div class="st-text">
-          <p class="eyebrow" data-reveal>Virtual staging</p>
-          <h2 class="display st-title" data-reveal data-reveal-delay="1">
-            Empty rooms become <span class="brass">move-in ready</span> in a click.
-          </h2>
-          <p class="lead" data-reveal data-reveal-delay="2">
-            Virtual staging fills vacant rooms with realistic, properly-scaled furniture so buyers can see the potential without the cost of physical staging. Drag the slider to see real examples from my work.
-          </p>
+          <p class="eyebrow" data-reveal>{c.staging.eyebrow}</p>
+          <h2 class="display st-title" data-reveal data-reveal-delay="1" set:html={c.staging.title} />
+          <p class="lead" data-reveal data-reveal-delay="2">{c.staging.lead}</p>
           <ul class="st-points" role="list" data-reveal data-reveal-delay="3">
-            <li>Photoreal furniture scaled to your room</li>
-            <li>Multiple styles — modern, traditional, glam</li>
-            <li>Faster and far cheaper than physical staging</li>
-            <li>Staged photos for MLS + 360 panoramas for tours</li>
+            {(c.staging.points || ["Photoreal furniture scaled to your room", "Multiple styles — modern, traditional, glam", "Faster and far cheaper than physical staging", "Staged photos for MLS + 360 panoramas for tours"]).map((pt) => <li>{pt}</li>)}
           </ul>
-          <a href={asset("/work/virtual-staging/")} class="text-link" data-reveal data-reveal-delay="3">See the full before/after gallery →</a>
+          <a href={asset("/work/virtual-staging/")} class="text-link" data-reveal data-reveal-delay="3">{c.staging.linkText || "See the full before/after gallery →"}</a>
         </div>
         <div class="st-slider" data-reveal data-reveal-delay="2">
           <BeforeAfterSlider
@@ -183,17 +191,12 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
   {/* ===== PRICING SNAPSHOT ===== */}
   <section class="section paper-2 pricing-snap">
     <div class="container">
-      <SectionHeader
-        eyebrow="Transparent pricing"
-        title="Three Las Vegas packages. Pick yours."
-        lead="No quote-and-wait. Real, published pricing sized to your property. The full price list is on the pricing page."
-        align="center"
-      />
+      <SectionHeader eyebrow={c.pricing.eyebrow} title={c.pricing.title} lead={c.pricing.lead} align="center" />
       <div class="pkg-grid">
         {vegasPackages.map((p) => <PricingCard pkg={p} />)}
       </div>
       <div class="text-center" style="margin-top:2.5rem" data-reveal>
-        <a href={asset("/pricing/")} class="btn outline">See full pricing</a>
+        <a href={asset("/pricing/")} class="btn outline">{c.pricing.buttonText}</a>
       </div>
     </div>
   </section>
@@ -201,10 +204,7 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
   {/* ===== PROCESS ===== */}
   <section class="section dark process-section">
     <div class="container">
-      <SectionHeader
-        eyebrow="How it works"
-        title="From booking to MLS in three steps."
-      />
+      <SectionHeader eyebrow={c.process.eyebrow} title={c.process.title} />
       <div class="proc-grid">
         {process.map((p, i) => (
           <article class="proc" data-reveal data-reveal-delay={String(i + 1)}>
@@ -220,10 +220,7 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
   {/* ===== TESTIMONIALS ===== */}
   <section class="section testimonials-section">
     <div class="container">
-      <SectionHeader
-        eyebrow="What clients say"
-        title="Rated five stars by Las Vegas agents & hosts."
-      />
+      <SectionHeader eyebrow={c.testimonials.eyebrow} title={c.testimonials.title} />
       <div class="t-grid" data-stagger>
         {testimonials.map((t) => <TestimonialCard t={t} />)}
       </div>
@@ -235,14 +232,14 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
     <div class="container">
       <div class="area-grid">
         <div data-reveal>
-          <p class="eyebrow">Service area</p>
-          <h2 class="display area-title">Proudly local to Las Vegas.</h2>
-          <p class="lead">Centrally located about three miles east of the Strip. I shoot across the entire Las Vegas Valley, from Summerlin and Henderson to North Las Vegas and beyond.</p>
+          <p class="eyebrow">{c.serviceArea.eyebrow}</p>
+          <h2 class="display area-title">{c.serviceArea.title}</h2>
+          <p class="lead">{c.serviceArea.lead}</p>
           <ul class="area-list" role="list">
-            {serviceAreaLinks.map((c) => (
+            {serviceAreaLinks.map((city) => (
               <li>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                <a href={asset(c.href)}>{c.name}</a>
+                <a href={asset(city.href)}>{city.name}</a>
               </li>
             ))}
           </ul>
@@ -250,8 +247,8 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
         <div class="area-stat" data-reveal data-reveal-delay="2">
           <div class="area-img photo-frame">
             <picture>
-              <source type="image/webp" srcset={asset(webpOf("/images/portfolio/drone-aerial.jpg"))} />
-              <img src={asset("/images/portfolio/drone-aerial.jpg")} alt="Aerial drone view of a Las Vegas neighborhood" loading="lazy" decoding="async" width="700" height="525" />
+              <source type="image/webp" srcset={asset(webpOf(c.serviceArea.image))} />
+              <img src={asset(c.serviceArea.image)} alt={c.serviceArea.imageAlt} loading="lazy" decoding="async" width="700" height="525" />
             </picture>
           </div>
           <p class="area-cred">Locally based · Same-day availability · {business.turnaround} delivery</p>
@@ -261,10 +258,7 @@ const description = "Las Vegas real estate photographer Mike Madsen — HDR phot
   </section>
 
   {/* ===== FINAL CTA ===== */}
-  <CTABand
-    title="Let's make your next listing the one buyers remember."
-    body="Call or text me directly. Most shoots are on the calendar within 48 hours."
-  />
+  <CTABand title={c.cta.title} body={c.cta.body} />
 </Base>
 
 <style>
