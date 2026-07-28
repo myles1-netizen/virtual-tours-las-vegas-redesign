@@ -1196,11 +1196,17 @@ const focusByPath = Object.fromEntries(
 
         // Load data
         showLoading();
+        let ghConnected = true;
         try {
           await loadAllModels();
-          const testimonialCount = (models.testimonials.data.items || []).length;
-          const faqCount = (models.faq.data.items || []).length;
-          const portfolioCount = (models.portfolio.data.items || []).length;
+        } catch (e) {
+          // Content models couldn't load — most likely GH_TOKEN isn't set yet.
+          ghConnected = false;
+        }
+        try {
+          const testimonialCount = (models.testimonials?.data?.items || []).length;
+          const faqCount = (models.faq?.data?.items || []).length;
+          const portfolioCount = (models.portfolio?.data?.items || []).length;
           stats.appendChild(statCard(pages.length, "Pages"));
           stats.appendChild(statCard(testimonialCount, "Testimonials"));
           stats.appendChild(statCard(portfolioCount, "Portfolio items"));
@@ -1215,23 +1221,43 @@ const focusByPath = Object.fromEntries(
             return { ok: true, detail: "Connected and ready to save." };
           }));
           for (const c of checks) hl.appendChild(healthRow(c));
-          // Activity
-          const act = $("#recent-activity");
-          try {
-            const { commits } = await getCommits(null, 8);
+
+          // If GH_TOKEN isn't set, show a clear setup notice instead of
+          // leaving the health/activity sections stuck on "Checking…".
+          if (!ghConnected) {
+            hl.innerHTML = "";
+            const notice = el("div", { class: "list-item" });
+            notice.appendChild(el("span", { class: "badge badge-red", text: "Setup needed" }));
+            notice.appendChild(el("div", { class: "list-main" },
+              el("div", { class: "t", text: "Add the GH_TOKEN environment variable" }),
+              el("div", { class: "s", html: "In Cloudflare → Settings → Environment variables, add <b>GH_TOKEN</b> (your GitHub PAT). This lets the admin save your edits. Until then, you can browse but not save." })
+            ));
+            hl.appendChild(notice);
+            const act = $("#recent-activity");
             act.innerHTML = "";
-            for (const c of commits) {
-              const date = new Date(c.date).toLocaleDateString();
-              act.appendChild(el("div", { class: "list-item" },
-                el("div", { class: "list-main" },
-                  el("div", { class: "t", text: c.message.split("\n")[0] }),
-                  el("div", { class: "s", text: `${c.author} · ${date}` })
-                )
-              ));
-            }
-          } catch (e) { act.textContent = "Could not load recent activity."; }
-        } catch (e) {
-          toast(e.message, "error", "Load failed");
+            act.appendChild(el("div", { class: "list-item" },
+              el("div", { class: "list-main" },
+                el("div", { class: "t", text: "Recent activity will appear here once GH_TOKEN is set." })
+              )
+            ));
+          } else {
+            // Activity
+            const act = $("#recent-activity");
+            try {
+              const { commits } = await getCommits(null, 8);
+              act.innerHTML = "";
+              if (!commits.length) { act.textContent = "No recent activity."; }
+              for (const c of commits) {
+                const date = new Date(c.date).toLocaleDateString();
+                act.appendChild(el("div", { class: "list-item" },
+                  el("div", { class: "list-main" },
+                    el("div", { class: "t", text: c.message.split("\n")[0] }),
+                    el("div", { class: "s", text: `${c.author} · ${date}` })
+                  )
+                ));
+              }
+            } catch (e) { act.textContent = "Could not load recent activity."; }
+          }
         } finally { hideLoading(); }
 
         // Quick actions

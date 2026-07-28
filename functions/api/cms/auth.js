@@ -186,7 +186,8 @@ export async function onRequestPost({ request, env }) {
 export async function onRequestGet({ request, env }) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) return json({ valid: false }, 401);
-  const payload = await verifyJWT(token, env.JWT_SECRET);
+  const secret = cfg(env, "JWT_SECRET");
+  const payload = await verifyJWT(token, secret);
   if (!payload) return json({ valid: false }, 401);
   // Optionally enforce IP match (commented out to avoid breaking users on
   // mobile networks that rotate IPs mid-session; the short 12h expiry is
