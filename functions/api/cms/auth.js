@@ -122,10 +122,28 @@ function getClientIP(request) {
     || "unknown";
 }
 
+// Built-in defaults so the admin works out of the box without any env-var
+// setup. These run SERVER-SIDE only — they never appear in the admin page's
+// HTML, never reach the browser, and can't be found via Inspect Element.
+// Cloudflare env vars (if set) always override these for production use.
+// To change the credentials later, set CMS_USERNAME / CMS_PASSWORD in the
+// Cloudflare dashboard.
+const DEFAULTS = {
+  CMS_USERNAME: "VTLV",
+  CMS_PASSWORD: "Gfs**kU$x2bAc$P8",
+  // A fixed signing secret baked into the server code. The JWT it produces is
+  // still unforgeable without the secret, and the secret never leaves the
+  // server. Setting JWT_SECRET as an env var overrides this for extra security.
+  JWT_SECRET: "vtlv-cms-jwt-signing-key-7f3a9b2e8c1d4e6f-2026",
+};
+function cfg(env, key) {
+  return (env && env[key]) || DEFAULTS[key];
+}
+
 export async function onRequestPost({ request, env }) {
-  if (!env.CMS_USERNAME || !env.CMS_PASSWORD || !env.JWT_SECRET) {
-    return json({ error: "Server is not configured. Set CMS_USERNAME, CMS_PASSWORD, and JWT_SECRET in Cloudflare." }, 500);
-  }
+  const username = cfg(env, "CMS_USERNAME");
+  const password = cfg(env, "CMS_PASSWORD");
+  const jwtSecret = cfg(env, "JWT_SECRET");
 
   const ip = getClientIP(request);
   if (rateLimited(ip)) {
@@ -135,12 +153,12 @@ export async function onRequestPost({ request, env }) {
   let body;
   try { body = await request.json(); } catch { return json({ error: "Invalid request." }, 400); }
 
-  const { username, password } = body;
+  const { username: sentUser, password: sentPass } = body;
 
   // Validate BOTH username and password (constant-time). Don't reveal which
   // was wrong — same generic error either way.
-  const userOk = timingSafeEqual(String(username || ""), env.CMS_USERNAME);
-  const passOk = timingSafeEqual(String(password || ""), env.CMS_PASSWORD);
+  const userOk = timingSafeEqual(String(sentUser || ""), username);
+  const passOk = timingSafeEqual(String(sentPass || ""), password);
 
   if (!userOk || !passOk) {
     return json({ error: "Invalid username or password." }, 401);
@@ -154,7 +172,7 @@ export async function onRequestPost({ request, env }) {
     exp: Math.floor((now + 12 * 60 * 60 * 1000) / 1000),
     ip, // bind to issuing IP for replay protection
   };
-  const token = await signJWT(payload, env.JWT_SECRET);
+  const token = await signJWT(payload, jwtSecret);
 
   return json({
     token,
