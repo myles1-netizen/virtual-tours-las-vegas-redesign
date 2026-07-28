@@ -17,7 +17,14 @@
 // Security: a valid JWT is required for every operation. No password hash
 // is ever sent to the browser — only the JWT, which is signed and expires.
 
-const REPO = "MylesThePro1/virtual-tours-las-vegas-redesign";
+// The repo to read/write. Defaults to the upstream repo, but can be overridden
+// with the GH_REPO env var — set this to match whichever repo your PAT has
+// access to (e.g. "myles1-netizen/virtual-tours-las-vegas-redesign" if you
+// deploy from a fork).
+const DEFAULT_REPO = "MylesThePro1/virtual-tours-las-vegas-redesign";
+function repo(env) {
+  return (env && env.GH_REPO) || DEFAULT_REPO;
+}
 const BRANCH = "main";
 const API = "https://api.github.com";
 const enc = new TextEncoder();
@@ -88,6 +95,7 @@ function jwtSecret(env) {
 export async function onRequestPost({ request, env }) {
   if (!env.GH_TOKEN) return json({ error: "Server missing GH_TOKEN. Set GH_TOKEN in Cloudflare environment variables." }, 500);
   const secret = jwtSecret(env);
+  const REPO = repo(env); // resolve repo from env var or default
 
   // ---- Auth: require a valid JWT ----
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
